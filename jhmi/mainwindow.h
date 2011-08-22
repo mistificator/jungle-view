@@ -32,7 +32,7 @@ private:
 
 	int fast_timer, slow_timer, frames_count, step, prev_count, prev_rendered_count;
 	void timerEvent(QTimerEvent * _te);
-	bool event (QEvent * _ev); 
+        bool event (QEvent * _ev);
 	void closeEvent(QCloseEvent *);
 
 private slots:
