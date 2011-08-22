@@ -1557,10 +1557,66 @@ jZoom & jView::zoomer() const
 	return d->zoomer;
 }
 
+jView & jView::addItem(jItem * _item)
+{
+	THREAD_SAFE(Write)
+	d->items << _item;
+	THREAD_UNSAFE
+	return * this;
+}
+
+jView & jView::addItems(const QVector<jItem *> & _items)
+{
+	THREAD_SAFE(Write)
+	d->items << _items;
+	THREAD_UNSAFE
+	return * this;
+}
+
+jView & jView::setItem(jItem * _item)
+{
+	SAFE_SET(d->items, QVector<jItem *>() << _item);
+	return * this;
+}
+
 jView & jView::setItems(const QVector<jItem *> & _items)
 {
 	SAFE_SET(d->items, _items);
 	return * this;
+}
+
+jView & jView::removeItem(jItem * _item)
+{
+	THREAD_SAFE(Write)
+	QVector<jItem *>::iterator _it = ::qFind(d->items.begin(), d->items.end(), _item);
+	if (_it)
+	{
+		d->items.erase(_it);
+	}
+	THREAD_UNSAFE
+	return * this;
+}
+
+jView & jView::removeItems(const QVector<jItem *> & _items)
+{
+	THREAD_SAFE(Write)
+	foreach (jItem * _item, _items)
+	{
+		QVector<jItem *>::iterator _it = ::qFind(d->items.begin(), d->items.end(), _item);
+		if (_it)
+		{
+			d->items.erase(_it);
+		}
+	}
+	THREAD_UNSAFE
+	return * this;
+}
+
+void jView::clear()
+{
+	THREAD_SAFE(Write)
+	d->items.clear();
+	THREAD_UNSAFE
 }
 
 QVector<jItem *> jView::items() const

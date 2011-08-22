@@ -127,6 +127,8 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 			QVector<jSelector *>() << &highlight
 		);
 
+	view->setItems(QVector<jItem *>());
+
 	view->coordinator().label().
 		setPen(QPen(Qt::yellow)).
 		setBackground(QBrush(QColor(0, 0, 0, 80), Qt::SolidPattern));
