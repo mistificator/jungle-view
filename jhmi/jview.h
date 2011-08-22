@@ -735,8 +735,15 @@ public:
 	jMarker & verticalMarker() const;
 	jLazyRenderer & lazyRenderer() const;
 
+	jView & addItem(jItem * _item);
+	jView & addItems(const QVector<jItem *> & _items);
+	jView & setItem(jItem * _item);
 	jView & setItems(const QVector<jItem *> & _items);
+	jView & removeItem(jItem * _item);
+	jView & removeItems(const QVector<jItem *> & _items);
 	QVector<jItem *> items() const;
+
+	void clear();
 
 	jView & setBackground(const QBrush & _brush);
 	QBrush background() const;
