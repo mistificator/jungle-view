@@ -75,10 +75,10 @@ struct jAxis::Data
 			_ticks << _value;
 		}
 		unsigned int _mply = 1;
-		while (_ticks.count() > count_hint)
+		while (_ticks.count() > (int)count_hint)
 		{
 			_mply *= 2;
-			for (unsigned int _idx = 0; _idx < _ticks.count(); _idx++)
+			for (int _idx = 0; _idx < _ticks.count(); _idx++)
 			{
 				if (alignTick(_ticks[_idx], alignment * _mply) != _ticks[_idx])
 				{
@@ -201,9 +201,9 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 	QVector<double> _ticks = d->calcTicks(_lo, _hi);
 	if (_ticks.count() > 0)
 	{
-		while (_ticks.count() > d->count)
+		while (_ticks.count() > (int)d->count)
 		{
-			for (unsigned int _idx = 0; _idx < _ticks.count(); _idx++)
+			for (int _idx = 0; _idx < _ticks.count(); _idx++)
 			{
 				_ticks.remove(_idx);
 			}
@@ -224,7 +224,7 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 				_dst_rect.left() + _pen.width() / 2,
 				_dst_rect.bottom()
 				);
-			for (unsigned int _idx = 0; _idx < _ticks.count(); _idx++)
+			for (int _idx = 0; _idx < _ticks.count(); _idx++)
 			{
 				int _y = _dst_rect.height() - ((_ticks[_idx] - _lo) * _dst_rect.height() / (_hi - _lo));
 				_painter.drawLine(0, _y, _tick_length, _y);
@@ -254,7 +254,7 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 				_dst_rect.right(),
 				_dst_rect.bottom() - _pen.width() + 1
 				);
-			for (unsigned int _idx = 0; _idx < _ticks.count(); _idx++)
+			for (int _idx = 0; _idx < _ticks.count(); _idx++)
 			{
 				int _x = (_ticks[_idx] - _lo) * _dst_rect.width() / (_hi - _lo);
 				_painter.drawLine(_x, _dst_rect.bottom(), _x, _y + _pen.width());
@@ -554,7 +554,7 @@ struct jZoom::Data
 	}
 	void adjustHistory()
 	{
-		for (unsigned int _idx = 0; _idx < history.count(); _idx++)
+		for (int _idx = 0; _idx < history.count(); _idx++)
 		{
 			history[_idx] = minmaxRect(history[_idx]);
 		}
@@ -2948,8 +2948,8 @@ struct jLegend::Data
 			_color_label = new QLabel();
 			_text_label = new QLabel();
 			_updown_scrollbar = new QScrollBar(Qt::Vertical);
-			_updown_scrollbar->setMaximumHeight(16);
-			_updown_scrollbar->setMaximumWidth(12);
+			_updown_scrollbar->setMaximumHeight(24);
+			_updown_scrollbar->setMaximumWidth(16);
 			_updown_scrollbar->setProperty("index", _idx);
 			layout->addWidget(_visibility_checkbox, _idx, 0);
 			layout->addWidget(_color_label, _idx, 1);

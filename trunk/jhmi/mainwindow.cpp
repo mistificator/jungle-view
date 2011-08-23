@@ -29,7 +29,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 
 	const int _sz_2d = 524288;
 	double * _gfx2d = new double[_sz_2d];
-	for (unsigned int _idx = 0; _idx < _sz_2d; _idx++)
+	for (int _idx = 0; _idx < _sz_2d; _idx++)
 	{
 		_gfx2d[_idx] = _idx * 256;
 	}
@@ -56,7 +56,6 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		_gfx_cos[_idx] = 100.0*::cosf(_idx/500.0);
 	}
 
-	int _sz = sizeof(gfx_dots);
 	::memset(gfx_dots, 0, sizeof(gfx_dots));
 
 	item1d.
@@ -219,7 +218,7 @@ void Mainwindow::timerEvent(QTimerEvent * _te)
 		}
 		item2d.setOrigin(QPointF(_origin.x() + step, _origin.y()));
 		::qsrand(_origin.x());
-		for (int _idx = 0; _idx < sizeof(gfx_dots) / sizeof(gfx_dots[0]); _idx++)
+		for (unsigned int _idx = 0; _idx < sizeof(gfx_dots) / sizeof(gfx_dots[0]); _idx++)
 		{
 			gfx_dots[_idx].x = ::qrand() / 8.0;
 			gfx_dots[_idx].y = ::qrand() / 256.0;
