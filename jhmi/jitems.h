@@ -396,7 +396,7 @@ void jItem1D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
 	if (_x_axis && _x_axis->isLog10ScaleEnabled())
 	{
 		const qreal _minimum = _src_rect.left();
-		for (unsigned int _idx = 0; _idx < _points.count(); _idx++)
+		for (int _idx = 0; _idx < _points.count(); _idx++)
 		{
 			_points[_idx].setX(_x_axis->toLog10(_points[_idx].x(), _minimum));
 		}
@@ -404,7 +404,7 @@ void jItem1D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
 	if (_y_axis && _y_axis->isLog10ScaleEnabled())
 	{
 		const qreal _minimum = -_src_rect.bottom();
-		for (unsigned int _idx = 0; _idx < _points.count(); _idx++)
+		for (int _idx = 0; _idx < _points.count(); _idx++)
 		{
 			_points[_idx].setY(-_y_axis->toLog10(-_points[_idx].y(), _minimum));
 		}
@@ -746,7 +746,7 @@ void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
 		const unsigned int _log_w = _x_axis->toLog10(_w);
 		QImage _result(_log_w, _h, (QImage::Format)format);
 		QPainter _painter(&_result);
-		for (int _x = 0; _x < _log_w - 1; _x++)
+		for (unsigned int _x = 0; _x < _log_w - 1; _x++)
 		{
 			_painter.drawImage(
 				QRectF(QPointF(_x, 0), QPointF(_x + 1, _h)), 
@@ -761,7 +761,7 @@ void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
 		const unsigned int _log_h = _y_axis->toLog10(_h);
 		QImage _result(_w, _log_h, (QImage::Format)format);
 		QPainter _painter(&_result);
-		for (int _y = 0; _y < _log_h - 1; _y++)
+		for (unsigned int _y = 0; _y < _log_h - 1; _y++)
 		{
 			_painter.drawImage(
 				QRectF(QPointF(0, _y), QPointF(_w, _y + 1)), 
