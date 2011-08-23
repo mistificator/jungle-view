@@ -16,6 +16,12 @@
 #define COPY_FBD(CLASS_NAME) CTOR_FBD(CLASS_NAME); ASSIGN_FBD(CLASS_NAME);
 #define PDATA private: struct Data; Data * d;
 
+#ifdef _DEBUG
+	#define JDEBUG(str) qDebug() << QFileInfo(__FILE__).fileName() << "\t" << __LINE__ << "\t" << __FUNCTION__ << "\t" << str;
+#else
+	#define JDEBUG(str)
+#endif
+
 class jMutex: public QReadWriteLock
 {
 public:
@@ -23,8 +29,8 @@ public:
 };
 
 #define DECL_MUTEX protected: mutable jMutex rw_lock;
-#define THREAD_SAFE(_TYPE_) rw_lock.lockFor##_TYPE_();
-#define THREAD_UNSAFE rw_lock.unlock();
+#define THREAD_SAFE(_TYPE_)  JDEBUG("mutex lock"); rw_lock.lockFor##_TYPE_();
+#define THREAD_UNSAFE rw_lock.unlock(); JDEBUG("mutex unlock");
 
 template <class T> void jSafeProperty(T & _property, const T & _value, QReadWriteLock & _lock)
 {

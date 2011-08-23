@@ -2366,6 +2366,7 @@ QVector<jItem *> jView::showToolTip(const QPointF & _point)
 	THREAD_SAFE(Read)
 	if (rect().contains(_point.toPoint()) == false)
 	{
+		THREAD_UNSAFE
 		return QVector<jItem *>();
 	}
 	QVector<jItem *> _items = itemsAt(_point);
