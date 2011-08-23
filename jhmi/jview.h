@@ -291,11 +291,11 @@ public:
 	jZoom();
 	virtual ~jZoom();
 
-	jZoom & setZoomBase(const QRectF & _rect);
-	jZoom & setZoomBase(const jAxis & _x_axis, const jAxis & _y_axis);
+	jZoom & setZoomFullView(const QRectF & _rect);
+	jZoom & setZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis);
 	QRectF rectBase() const;
-	void adjustZoomBase(const QRectF & _rect);
-	void adjustZoomBase(const jAxis & _x_axis, const jAxis & _y_axis);
+	void adjustZoomFullView(const QRectF & _rect);
+	void adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis);
 
 	void zoomIn(const QRectF & _rect);
 	void zoomOut();
@@ -731,22 +731,23 @@ public:
 		ZoomStart = 4,
 		ZoomMove = 5,
 		ZoomEnd = 6,
-		ZoomBase = 7,
+		ZoomFullView = 7,
 		ZoomDelta = 8,
 		PanStart = 9,
 		PanMove = 10,
-		PanEnd = 11
+		PanEnd = 11,
+		ContextMenuRequested = 12
 	};
 	enum Method
 	{
 		UnknownMethod = -1,
-		KeyPress = 0,
-		KeyRelease = 1,
-		MousePress = 2,
-		MouseRelease = 3,
-		MouseDoubleClick = 4,
-		Wheel = 5,
-		MouseMove = 6
+		KeyPress = QEvent::KeyPress,
+		KeyRelease = QEvent::KeyRelease,
+		MousePress = QEvent::MouseButtonPress,
+		MouseRelease = QEvent::MouseButtonRelease,
+		MouseDoubleClick = QEvent::MouseButtonDblClick,
+		Wheel = QEvent::Wheel,
+		MouseMove = QEvent::MouseMove
 	};
 
 	jInputPattern & addAction(int _action, int _method, int _code = 0, int _modifier = 0);

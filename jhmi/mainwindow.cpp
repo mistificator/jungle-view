@@ -183,8 +183,8 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 	view_legend->show();
 
 	view->inputPattern()->
-		addAction(jInputPattern::ZoomBase, jInputPattern::MousePress, Qt::MidButton).
-		addAction(jInputPattern::ZoomDelta, jInputPattern::MousePress, Qt::MidButton, Qt::ShiftModifier);
+                addAction(jInputPattern::ZoomFullView, jInputPattern::MousePress, Qt::MidButton).
+                addAction(jInputPattern::ZoomDelta, jInputPattern::MousePress, Qt::MidButton, Qt::ShiftModifier);
 
 	step = 10;
 	frames_count = 0;
