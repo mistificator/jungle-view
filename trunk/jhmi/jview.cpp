@@ -578,7 +578,7 @@ void jZoom::clearHistory()
 	THREAD_UNSAFE
 }
 
-jZoom & jZoom::setZoomBase(const QRectF & _rect)
+jZoom & jZoom::setZoomFullView(const QRectF & _rect)
 {
 	THREAD_SAFE(Write)
 	clearHistory();
@@ -594,9 +594,9 @@ jZoom & jZoom::setZoomBase(const QRectF & _rect)
 	return * this;
 }
 
-jZoom & jZoom::setZoomBase(const jAxis & _x_axis, const jAxis & _y_axis)
+jZoom & jZoom::setZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis)
 {
-	return setZoomBase(QRectF(QPointF(_x_axis.lo(), _y_axis.lo()), QPointF(_x_axis.hi(), _y_axis.hi())));
+	return setZoomFullView(QRectF(QPointF(_x_axis.lo(), _y_axis.lo()), QPointF(_x_axis.hi(), _y_axis.hi())));
 }
 
 QRectF jZoom::rectBase() const
@@ -604,7 +604,7 @@ QRectF jZoom::rectBase() const
 	return SAFE_GET(d->base);
 }
 
-void jZoom::adjustZoomBase(const QRectF & _rect)
+void jZoom::adjustZoomFullView(const QRectF & _rect)
 {
 	if (_rect == SAFE_GET(d->base))
 	{
@@ -620,9 +620,9 @@ void jZoom::adjustZoomBase(const QRectF & _rect)
 	THREAD_UNSAFE
 }
 
-void jZoom::adjustZoomBase(const jAxis & _x_axis, const jAxis & _y_axis)
+void jZoom::adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis)
 {
-	adjustZoomBase(QRectF(QPointF(_x_axis.lo(), _y_axis.lo()), QPointF(_x_axis.hi(), _y_axis.hi())));
+	adjustZoomFullView(QRectF(QPointF(_x_axis.lo(), _y_axis.lo()), QPointF(_x_axis.hi(), _y_axis.hi())));
 }
 
 void jZoom::zoomIn(const QRectF & _rect)
@@ -1394,11 +1394,12 @@ struct jInputPattern::Data
 			addAction(jInputPattern::MoveCursorRight, jInputPattern::KeyPress, Qt::Key_Right).
 			addAction(jInputPattern::MoveCursorUp, jInputPattern::KeyPress, Qt::Key_Up).
 			addAction(jInputPattern::MoveCursorDown, jInputPattern::KeyPress, Qt::Key_Down).
+			addAction(jInputPattern::ContextMenuRequested, jInputPattern::MouseRelease, Qt::RightButton).
 			addAction(jInputPattern::ZoomStart, jInputPattern::MousePress, Qt::LeftButton).
 			addAction(jInputPattern::ZoomEnd, jInputPattern::MouseRelease, Qt::LeftButton).
 			addAction(jInputPattern::ZoomMove, jInputPattern::MouseMove, Qt::LeftButton).
 			addAction(jInputPattern::ZoomDelta, jInputPattern::Wheel).
-			addAction(jInputPattern::ZoomBase, jInputPattern::MouseDoubleClick, Qt::LeftButton).
+			addAction(jInputPattern::ZoomFullView, jInputPattern::MouseDoubleClick, Qt::LeftButton).
 			addAction(jInputPattern::PanStart, jInputPattern::MousePress, Qt::RightButton).
 			addAction(jInputPattern::PanEnd, jInputPattern::MouseRelease, Qt::RightButton).
 			addAction(jInputPattern::PanMove, jInputPattern::MouseMove, Qt::RightButton);
@@ -1746,11 +1747,11 @@ struct jView::Data
 	{
 		return axisToScreenTransform(_screen_rect).map(_src_point);
 	}
-	void setZoomBase()
+	void setZoomFullView()
 	{
 		if (x_axis && y_axis)
 		{
-			zoomer.setZoomBase(* x_axis, * y_axis);
+			zoomer.setZoomFullView(* x_axis, * y_axis);
 		}
 	}
 	static bool itemZSort(const jItem * _item1, const jItem * _item2)
@@ -1844,7 +1845,7 @@ jView & jView::setXAxis(jAxis * _axis)
 	if (d->x_axis != _axis)
 	{
 		d->x_axis = _axis;
-		d->setZoomBase();
+		d->setZoomFullView();
 	}
 	THREAD_UNSAFE
 	return * this;
@@ -1861,7 +1862,7 @@ jView & jView::setYAxis(jAxis * _axis)
 	if (d->y_axis != _axis)
 	{
 		d->y_axis = _axis;
-		d->setZoomBase();
+		d->setZoomFullView();
 	}
 	THREAD_UNSAFE
 	return * this;
@@ -2187,7 +2188,7 @@ void jView::userCommand(int _action, int _method, int _code, int _modifier, QPoi
 		d->adjustCoordinator(rect(), d->release_point);
 		d->renderer->rebuild();
 		break;
-	case jInputPattern::ZoomBase:
+	case jInputPattern::ZoomFullView:
 		d->zoomer.zoomFullView();
 		d->updateViewports(d->zoomer.rect());
 		d->renderer->rebuild();
@@ -2217,12 +2218,14 @@ void jView::userCommand(int _action, int _method, int _code, int _modifier, QPoi
 		d->release_point.setY(rect().height() - d->release_point.y());
 
 		setCursor(d->before_pan_cursor);
+		d->adjustCoordinator(rect(), d->release_point);
+		d->renderer->rebuild();
+		break;
+	case jInputPattern::ContextMenuRequested:
 		if (d->press_point == d->release_point)
 		{
 			emit contextMenuRequested(mapToGlobal(_mpos.toPoint()));
 		}
-		d->adjustCoordinator(rect(), d->release_point);
-		d->renderer->rebuild();
 		break;
 	}
 	
@@ -2428,7 +2431,7 @@ void jView::autoScaleX()
 	{
 		QRectF _bounding_rect = itemsBoundingRect();
 		d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
-		d->zoomer.adjustZoomBase(* d->x_axis, * d->y_axis);
+		d->zoomer.adjustZoomFullView(* d->x_axis, * d->y_axis);
 	}
 }
 
@@ -2438,7 +2441,7 @@ void jView::autoScaleY()
 	{
 		QRectF _bounding_rect = itemsBoundingRect();
 		d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
-		d->zoomer.adjustZoomBase(* d->x_axis, * d->y_axis);
+		d->zoomer.adjustZoomFullView(* d->x_axis, * d->y_axis);
 	}
 }
 
@@ -2449,7 +2452,7 @@ void jView::autoScale()
 		QRectF _bounding_rect = itemsBoundingRect();
 		d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
 		d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
-		d->zoomer.adjustZoomBase(* d->x_axis, * d->y_axis);
+		d->zoomer.adjustZoomFullView(* d->x_axis, * d->y_axis);
 	}
 }
 
@@ -2809,7 +2812,7 @@ void jPreview::userCommand(int _action, int _method, int _code, int _modifier, Q
 		d->pan(rect(), _me);
 		d->prev_point = _mpos.toPoint();
 		break;
-	case jInputPattern::ZoomBase:
+	case jInputPattern::ZoomFullView:
 		d->zoomFullView(rect(), _me);
 		break;
 	case jInputPattern::ZoomDelta:
