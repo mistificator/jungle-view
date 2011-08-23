@@ -696,7 +696,14 @@ QRectF jItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) co
 	{
 		::qSwap(_top, _bottom);
 	}
+
+	if ((_top == _bottom) && (_top != 0))
+	{
+		THREAD_UNSAFE
+		return QRectF(QPointF(_left, _offset_y), QPointF(_right, _bottom));
+	}
 	THREAD_UNSAFE
+
 	return QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
 }
 

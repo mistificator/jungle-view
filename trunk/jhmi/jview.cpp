@@ -2018,7 +2018,7 @@ void jView::render(QPainter & _painter) const
 	THREAD_UNSAFE
 }
 
-void jView::userCommand(int _action, int _method, int _code, int _modifier, QPointF _mpos)
+void jView::userCommand(int _action, int /*_method*/, int /*_code*/, int _modifier, QPointF _mpos)
 {
 	switch (_action)
 	{
@@ -2789,7 +2789,7 @@ jInputPattern * jPreview::inputPattern() const
 	return d->pattern;
 }
 
-void jPreview::userCommand(int _action, int _method, int _code, int _modifier, QPointF _mpos)
+void jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifier, QPointF _mpos)
 {
 	QMouseEvent * _me = new QMouseEvent(QEvent::MouseButtonRelease, _mpos.toPoint(), (Qt::MouseButton)_code, (Qt::MouseButtons)_code, (Qt::KeyboardModifiers)_modifier);
 	QWheelEvent * _we = new QWheelEvent(_mpos.toPoint(), _modifier, (Qt::MouseButtons)_code, Qt::NoModifier);
