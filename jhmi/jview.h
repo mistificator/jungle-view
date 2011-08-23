@@ -711,6 +711,68 @@ public:
 	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect);
 };
 
+class jInputPattern : public QObject
+{
+	Q_OBJECT
+	PDATA
+public:
+	jInputPattern(QObject * _parent = 0);
+	~jInputPattern();
+
+	jInputPattern & setDefaultPattern();
+
+	enum Action 
+	{
+		UnknownAction = -1,
+		MoveCursorLeft = 0,
+		MoveCursorRight = 1,
+		MoveCursorUp = 2,
+		MoveCursorDown = 3,
+		ZoomStart = 4,
+		ZoomMove = 5,
+		ZoomEnd = 6,
+		ZoomBase = 7,
+		ZoomDelta = 8,
+		PanStart = 9,
+		PanMove = 10,
+		PanEnd = 11
+	};
+	enum Method
+	{
+		UnknownMethod = -1,
+		KeyPress = 0,
+		KeyRelease = 1,
+		MousePress = 2,
+		MouseRelease = 3,
+		MouseDoubleClick = 4,
+		Wheel = 5,
+		MouseMove = 6
+	};
+
+	jInputPattern & addAction(int _action, int _method, int _code = 0, int _modifier = 0);
+	jInputPattern & removeAction(int _action, int _method);
+	jInputPattern & removeActions(int _action);
+
+	void clear();
+
+	QVector<int> actions() const;
+	QVector<int> actionMethods(int _action) const;
+	QVector<int> actionCodes(int _action, int _method, QVector<int> & _modifiers = QVector<int>()) const;
+	QVector<int> actionModifiers(int _action, int _method) const;
+
+	QPointF lastMousePosition() const;
+	int lastMouseButtons() const;
+	int lastKeyboardKey() const;
+	int lastModifiers() const;
+	int lastDelta() const;
+
+	jInputPattern * copy() const;
+signals:
+	void actionAccepted(int, int, int, int, QPointF);		// action, method, code, modifier, mouse position
+protected:
+	bool eventFilter(QObject * _object, QEvent * _event);
+};
+
 class jLazyRenderer;
 
 class jView : public JUNGLE_WIDGET_CLASS
@@ -773,17 +835,16 @@ public:
 	void autoScaleX();
 	void autoScaleY();
 	void autoScale();
+
+	jView & setInputPattern(jInputPattern * _pattern);
+	jInputPattern * inputPattern() const;
 public slots:
 	void rebuild();
+	virtual void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 protected:
-	void mousePressEvent(QMouseEvent *);
-	void mouseReleaseEvent(QMouseEvent *);
 	void mouseMoveEvent(QMouseEvent *);
-	void mouseDoubleClickEvent(QMouseEvent *);
-	void wheelEvent(QWheelEvent *);
 	void enterEvent(QEvent *);
 	void leaveEvent(QEvent *);
-	void keyPressEvent(QKeyEvent *);
 signals:
 	void contextMenuRequested(QPoint);
 	void viewportChanged(QRectF);
@@ -814,14 +875,12 @@ public:
 	virtual void render(QPainter & _painter) const;
 
 	QSize minimumSizeHint() const;
+
+	jPreview & setInputPattern(jInputPattern * _pattern);
+	jInputPattern * inputPattern() const;
 public slots:
 	void rebuild();
-protected:
-	void mousePressEvent(QMouseEvent *);
-	void mouseReleaseEvent(QMouseEvent *);
-	void mouseMoveEvent(QMouseEvent *);
-	void mouseDoubleClickEvent(QMouseEvent *);
-	void wheelEvent(QWheelEvent *);
+	virtual void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 };
 
 //! Class jLazyRenderer is a 2-D rendering engine.
