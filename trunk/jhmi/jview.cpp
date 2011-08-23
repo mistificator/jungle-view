@@ -1363,6 +1363,318 @@ void jMarker::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF
 
 // ------------------------------------------------------------------------
 
+struct jInputPattern::Data
+{
+	struct ActionEntry
+	{
+		int action, method, code, modifier;
+		bool operator == (const ActionEntry & _other) const
+		{
+			return (action == _other.action) && (method == _other.method) && (code == _other.code) && (modifier == _other.modifier);
+		}
+	};
+	QMap<int, QVector<ActionEntry> > actions;
+	QPointF last_mouse_pos;
+	int last_btn, last_key, last_modifier;
+	Data()
+	{
+	}
+	~Data()
+	{
+	}
+	void setDefaultPattern(jInputPattern * _pattern)
+	{
+		if (_pattern == 0)
+		{
+			return;
+		}
+		_pattern->clear();
+		_pattern->
+			addAction(jInputPattern::MoveCursorLeft, jInputPattern::KeyPress, Qt::Key_Left).
+			addAction(jInputPattern::MoveCursorRight, jInputPattern::KeyPress, Qt::Key_Right).
+			addAction(jInputPattern::MoveCursorUp, jInputPattern::KeyPress, Qt::Key_Up).
+			addAction(jInputPattern::MoveCursorDown, jInputPattern::KeyPress, Qt::Key_Down).
+			addAction(jInputPattern::ZoomStart, jInputPattern::MousePress, Qt::LeftButton).
+			addAction(jInputPattern::ZoomEnd, jInputPattern::MouseRelease, Qt::LeftButton).
+			addAction(jInputPattern::ZoomMove, jInputPattern::MouseMove, Qt::LeftButton).
+			addAction(jInputPattern::ZoomDelta, jInputPattern::Wheel).
+			addAction(jInputPattern::ZoomBase, jInputPattern::MouseDoubleClick, Qt::LeftButton).
+			addAction(jInputPattern::PanStart, jInputPattern::MousePress, Qt::RightButton).
+			addAction(jInputPattern::PanEnd, jInputPattern::MouseRelease, Qt::RightButton).
+			addAction(jInputPattern::PanMove, jInputPattern::MouseMove, Qt::RightButton);
+	}
+	void addEntry(int _action, int _method, int _code, int _modifier)
+	{
+		ActionEntry _entry;
+		_entry.action = _action;
+		_entry.method = _method;
+		_entry.code = _code;
+		_entry.modifier = _modifier;
+		QVector<ActionEntry>::iterator _it = ::qFind(actions[_entry.action].begin(), actions[_entry.action].end(), _entry);
+		if (_it != actions[_entry.action].end())
+		{
+			return;
+		}
+		actions[_entry.action] << _entry;
+	}
+	void removeEntry(int _action, int _method)
+	{
+		ActionEntry _entry;
+		_entry.action = _action;
+		_entry.method = _method;
+		for (QVector<ActionEntry>::iterator _it = actions[_entry.action].begin(); _it != actions[_entry.action].end(); )
+		{
+			if (((*_it).action == _entry.action) && ((*_it).method == _entry.method))
+			{
+				actions[_entry.action].erase(_it);
+			}
+			else
+			{
+				_it++;
+			}
+		}
+	}
+	void removeEntries(int _action)
+	{
+		actions.remove(_action);
+	}
+	QVector<int> methods(int _action) const
+	{
+		QVector<int> _methods;
+		foreach (int _tmp_action, actions.keys())
+		{
+			if (_tmp_action == _action)
+			{
+				foreach (ActionEntry _entry, actions[_tmp_action])
+				{
+					_methods << _entry.method;
+				}
+			}
+		}
+		return _methods;
+	}
+	void codes(int _action, int _method, QVector<int> & _codes, QVector<int> & _modifiers) const
+	{
+		foreach (int _tmp_action, actions.keys())
+		{
+			if (_tmp_action == _action)
+			{
+				foreach (ActionEntry _entry, actions[_tmp_action])
+				{
+					if (_entry.method == _method)
+					{
+						_codes << _entry.code;
+						_modifiers << _entry.modifier;
+					}
+				}
+			}
+		}
+	}
+	QVector<ActionEntry> checkAction(int _method, int _code = 0, int _modifier = 0)
+	{
+		QVector<ActionEntry> _accepted;
+		foreach (int _tmp_action, actions.keys())
+		{
+			foreach (ActionEntry _entry, actions[_tmp_action])
+			{
+				if ((_entry.method == _method) && (_entry.code == _code) && (_entry.modifier == _modifier))
+				{
+					_accepted << _entry;
+				}
+			}
+		}
+		return _accepted;
+	}
+};
+
+jInputPattern::jInputPattern(QObject * _parent): QObject(_parent), d(new Data())
+{
+}
+
+jInputPattern::~jInputPattern()
+{
+	delete d;
+}
+
+jInputPattern & jInputPattern::setDefaultPattern()
+{
+	d->setDefaultPattern(this);
+	return * this;
+}
+
+jInputPattern & jInputPattern::addAction(int _action, int _method, int _code, int _modifier)
+{
+	d->addEntry(_action, _method, _code, _modifier);
+	return * this;
+}
+
+jInputPattern & jInputPattern::removeAction(int _action, int _method)
+{
+	d->removeEntry(_action, _method);
+	return * this;
+}
+
+jInputPattern & jInputPattern::removeActions(int _action)
+{
+	d->removeEntries(_action);
+	return * this;
+}
+
+void jInputPattern::clear()
+{
+	d->actions.clear();
+}
+
+QVector<int> jInputPattern::actions() const
+{
+	return d->actions.keys().toVector();
+}
+
+QVector<int> jInputPattern::actionMethods(int _action) const
+{
+	return d->methods(_action);
+}
+
+QVector<int> jInputPattern::actionCodes(int _action, int _method, QVector<int> & _modifiers) const
+{
+	QVector<int> _codes;
+	d->codes(_action, _method, _codes, _modifiers);
+	return _codes;
+}
+
+QVector<int> jInputPattern::actionModifiers(int _action, int _method) const
+{
+	QVector<int> _codes, _modifiers;
+	d->codes(_action, _method, _codes, _modifiers);
+	return _modifiers;
+}
+
+QPointF jInputPattern::lastMousePosition() const
+{
+	return d->last_mouse_pos;
+}
+
+int jInputPattern::lastMouseButtons() const
+{
+	return d->last_btn;
+}
+
+int jInputPattern::lastKeyboardKey() const
+{
+	return d->last_key;
+}
+
+int jInputPattern::lastModifiers() const
+{
+	return d->last_modifier;
+}
+
+int jInputPattern::lastDelta() const
+{
+	return d->last_modifier;
+}
+
+bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
+{
+	QMouseEvent *	_me	= 0;
+	QKeyEvent *		_ke	= 0;
+	QWheelEvent *	_we	= 0;
+	int _method = UnknownMethod;
+	QVector<Data::ActionEntry> _actions;
+	int _code = 0;
+	int _modifier = 0;
+	QPointF _mpos = QPoint(0, 0);
+	switch (_event->type())
+	{
+	case QEvent::MouseButtonPress:
+		_me = dynamic_cast<QMouseEvent *>(_event);
+		_method = MousePress;
+		_code = _me->buttons();
+		if (_code == Qt::NoButton)
+		{
+			_code = _me->button();
+		}
+		_modifier = _me->modifiers();
+		_mpos = _me->posF();
+		_actions = d->checkAction(_method, _code, _modifier);
+		break;
+	case QEvent::MouseButtonRelease:
+		_me = dynamic_cast<QMouseEvent *>(_event);
+		_method = MouseRelease;
+		_code = _me->buttons();
+		if (_code == Qt::NoButton)
+		{
+			_code = _me->button();
+		}
+		_modifier = _me->modifiers();
+		_mpos = _me->posF();
+		_actions = d->checkAction(_method, _code, _modifier);
+		break;
+	case QEvent::MouseButtonDblClick:
+		_me = dynamic_cast<QMouseEvent *>(_event);
+		_method = MouseDoubleClick;
+		_code = _me->buttons();
+		_modifier = _me->modifiers();
+		_mpos = _me->posF();
+		_actions = d->checkAction(_method, _code, _modifier);
+		break;
+	case QEvent::KeyPress:
+		_ke = dynamic_cast<QKeyEvent *>(_event);
+		_method = KeyPress;
+		_code = _ke->key();
+		_modifier = _ke->modifiers();
+		_mpos = dynamic_cast<QWidget *>(_object)->mapFromGlobal(QCursor::pos());
+		_actions = d->checkAction(_method, _code, _modifier);
+		break;
+	case QEvent::KeyRelease:
+		_ke = dynamic_cast<QKeyEvent *>(_event);
+		_method = KeyRelease;
+		_code = _ke->key();
+		_modifier = _ke->modifiers();
+		_mpos = dynamic_cast<QWidget *>(_object)->mapFromGlobal(QCursor::pos());
+		_actions = d->checkAction(_method, _code, _modifier);
+		break;
+	case QEvent::Wheel:
+		_we = dynamic_cast<QWheelEvent *>(_event);
+		_method = Wheel;
+		_code = _we->buttons();
+		_modifier = _we->delta();
+		_mpos = _we->pos();
+		_actions = d->checkAction(_method, _code);
+		break;
+	case QEvent::MouseMove:
+		_me = dynamic_cast<QMouseEvent *>(_event);
+		_method = MouseMove;
+		_code = _me->buttons();
+		_modifier = _me->modifiers();
+		_mpos = _me->posF();
+		_actions = d->checkAction(_method, _code, _modifier);
+		break;
+	}
+	d->last_mouse_pos = _mpos;
+	d->last_btn = _code;
+	d->last_modifier = _modifier;
+	d->last_key = _code;
+	if (_actions.count())
+	{
+		foreach (Data::ActionEntry _entry, _actions)
+		{
+			emit actionAccepted(_entry.action, _method, _code, _modifier, _mpos);
+		}
+		return true;
+	}
+	return _object->eventFilter(_object, _event);
+}
+
+jInputPattern * jInputPattern::copy() const
+{
+	jInputPattern * _pattern = new jInputPattern();
+	_pattern->d->actions = d->actions;
+	return _pattern;
+}
+
+// ------------------------------------------------------------------------
+
 struct jView::Data
 {
 	jAxis * x_axis, * y_axis;
@@ -1379,8 +1691,11 @@ struct jView::Data
 	bool in_zoom;
 	QCursor before_pan_cursor;
 	jLazyRenderer * renderer;
+	jInputPattern * pattern;
 	Data()
 	{
+		pattern = new jInputPattern();
+		pattern->setDefaultPattern();
 		x_axis = 0;
 		y_axis = 0;
 		in_zoom = false;
@@ -1395,6 +1710,7 @@ struct jView::Data
 	}
 	~Data()
 	{
+		pattern->deleteLater();
 	}
 	QTransform screenToAxisTransform(const QRectF & _screen_rect) const
 	{
@@ -1490,18 +1806,22 @@ struct jView::Data
 		_instance->setMouseTracking(true);
 		_instance->setCursor(Qt::CrossCursor);
 		_instance->setFocusPolicy(Qt::WheelFocus);
+
+		_instance->installEventFilter(pattern);
 	}
 };
 
 jView::jView(QWidget * _parent)
 	: JUNGLE_WIDGET_CLASS(_parent), d(new Data())
 {
+	connect(d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
 	d->init(this);
 }
 
 jView::jView(jAxis * _x_axis, jAxis * _y_axis, QWidget * _parent)
 	: JUNGLE_WIDGET_CLASS(_parent), d(new Data())
 {
+	connect(d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
 	d->init(this);
 
 	this->
@@ -1589,7 +1909,7 @@ jView & jView::removeItem(jItem * _item)
 {
 	THREAD_SAFE(Write)
 	QVector<jItem *>::iterator _it = ::qFind(d->items.begin(), d->items.end(), _item);
-	if (_it)
+	if (_it != d->items.end())
 	{
 		d->items.erase(_it);
 	}
@@ -1603,7 +1923,7 @@ jView & jView::removeItems(const QVector<jItem *> & _items)
 	foreach (jItem * _item, _items)
 	{
 		QVector<jItem *>::iterator _it = ::qFind(d->items.begin(), d->items.end(), _item);
-		if (_it)
+		if (_it != d->items.end())
 		{
 			d->items.erase(_it);
 		}
@@ -1697,54 +2017,158 @@ void jView::render(QPainter & _painter) const
 	THREAD_UNSAFE
 }
 
-void jView::mousePressEvent(QMouseEvent *_me)
+void jView::userCommand(int _action, int _method, int _code, int _modifier, QPointF _mpos)
 {
-	d->press_point = _me->pos();
-	d->press_point.setY(rect().height() - d->press_point.y());
-
-	d->move_point = d->press_point;
-	if (_me->button() == Qt::LeftButton)
+	switch (_action)
 	{
+	case jInputPattern::MoveCursorLeft:
+		{
+			QPoint _pt_current = QCursor::pos();
+			QPoint _pt_new = _pt_current;
+
+			_pt_new.setX(_pt_current.x() - 1);
+
+			if (rect().contains(mapFromGlobal(_pt_new)))
+			{
+				QCursor::setPos(_pt_new);
+			}
+			else
+			{
+				QPointF _p1 = d->screenToAxis(rect(), _pt_new);
+				QPointF _p2 = d->screenToAxis(rect(), _pt_current);
+				d->zoomer.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
+				d->updateViewports(d->zoomer.rect());
+				QPoint _local_pt = mapFromGlobal(_pt_current);
+				_local_pt.setY(rect().height() - _local_pt.y());
+				d->adjustCoordinator(rect(), _local_pt);
+				d->renderer->rebuild();
+			}
+		}
+		break;
+	case jInputPattern::MoveCursorRight:
+		{
+			QPoint _pt_current = QCursor::pos();
+			QPoint _pt_new = _pt_current;
+
+			_pt_new.setX(_pt_current.x() + 1);
+
+			if (rect().contains(mapFromGlobal(_pt_new)))
+			{
+				QCursor::setPos(_pt_new);
+			}
+			else
+			{
+				QPointF _p1 = d->screenToAxis(rect(), _pt_new);
+				QPointF _p2 = d->screenToAxis(rect(), _pt_current);
+				d->zoomer.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
+				d->updateViewports(d->zoomer.rect());
+				QPoint _local_pt = mapFromGlobal(_pt_current);
+				_local_pt.setY(rect().height() - _local_pt.y());
+				d->adjustCoordinator(rect(), _local_pt);
+				d->renderer->rebuild();
+			}
+		}
+		break;
+	case jInputPattern::MoveCursorUp:
+		{
+			QPoint _pt_current = QCursor::pos();
+			QPoint _pt_new = _pt_current;
+
+			_pt_new.setY(_pt_current.y() - 1);
+
+			if (rect().contains(mapFromGlobal(_pt_new)))
+			{
+				QCursor::setPos(_pt_new);
+			}
+			else
+			{
+				QPointF _p1 = d->screenToAxis(rect(), _pt_new);
+				QPointF _p2 = d->screenToAxis(rect(), _pt_current);
+				d->zoomer.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
+				d->updateViewports(d->zoomer.rect());
+				QPoint _local_pt = mapFromGlobal(_pt_current);
+				_local_pt.setY(rect().height() - _local_pt.y());
+				d->adjustCoordinator(rect(), _local_pt);
+				d->renderer->rebuild();
+			}
+		}		
+		break;
+	case jInputPattern::MoveCursorDown:
+		{
+			QPoint _pt_current = QCursor::pos();
+			QPoint _pt_new = _pt_current;
+
+			_pt_new.setY(_pt_current.y() + 1);
+
+			if (rect().contains(mapFromGlobal(_pt_new)))
+			{
+				QCursor::setPos(_pt_new);
+			}
+			else
+			{
+				QPointF _p1 = d->screenToAxis(rect(), _pt_new);
+				QPointF _p2 = d->screenToAxis(rect(), _pt_current);
+				d->zoomer.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
+				d->updateViewports(d->zoomer.rect());
+				QPoint _local_pt = mapFromGlobal(_pt_current);
+				_local_pt.setY(rect().height() - _local_pt.y());
+				d->adjustCoordinator(rect(), _local_pt);
+				d->renderer->rebuild();
+			}
+		}
+		break;
+	case jInputPattern::ZoomDelta:
+		{
+			QPointF _wheel_point = _mpos;
+			_wheel_point.setY(rect().height() - _wheel_point.y());
+			QPointF _axis_point = d->screenToAxis(rect(), QPointF(_mpos.x(), 0));
+			QRectF _rect;
+			QRectF _zoom_rect = d->zoomer.rect();
+			double _k = (_axis_point.x() - _zoom_rect.left()) / _zoom_rect.width();
+			if (_modifier > 0)
+			{
+				_rect = QRectF(QPointF(_axis_point.x() - (_zoom_rect.width() * _k) / 2.0, _axis_point.y()) , 
+					QSizeF(_zoom_rect.width() / 2.0, _zoom_rect.height()));
+			}
+			if (_modifier < 0)
+			{
+				if (_zoom_rect.width() * 2.0 > d->zoomer.maximumSize().width())
+				{
+					return;
+				}
+				_rect =	QRectF(QPointF(_axis_point.x() - (_zoom_rect.width() * _k) * 2.0, _axis_point.y()) , 
+					QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
+			}
+			d->zoomer.zoomIn(_rect);
+			d->updateViewports(d->zoomer.rect());
+			d->adjustCoordinator(rect(), _wheel_point);
+			d->renderer->rebuild();
+		}
+		break;
+	case jInputPattern::ZoomMove:
+		{
+			QPointF _move_point = _mpos;
+			_move_point.setY(rect().height() - _move_point.y());
+			if (d->in_zoom)
+			{
+				d->zoomer.selector().setRect(d->zoomer.adjustRect(d->screenToAxis(rect(), QRectF(d->press_point, _move_point))));
+			}
+			d->move_point = _move_point;
+		}
+		break;
+	case jInputPattern::ZoomStart:
+		d->press_point = _mpos;
+		d->press_point.setY(rect().height() - d->press_point.y());
+		d->move_point = d->press_point;
+
 		d->in_zoom = true;
 		d->zoomer.selector().setRect(QRectF());
 		d->zoomer.selector().setVisible(true);
-	}
-	if (_me->button() == Qt::RightButton)
-	{
-		d->before_pan_cursor = cursor();
-		setCursor(Qt::OpenHandCursor);
-	}
-	d->renderer->rebuild();
-}
+		break;
+	case jInputPattern::ZoomEnd:	
+		d->release_point = _mpos;
+		d->release_point.setY(rect().height() - d->release_point.y());
 
-void jView::mouseMoveEvent(QMouseEvent * _me)
-{
-	QPointF _move_point = _me->posF();
-	_move_point.setY(rect().height() - _move_point.y());
-	if (d->in_zoom)
-	{
-		d->zoomer.selector().setRect(d->zoomer.adjustRect(d->screenToAxis(rect(), QRectF(d->press_point, _move_point))));
-	}
-	if ((_me->buttons() & Qt::RightButton) == Qt::RightButton)
-	{
-		QPointF _p1 = d->screenToAxis(rect(), d->move_point);
-		QPointF _p2 = d->screenToAxis(rect(), _move_point);
-		d->zoomer.pan(_p1.x() - _p2.x(), _p1.y() - _p2.y());
-		d->updateViewports(d->zoomer.rect());
-		setCursor(Qt::ClosedHandCursor);
-	}
-	d->adjustCoordinator(rect(), _move_point);
-	d->move_point = _move_point;
-	d->renderer->rebuild();
-}
-
-void jView::mouseReleaseEvent(QMouseEvent *_me)
-{
-	d->release_point = _me->pos();
-	d->release_point.setY(rect().height() - d->release_point.y());
-
-	if (_me->button() == Qt::LeftButton)
-	{
 		d->in_zoom = false;
 		d->zoomer.selector().setVisible(false);
 
@@ -1760,100 +2184,56 @@ void jView::mouseReleaseEvent(QMouseEvent *_me)
 			}
 			d->updateViewports(d->zoomer.rect());
 		}
-	}
-	if (_me->button() == Qt::RightButton)
-	{
-		setCursor(d->before_pan_cursor);
-		if (d->press_point == d->release_point)
-		{
-			emit contextMenuRequested(_me->globalPos());
-		}
-	}
-	d->adjustCoordinator(rect(), d->release_point);
-	d->renderer->rebuild();
-}
-
-void jView::mouseDoubleClickEvent(QMouseEvent * _me)
-{
-	if (_me->button() == Qt::LeftButton)
-	{
+		d->adjustCoordinator(rect(), d->release_point);
+		d->renderer->rebuild();
+		break;
+	case jInputPattern::ZoomBase:
 		d->zoomer.zoomFullView();
 		d->updateViewports(d->zoomer.rect());
 		d->renderer->rebuild();
-	}
-}
+		break;
+	case jInputPattern::PanMove:
+		{
+			QPointF _move_point = _mpos;
+			_move_point.setY(rect().height() - _move_point.y());
+			QPointF _p1 = d->screenToAxis(rect(), d->move_point);
+			QPointF _p2 = d->screenToAxis(rect(), _move_point);
+			d->zoomer.pan(_p1.x() - _p2.x(), _p1.y() - _p2.y());
+			d->updateViewports(d->zoomer.rect());
+			setCursor(Qt::ClosedHandCursor);
+			d->move_point = _move_point;
+		}
+		break;
+	case jInputPattern::PanStart:
+		d->press_point = _mpos;
+		d->press_point.setY(rect().height() - d->press_point.y());
+		d->move_point = d->press_point;
 
-void jView::wheelEvent(QWheelEvent * _we)
-{
-	QPointF _wheel_point = _we->pos();
-	_wheel_point.setY(rect().height() - _wheel_point.y());
-	QPointF _axis_point = d->screenToAxis(rect(), QPointF(_we->pos().x(), 0));
-	QRectF _rect;
-	QRectF _zoom_rect = d->zoomer.rect();
-	double _k = (_axis_point.x() - _zoom_rect.left()) / _zoom_rect.width();
-	if (_we->delta() > 0)
-	{
-		_rect = QRectF(QPointF(_axis_point.x() - (_zoom_rect.width() * _k) / 2.0, _axis_point.y()) , 
-			QSizeF(_zoom_rect.width() / 2.0, _zoom_rect.height()));
-	}
-	if (_we->delta() < 0)
-	{
-		if (_zoom_rect.width() * 2.0 > d->zoomer.maximumSize().width())
-		{
-			return;
-		}
-		_rect =	QRectF(QPointF(_axis_point.x() - (_zoom_rect.width() * _k) * 2.0, _axis_point.y()) , 
-			QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
-	}
-	d->zoomer.zoomIn(_rect);
-	d->updateViewports(d->zoomer.rect());
-	d->adjustCoordinator(rect(), _wheel_point);
-	d->renderer->rebuild();
-}
+		d->before_pan_cursor = cursor();
+		setCursor(Qt::OpenHandCursor);
+		break;
+	case jInputPattern::PanEnd:
+		d->release_point = _mpos;
+		d->release_point.setY(rect().height() - d->release_point.y());
 
-void jView::keyPressEvent(QKeyEvent * _ke)
-{
-	QPoint _pt_current = QCursor::pos();
-	QPoint _pt_new = _pt_current;
-	switch (_ke->key())
-	{
-	case Qt::Key_Left:
+		setCursor(d->before_pan_cursor);
+		if (d->press_point == d->release_point)
 		{
-			_pt_new.setX(_pt_current.x() - 1);
-			break;
+			emit contextMenuRequested(mapToGlobal(_mpos.toPoint()));
 		}
-	case Qt::Key_Right:
-		{
-			_pt_new.setX(_pt_current.x() + 1);
-			break;
-		}
-	case Qt::Key_Up:
-		{
-			_pt_new.setY(_pt_current.y() - 1);
-			break;
-		}
-	case Qt::Key_Down:
-		{
-			_pt_new.setY(_pt_current.y() + 1);
-			break;
-		}
-	}
-
-	if (rect().contains(mapFromGlobal(_pt_new)))
-	{
-		QCursor::setPos(_pt_new);
-	}
-	else
-	{
-		QPointF _p1 = d->screenToAxis(rect(), _pt_new);
-		QPointF _p2 = d->screenToAxis(rect(), _pt_current);
-		d->zoomer.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
-		d->updateViewports(d->zoomer.rect());
-		QPoint _local_pt = mapFromGlobal(_pt_current);
-		_local_pt.setY(rect().height() - _local_pt.y());
-		d->adjustCoordinator(rect(), _local_pt);
+		d->adjustCoordinator(rect(), d->release_point);
 		d->renderer->rebuild();
+		break;
 	}
+	
+}
+
+void jView::mouseMoveEvent(QMouseEvent * _me)
+{
+	QPointF _move_point = _me->posF();
+	_move_point.setY(rect().height() - _move_point.y());
+	d->adjustCoordinator(rect(), _move_point);
+	d->renderer->rebuild();
 }
 
 jView & jView::setLabels(const QVector<jLabel *> & _labels)
@@ -2073,6 +2453,26 @@ void jView::autoScale()
 	}
 }
 
+jView & jView::setInputPattern(jInputPattern * _pattern)
+{
+	if (_pattern && (_pattern != d->pattern))
+	{
+		if (d->pattern)
+		{
+			removeEventFilter(d->pattern);
+			d->pattern->deleteLater();
+		}
+		d->pattern = _pattern->copy();
+		connect(d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+		installEventFilter(d->pattern);
+	}
+	return * this;
+}
+
+jInputPattern * jView::inputPattern() const
+{
+	return d->pattern;
+}
 
 // ------------------------------------------------------------------------
 
@@ -2084,14 +2484,17 @@ struct jPreview::Data
 	int orientation;
 	QPoint prev_point, press_point;
 	jLazyRenderer * renderer;
+	jInputPattern * pattern;
 	Data()
 	{
+		pattern = new jInputPattern();
+		pattern->setDefaultPattern();
 		view = 0;
 		orientation = Qt::Vertical | Qt::Horizontal;
 	}
 	~Data()
 	{
-
+		pattern->deleteLater();
 	}
 	static bool itemZSort(const jItem * _item1, const jItem * _item2)
 	{
@@ -2249,6 +2652,8 @@ jPreview::jPreview(QWidget * _parent)
 		setMaxThreads(1).
 		setEnabled(false);
 	installEventFilter(d->renderer);
+	connect(d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	installEventFilter(d->pattern);
 }
 
 jPreview::jPreview(jView * _view, QWidget * _parent)
@@ -2288,6 +2693,7 @@ jPreview & jPreview::setView(jView * _view)
 	if (d->view)
 	{
 		connect(d->view, SIGNAL(viewportChanged(QRectF)), d->renderer, SLOT(rebuild()));
+		setInputPattern(d->view->inputPattern());
 	}
 	THREAD_UNSAFE
 	return * this;
@@ -2359,34 +2765,59 @@ int jPreview::orientation() const
 	return d->orientation;
 }
 
-void jPreview::mousePressEvent(QMouseEvent * _me)
+jPreview & jPreview::setInputPattern(jInputPattern * _pattern)
 {
-	d->prev_point = _me->pos();
-	d->press_point = _me->pos();
-}
-
-void jPreview::mouseReleaseEvent(QMouseEvent * _me)
-{
-	if (d->press_point == _me->pos())
+	if (_pattern && (_pattern != d->pattern))
 	{
-		d->setToPosition(rect(), _me);
+		if (d->pattern)
+		{
+			removeEventFilter(d->pattern);
+			d->pattern->deleteLater();
+		}
+		d->pattern = _pattern->copy();
+		connect(d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+		installEventFilter(d->pattern);
 	}
+	return * this;
 }
 
-void jPreview::mouseMoveEvent(QMouseEvent * _me)
+jInputPattern * jPreview::inputPattern() const
 {
-	d->pan(rect(), _me);
-	d->prev_point = _me->pos();
+	return d->pattern;
 }
 
-void jPreview::mouseDoubleClickEvent(QMouseEvent * _me)
+void jPreview::userCommand(int _action, int _method, int _code, int _modifier, QPointF _mpos)
 {
-	d->zoomFullView(rect(), _me);
-}
-
-void jPreview::wheelEvent(QWheelEvent * _we)
-{
-	d->wheelScale(rect(), _we);
+	QMouseEvent * _me = new QMouseEvent(QEvent::MouseButtonRelease, _mpos.toPoint(), (Qt::MouseButton)_code, (Qt::MouseButtons)_code, (Qt::KeyboardModifiers)_modifier);
+	QWheelEvent * _we = new QWheelEvent(_mpos.toPoint(), _modifier, (Qt::MouseButtons)_code, Qt::NoModifier);
+	switch (_action)
+	{
+	case jInputPattern::ZoomStart:
+	case jInputPattern::PanStart:
+		d->prev_point = _mpos.toPoint();
+		d->press_point = _mpos.toPoint();
+		break;
+	case jInputPattern::ZoomEnd:
+	case jInputPattern::PanEnd:
+		if (d->press_point == _mpos.toPoint())
+		{
+			d->setToPosition(rect(), _me);
+		}
+		break;
+	case jInputPattern::ZoomMove:
+	case jInputPattern::PanMove:
+		d->pan(rect(), _me);
+		d->prev_point = _mpos.toPoint();
+		break;
+	case jInputPattern::ZoomBase:
+		d->zoomFullView(rect(), _me);
+		break;
+	case jInputPattern::ZoomDelta:
+		d->wheelScale(rect(), _we);
+		break;
+	}
+	delete _we;
+	delete _me;
 }
 
 void jPreview::rebuild()
