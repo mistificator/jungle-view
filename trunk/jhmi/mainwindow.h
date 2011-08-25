@@ -4,6 +4,7 @@
 #include "ui_mainwindow.h"
 #include "jview.h"
 #include "jitems.h"
+#include "jstorage.h"
 
 class Mainwindow : public QMainWindow
 {
@@ -22,11 +23,12 @@ private:
 	jLegend * view_legend;
 	jItem1D<short> item1d;
 	jItem2D<double> item2d;
-	jItem1D<float> item_cos;
-	jItem1D<float> item_dots;
-	jItem1D<float>::Point gfx_dots[100];
+	jItem1D<qreal> item_cos;
+	jItem1D<qreal> item_dots;
+	jItem1D<qreal>::Point gfx_dots[100];
 	jSelector highlight;
 	jAxis x_axis, y_axis;
+	jStorageInterface * storage;
 
 	QMenu menu;
 
@@ -48,6 +50,8 @@ private slots:
 	void on_x_log_clicked();
 	void on_y_log_clicked();
 	void on_show_legend_clicked();
+
+	void on_storage_finished(quint64);
 };
 
 #endif // MAINWINDOW_H
