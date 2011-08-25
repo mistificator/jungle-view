@@ -282,42 +282,42 @@ public:
 	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect);
 };
 
-class jZoom: public QObject
+class jViewport: public QObject
 {
 	Q_OBJECT
 	PDATA
 	DECL_MUTEX
 public:
-	jZoom();
-	virtual ~jZoom();
+	jViewport();
+	virtual ~jViewport();
 
-	jZoom & setZoomFullView(const QRectF & _rect);
-	jZoom & setZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis);
+	jViewport & setZoomFullView(const QRectF & _rect);
+	jViewport & setZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis);
 	QRectF rectBase() const;
 	void adjustZoomFullView(const QRectF & _rect);
 	void adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis);
 
-	void zoomIn(const QRectF & _rect);
-	void zoomOut();
-	void zoomFullView();
 	QRectF rect() const;
-
-	void pan(double _dx, double _dy);
 
 	QVector<QRectF> history() const;
 	void clearHistory();
 
 	jSelector & selector() const;
 
-	jZoom & setOrientation(int _orientation);
-	int orientation() const;
+	jViewport & setZoomOrientation(int _orientation);
+	int zoomOrientation() const;
 
 	QRectF adjustRect(const QRectF & _rect) const;
 
-	jZoom & setMinimumSize(const QSizeF & _size);
+	jViewport & setMinimumSize(const QSizeF & _size);
 	QSizeF minimumSize() const;
-	jZoom & setMaximumSize(const QSizeF & _size);
+	jViewport & setMaximumSize(const QSizeF & _size);
 	QSizeF maximumSize() const;
+public slots:
+	void zoomIn(const QRectF & _rect);
+	void zoomOut();
+	void zoomFullView();
+	void pan(double _dx, double _dy);
 signals:
 	void zoomedIn(QRectF);
 	void zoomedOut(QRectF);
@@ -462,7 +462,7 @@ public:
 	\param _src_rect rectangle measured in axes units (fragment of item that will be rendered)
 	\param _x_axis pointer to jAxis object that represents horizontal axis
 	\param _y_axis pointer to jAxis object that represents vertical axis
-	\sa jView, jAxis, jZoomm, jLabel
+	\sa jView, jAxis, jViewportm, jLabel
 	*/
 	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
 };
@@ -624,7 +624,7 @@ public:
 	\param _src_rect rectangle measured in axes units (fragment of item that will be rendered)
 	\param _x_axis x axis
 	\param _y_axis y axis
-	\sa jView, jAxis, jZoom, renderPreview()
+	\sa jView, jAxis, jViewport, renderPreview()
 	*/
 	virtual void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) = 0;
 	//! Calculates intersection of specified rectangle and area occupied by item.
@@ -641,7 +641,7 @@ public:
 	Default implementation of updateViewport() is empty. It may be useful to reimplement this method when input data has a huge size
 	and should be partially loaded when user scrolls or zoomes viewport.
 	\param _rect rectangle measured in axes units
-	\sa jView, jZoom
+	\sa jView, jViewport
 	*/
 	virtual void updateViewport(const QRectF & _rect);
 	//! Renders item preview onto jPreview widget or any acceptable QPaintDevice.
@@ -653,7 +653,7 @@ public:
 	\param _src_rect rectangle measured in axes units (fragment of item that will be rendered)
 	\param _x_axis x axis
 	\param _y_axis y axis
-	\sa jPreview, jView, jAxis, jZoom, render()
+	\sa jPreview, jView, jAxis, jViewport, render()
 	*/
 	virtual void renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
 
@@ -792,7 +792,7 @@ public:
 	jView & setYAxis(jAxis * _axis);
 	jAxis * yAxis() const;
 
-	jZoom & zoomer() const;
+	jViewport & viewport() const;
 	jCoordinator & coordinator() const;
 	jMarker & horizontalMarker() const;
 	jMarker & verticalMarker() const;

@@ -50,7 +50,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		_gfx1d[_idx] = (_idx / 8) - 16;
 	}
 
-	float _gfx_cos[5000];
+	qreal _gfx_cos[5000];
 	for (unsigned int _idx = 0; _idx < sizeof(_gfx_cos) / sizeof(_gfx_cos[0]); _idx++)
 	{
 		_gfx_cos[_idx] = 100.0*::cosf(_idx/500.0);
@@ -77,7 +77,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		setToolTip("item_cos");
 
 	item_cos.
-		setLineStyle(jItem1D<float>::Ticks);
+		setLineStyle(jItem1D<qreal>::Ticks);
 
 	item_dots.
 		setPen(QPen(Qt::green, 7, Qt::SolidLine, Qt::RoundCap)).
@@ -88,7 +88,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 
 	item_dots.
 		setLineStyle(jItem1D<short>::Dots).
-		setDataModel(jItem1D<float>::PointData);
+		setDataModel(jItem1D<qreal>::PointData);
 
 	highlight.
 		setVisible(false).
@@ -129,11 +129,11 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 	view->coordinator().label().
 		setPen(QPen(Qt::yellow)).
 		setBackground(QBrush(QColor(0, 0, 0, 80), Qt::SolidPattern));
-	view->zoomer().
-		setOrientation(Qt::Horizontal | Qt::Vertical).
+	view->viewport().
+		setZoomOrientation(Qt::Horizontal | Qt::Vertical).
 		setMinimumSize(QSizeF(0.5, 0.5)).
 		setMaximumSize(QSizeF(1e6, 1e6));
-	view->zoomer().selector().
+	view->viewport().selector().
 		setPen(QPen(Qt::green, 3, Qt::DotLine)).
 		setBackground(QColor(255, 255, 255, 40));
 	view->horizontalMarker().
@@ -186,6 +186,14 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
                 addAction(jInputPattern::ZoomFullView, jInputPattern::MousePress, Qt::MidButton).
                 addAction(jInputPattern::ZoomDelta, jInputPattern::MousePress, Qt::MidButton, Qt::ShiftModifier);
 
+	jMemoryStorage<float> * _mem_storage = new jMemoryStorage<float>();
+	_mem_storage->setStorageBuffer(new float[200000000], 200000000);
+
+	storage = _mem_storage;
+	storage->setSegmentSize();
+	storage->startProcessing();
+	connect(storage->storageControl(), SIGNAL(finished(quint64)), this, SLOT(on_storage_finished(quint64)));
+
 	step = 10;
 	frames_count = 0;
 	prev_count = 0;
@@ -207,7 +215,7 @@ void Mainwindow::on_view_contextMenuRequested(QPoint _pos)
 
 void Mainwindow::on_fullview()
 {
-	view->zoomer().zoomFullView();
+	view->viewport().zoomFullView();
 	view->rebuild();
 }
 
@@ -248,6 +256,9 @@ void Mainwindow::timerEvent(QTimerEvent * _te)
 		frames_count = 0;
 		prev_count = _counter;
 		prev_rendered_count = _rendered_counter;
+
+		QVector<float> _items = dynamic_cast<jMemoryStorage<float> *>(storage)->processedItems();
+		_items.size();
 	}
 }
 
@@ -346,4 +357,9 @@ void Mainwindow::on_show_legend_clicked()
 {
 	view_legend->show();
 	view_legend->raise();
+}
+
+void Mainwindow::on_storage_finished(quint64 _msecs)
+{
+	QMessageBox::information(this, "", QString::number(_msecs));
 }
