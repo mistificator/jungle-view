@@ -186,13 +186,12 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
                 addAction(jInputPattern::ZoomFullView, jInputPattern::MousePress, Qt::MidButton).
                 addAction(jInputPattern::ZoomDelta, jInputPattern::MousePress, Qt::MidButton, Qt::ShiftModifier);
 
-	jMemoryStorage<float> * _mem_storage = new jMemoryStorage<float>();
-	_mem_storage->setStorageBuffer(new float[200000000], 200000000);
-
-	storage = _mem_storage;
+	storage = new jMemoryStorage<float>(new float[100000000], 100000000);
+//	storage = new jFileStorage<qint16>("c:/temp/compress_test.random");
+	quint64 _storage_size = storage->storageSize();
+	connect(storage->storageControl(), SIGNAL(finished(quint64)), this, SLOT(on_storage_finished(quint64)));
 	storage->setSegmentSize();
 	storage->startProcessing();
-	connect(storage->storageControl(), SIGNAL(finished(quint64)), this, SLOT(on_storage_finished(quint64)));
 
 	step = 10;
 	frames_count = 0;
@@ -205,7 +204,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 
 Mainwindow::~Mainwindow()
 {
-
+	delete storage;
 }
 
 void Mainwindow::on_view_contextMenuRequested(QPoint _pos)
@@ -257,8 +256,7 @@ void Mainwindow::timerEvent(QTimerEvent * _te)
 		prev_count = _counter;
 		prev_rendered_count = _rendered_counter;
 
-		QVector<float> _items = dynamic_cast<jMemoryStorage<float> *>(storage)->processedItems();
-		_items.size();
+		JDEBUG("processed" << 100.0 * storage->itemsProcessed() / storage->storageSize());
 	}
 }
 
