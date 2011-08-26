@@ -595,7 +595,7 @@ public:
 	\return untyped pointer
 	\sa setData()
 	*/
-        const void * data() const;
+	const void * data() const;
 	//! Returns measurements (width and height) of data.
 	/*!
 	\return size

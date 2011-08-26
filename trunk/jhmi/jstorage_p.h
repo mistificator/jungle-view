@@ -11,7 +11,9 @@ jStorage<T>::jStorage(): jStorageInterface()
 	seek_pos = 0;
 	setProcessedItemsHint();
 	setSegmentFunc();
-	setSegmentSize();	
+	setSegmentSize();
+	setLessFunc();
+	setGreaterFunc();
 
 	handler = new jStorageHandler(this);
 	thread = new jStorageThread(this, & rw_lock);
@@ -25,9 +27,22 @@ jStorage<T>::~jStorage()
 }
 
 template <class T>
+int jStorage<T>::itemSize() const
+{
+	return sizeof(T);
+}
+
+template <class T>
 QVector<T> jStorage<T>::processedItems(quint64 _start_item, quint64 _end_item, int _type) const
 {
 	return thread->items(_start_item, _end_item ? _end_item : storageSize(), _type);
+}
+
+template <class T>
+QByteArray jStorage<T>::processedArray(quint64 _start_item, quint64 _end_item, int _type) const
+{
+	QVector<T> _items = thread->items(_start_item, _end_item ? _end_item : storageSize(), _type);
+	return QByteArray::fromRawData(reinterpret_cast<const char *>(_items.constData()), _items.count() * sizeof(T));
 }
 
 template <class T>
@@ -76,6 +91,44 @@ typename jStorage<T>::segment_func jStorage<T>::segmentFunc() const
 }
 
 template <class T>
+bool jStorage<T>::defaultLess(const T & _op1, const T & _op2)
+{
+	return _op1 < _op2;
+}
+
+template <class T>
+jStorage<T> & jStorage<T>::setLessFunc(less_func _less_func = & defaultLess)
+{
+	SAFE_SET(l_func, _less_func);
+	return * this;
+}
+
+template <class T>
+typename jStorage<T>::less_func jStorage<T>::lessFunc() const
+{
+	return l_func;
+}
+
+template <class T>
+bool jStorage<T>::defaultGreater(const T & _op1, const T & _op2)
+{
+	return _op1 > _op2;
+}
+
+template <class T>
+jStorage<T> & jStorage<T>::setGreaterFunc(greater_func _greater_func = & defaultGreater)
+{
+	SAFE_SET(g_func, _greater_func);
+	return * this;
+}
+
+template <class T>
+typename jStorage<T>::greater_func jStorage<T>::greaterFunc() const
+{
+	return g_func;
+}
+
+template <class T>
 jStorageInterface & jStorage<T>::setProcessedItemsHint(quint64 _count)
 {
 	SAFE_SET(hint, _count ? _count : 1);
@@ -107,22 +160,50 @@ bool jStorage<T>::isProcessingFinished() const
 }
 
 template <class T>
+quint64 jStorage<T>::itemsProcessed() const
+{
+	return thread->itemsProcessed();
+}
+
+template <class T>
 jStorageHandler * jStorage<T>::storageControl() const
 {
 	return handler;
 }
 
+template <class T>
+QByteArray jStorage<T>::exportLayers() const
+{
+	return thread->exportLayers();
+}
 
+template <class T>
+bool jStorage<T>::importLayers(const QByteArray & _saved_layers)
+{
+	return thread->importLayers(_saved_layers);
+}
 // ------------------------------------------------------------------------
 
 template <class T>
 jMemoryStorage<T>::jMemoryStorage(): jStorage<T>()
 {
+	items = 0;
+}
+
+template <class T>
+jMemoryStorage<T>::jMemoryStorage(T * _items, quint64 _items_count, bool _deep_copy): jStorage<T>()
+{
+	items = 0;
+	setStorageBuffer(_items, _items_count, _deep_copy);
 }
 
 template <class T>
 jMemoryStorage<T>::~jMemoryStorage()
 {
+	if (deep_copy && items)
+	{
+		delete [] items;
+	}
 }
 
 template <class T>
@@ -142,13 +223,107 @@ quint64 jMemoryStorage<T>::storageSize() const
 }
 
 template <class T>
-jMemoryStorage<T> & jMemoryStorage<T>::setStorageBuffer(T * _items, quint64 _items_count)
+jMemoryStorage<T> & jMemoryStorage<T>::setStorageBuffer(T * _items, quint64 _items_count, bool _deep_copy)
 {
+	stopProcessing();
 	THREAD_SAFE(Write)
-	items = _items;
+	if (deep_copy && items)
+	{
+		delete [] items;
+	}
+	deep_copy = _deep_copy;
 	items_count = _items_count;
+	if (deep_copy)
+	{
+		items = new T[items_count];
+		::memcpy(items, _items, items_count * sizeof(T));
+	}
+	else
+	{
+		items = _items;
+	}
 	THREAD_UNSAFE
 	return * this;
+}
+
+template <class T>
+bool jMemoryStorage<T>::isDeepCopy() const
+{
+	return deep_copy;
+}
+
+// ------------------------------------------------------------------------
+
+template <class T>
+jFileStorage<T>::jFileStorage(): jStorage<T>()
+{
+	setOffset(0);
+}
+
+template <class T>
+jFileStorage<T>::jFileStorage(const QString & _file_name, quint64 _offset): jStorage<T>()
+{
+	setOffset(_offset);
+	setStorageFile(_file_name);
+}
+
+template <class T>
+jFileStorage<T>::~jFileStorage()
+{
+	if (file.isOpen())
+	{
+		file.close();
+	}
+}
+
+template <class T>
+jFileStorage<T> & jFileStorage<T>::setStorageFile(const QString & _file_name)
+{
+	stopProcessing();
+	THREAD_SAFE(Write);
+	if (file.isOpen())
+	{
+		file.close();
+	}
+	file.setFileName(_file_name);
+	file.setPermissions(QFile::ReadOther);
+	file.open(QFile::ReadOnly);
+	THREAD_UNSAFE
+	return * this;
+}
+
+template <class T>
+quint64 jFileStorage<T>::storageSize() const
+{
+	THREAD_SAFE(Read)
+	quint64 _size = (file.size() - offs)/ sizeof(T);
+	THREAD_UNSAFE
+	return _size;
+}
+
+template <class T>
+quint64 jFileStorage<T>::readItems(T * & _items, quint64 _items_count)
+{
+	THREAD_SAFE(Write)
+	file.seek((position() + offs) / sizeof(T));
+	items = file.read(_items_count * sizeof(T));
+	_items = reinterpret_cast<T *>(const_cast<char *>(items.constData()));
+	THREAD_UNSAFE
+	return SAFE_GET(items.count() / sizeof(T));
+}
+
+template <class T>
+jFileStorage<T> & jFileStorage<T>::setOffset(quint64 _offset)
+{
+	stopProcessing();
+	SAFE_SET(offs, _offset);
+	return * this;
+}
+
+template <class T>
+quint64 jFileStorage<T>::offset() const
+{
+	return offs;
 }
 
 // ------------------------------------------------------------------------
@@ -163,6 +338,9 @@ public:
 	QVector<T> items(quint64 _lo, quint64 _hi, int _type) const;
 	void stop();
 	bool isProcessingFinished() const;
+	QByteArray exportLayers() const;
+	bool importLayers(const QByteArray & _saved_layers);
+	quint64 itemsProcessed() const;
 protected:
 	void run();
 private:
@@ -170,6 +348,7 @@ private:
 	QReadWriteLock * storage_rw_lock;
 	bool finished;
 	bool stop_thread;
+	quint64 items_processed;
 
 	struct Layer
 	{
@@ -192,6 +371,7 @@ jStorage<T>::jStorageThread::jStorageThread(jStorage<T> * _storage, QReadWriteLo
 	storage_rw_lock = _rw_lock;
 	finished = true;
 	stop_thread = false;
+	items_processed = 0;
 }
 
 template <class T>
@@ -212,8 +392,16 @@ void jStorage<T>::jStorageThread::run()
 		msleep(1);
 	}
 	quint64 _msecs = _time_stamp.msecsTo(QDateTime::currentDateTime());
-	JDEBUG("finished" << _msecs);
-	storage->storageControl()->emitFinished(_msecs);
+	JDEBUG("thread finished" << _msecs);
+
+	if (finished)
+	{
+		storage->storageControl()->emitFinished(_msecs);
+	}
+	if (stop_thread)
+	{
+		storage->storageControl()->emitStopped();
+	}
 
 	stop_thread = false;
 }
@@ -223,6 +411,7 @@ void jStorage<T>::jStorageThread::stop()
 {
 	stop_thread = true;
 	wait();
+	stop_thread = false;
 }
 
 template <class T>
@@ -237,6 +426,7 @@ void jStorage<T>::jStorageThread::splitStorage()
 	THREAD_SAFE(Write)
 	finished = false;
 	layers.clear();
+	items_processed = 0;
 	qreal _seg_count = (qreal)storage->storageSize() / storage->segmentSize();
 	do 
 	{
@@ -311,6 +501,8 @@ bool jStorage<T>::jStorageThread::adjustLayers()
 	}
 	Layer & _layer0 = layers[0];
 	const quint64 _seg_count = ::ceil(_layer0.seg_count);
+	jStorage<T>::less_func _less_func = storage->lessFunc();
+	jStorage<T>::greater_func _greater_func = storage->greaterFunc();
 	THREAD_UNSAFE
 	if (_seg_count < storage->processedItemsHint())
 	{
@@ -340,18 +532,26 @@ bool jStorage<T>::jStorageThread::adjustLayers()
 			T _max = _items[0];
 			for (quint64 _items_idx = 1; _items_idx < _items_count; _items_idx++)
 			{
-				if (_items[_items_idx] < _min)
+				if (_less_func(_items[_items_idx], _min))
 				{
 					_min = _items[_items_idx];
 				}
-				if (_items[_items_idx] > _max)
+				if (_greater_func(_items[_items_idx], _max))
 				{
 					_max = _items[_items_idx];
 				}
 			}
 			THREAD_SAFE(Write)
-			_layer0.min[_seg_idx] = _min;
-			_layer0.max[_seg_idx] = _max;
+			items_processed += _items_count;
+			const quint64 _seg_idx_sub_end = qMin<quint64>(_seg_count, _seg_idx + _step);
+			for (quint64 _seg_idx_sub = _seg_idx; _seg_idx_sub < _seg_idx_sub_end; _seg_idx_sub++)
+			{
+				if (_layer0.processed[_seg_idx_sub] == false)
+				{
+					_layer0.min[_seg_idx_sub] = _min;
+					_layer0.max[_seg_idx_sub] = _max;
+				}
+			}
 			_layer0.processed[_seg_idx] = true;
 			THREAD_UNSAFE
 		}
@@ -381,18 +581,18 @@ bool jStorage<T>::jStorageThread::adjustLayers()
 				{
 					break;
 				}
-				if (_prev_layer.min[_prev_seg_idx] < _min)
+				if (_less_func(_prev_layer.min[_prev_seg_idx], _min))
 				{
 					_min = _prev_layer.min[_prev_seg_idx];
 				}
-				if (_prev_layer.max[_prev_seg_idx] > _max)
+				if (_greater_func(_prev_layer.max[_prev_seg_idx], _max))
 				{
 					_max = _prev_layer.max[_prev_seg_idx];
 				}					
 			}
 			_layer.min[_seg_idx] = _min;
 			_layer.max[_seg_idx] = _max;
-
+			_layer.processed[_seg_idx] = true;
 			if (stop_thread)
 			{
 				return false;
@@ -468,6 +668,67 @@ QVector<T> jStorage<T>::jStorageThread::items(quint64 _lo, quint64 _hi, int _typ
 	}
 	THREAD_UNSAFE
 	return _result;
+}
+
+template <class T>
+QByteArray jStorage<T>::jStorageThread::exportLayers() const
+{
+	QByteArray _exported;
+	QDataStream ds(&_exported, QIODevice::WriteOnly);
+	THREAD_SAFE(Read)
+	ds << storage->storageSize();
+	ds << layers.count();
+	foreach (const Layer & _layer, layers)
+	{
+		ds << _layer.seg_count;
+		ds << _layer.processed;
+		ds << _layer.min;
+		ds << _layer.max;
+	}
+	THREAD_UNSAFE
+	return qCompress(_exported);
+}
+
+template <class T>
+bool jStorage<T>::jStorageThread::importLayers(const QByteArray & _saved_layers)
+{
+	QDateTime _time_stamp = QDateTime::currentDateTime();
+	stop();
+	THREAD_SAFE(Write)
+	QDataStream ds(qUncompress(_saved_layers));
+	quint64 _storage_size;
+	ds >> _storage_size;
+	if (_storage_size != storage->storageSize())
+	{
+		THREAD_UNSAFE
+		JDEBUG("import failed, wrong size");
+		return false;
+	}
+	layers.clear();
+	int _layers_count;
+	ds >> _layers_count;
+	layers.resize(_layers_count);
+	for (int _idx = 0; _idx < _layers_count; _idx++)
+	{
+		Layer & _layer = layers[_idx];
+		ds >> _layer.seg_count;
+		ds >> _layer.processed;
+		ds >> _layer.min;
+		ds >> _layer.max;
+	}
+	finished = true;
+	THREAD_UNSAFE
+	quint64 _msecs = _time_stamp.msecsTo(QDateTime::currentDateTime());
+	JDEBUG("import finished" << _msecs);
+	storage->storageControl()->emitLayersAdjusted();
+	storage->storageControl()->emitFinished(_msecs);
+	return true;
+}
+
+template <class T>
+quint64 jStorage<T>::jStorageThread::itemsProcessed() const
+{
+	return items_processed;
 }
 
 // ------------------------------------------------------------------------

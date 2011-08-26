@@ -1010,7 +1010,7 @@ void jCoordinator::render(QPainter & _painter, const QRectF & _dst_rect, const Q
 	QPointF _offset = d->offset;
 	format_func _format_func = d->format_func;
 	d->label.
-		setText(_format_func(_pos.x(), _pos.y(), (jAxis *)_x_axis, (jAxis *)_y_axis, this));
+		setText(_format_func(_pos.x(), _pos.y(), const_cast<jAxis *>(_x_axis), const_cast<jAxis *>(_y_axis), this));
 	d->label.
 		setSize(d->label.sizeHint()).
 		setPos(QPointF(_pos.x(), _src_rect.top() + _src_rect.bottom() - _pos.y()));
