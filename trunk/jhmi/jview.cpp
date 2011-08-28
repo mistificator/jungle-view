@@ -57,7 +57,7 @@ struct jAxis::Data
 	}
 	double alignTick(double _value, double _alignment) const
 	{
-		return static_cast<int>(_value / _alignment) * _alignment;
+		return static_cast<qint64>(_value / _alignment) * _alignment;
 	}
 	QVector<double> calcTicks(double _lo, double _hi) const
 	{
@@ -70,17 +70,23 @@ struct jAxis::Data
 			return QVector<double>() << alignTick(_hi - _lo, alignment);
 		}
 		QVector<double> _ticks;
-		for (double _value = alignTick(_lo, alignment); _value <= _hi; _value += alignment)
+		double _alignment = alignment;
+		while ((_hi - _lo) / _alignment > 100.0 * count_hint)
+		{
+			_alignment *= 10.0;
+		}
+		const double _start_tick = alignTick(_lo, _alignment);
+		for (double _value = _start_tick; _value <= _hi; _value += _alignment)
 		{
 			_ticks << _value;
 		}
-		unsigned int _mply = 1;
+		quint64 _mply = 1;
 		while (_ticks.count() > (int)count_hint)
 		{
 			_mply *= 2;
 			for (int _idx = 0; _idx < _ticks.count(); _idx++)
 			{
-				if (alignTick(_ticks[_idx], alignment * _mply) != _ticks[_idx])
+				if (alignTick(_ticks[_idx], _alignment * _mply) != _ticks[_idx])
 				{
 					_ticks.remove(_idx);
 				}
@@ -2392,6 +2398,7 @@ QVector<jItem *> jView::showToolTip(const QPointF & _point)
 
 void jView::rebuild()
 {
+	d->updateViewports(d->viewport.rect());
 	d->renderer->rebuild();
 }
 
@@ -2426,34 +2433,59 @@ QRectF jView::itemsBoundingRect(bool _exclude_invisible) const
 	return _united;
 }
 
-void jView::autoScaleX()
+void jView::autoScaleX(qreal _margin_x)
 {
 	if (d->x_axis && d->y_axis)
 	{
 		QRectF _bounding_rect = itemsBoundingRect();
+
+		const qreal _width = _bounding_rect.width();
+		const qreal _offset_x = _width * _margin_x;
+		_bounding_rect.setLeft(_bounding_rect.left() - _offset_x);
+		_bounding_rect.setRight(_bounding_rect.right() + 2 * _offset_x);
+
 		d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
 		d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
+		d->updateViewports(d->viewport.rect());
 	}
 }
 
-void jView::autoScaleY()
+void jView::autoScaleY(qreal _margin_y)
 {
 	if (d->x_axis && d->y_axis)
 	{
 		QRectF _bounding_rect = itemsBoundingRect();
+
+		const qreal _height = _bounding_rect.height();
+		const qreal _offset_y = _height * _margin_y;
+		_bounding_rect.setTop(_bounding_rect.top() - _offset_y);
+		_bounding_rect.setBottom(_bounding_rect.bottom() + 2 * _offset_y);
+
 		d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
 		d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
+		d->updateViewports(d->viewport.rect());
 	}
 }
 
-void jView::autoScale()
+void jView::autoScale(qreal _margin_x, qreal _margin_y)
 {
 	if (d->x_axis && d->y_axis)
 	{
 		QRectF _bounding_rect = itemsBoundingRect();
+
+		const qreal _width = _bounding_rect.width();
+		const qreal _offset_x = _width * _margin_x;
+		_bounding_rect.setLeft(_bounding_rect.left() - _offset_x);
+		_bounding_rect.setRight(_bounding_rect.right() + _offset_x);
+		const qreal _height = _bounding_rect.height();
+		const qreal _offset_y = _height * _margin_y;
+		_bounding_rect.setTop(_bounding_rect.top() - _offset_y);
+		_bounding_rect.setBottom(_bounding_rect.bottom() + _offset_y);
+
 		d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
 		d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
 		d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
+		d->updateViewports(d->viewport.rect());
 	}
 }
 

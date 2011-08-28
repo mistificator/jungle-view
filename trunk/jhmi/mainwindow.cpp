@@ -132,7 +132,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 	view->viewport().
 		setZoomOrientation(Qt::Horizontal | Qt::Vertical).
 		setMinimumSize(QSizeF(0.5, 0.5)).
-		setMaximumSize(QSizeF(1e6, 1e6));
+		setMaximumSize(QSizeF(1e38, 1e38));
 	view->viewport().selector().
 		setPen(QPen(Qt::green, 3, Qt::DotLine)).
 		setBackground(QColor(255, 255, 255, 40));
@@ -186,12 +186,25 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
                 addAction(jInputPattern::ZoomFullView, jInputPattern::MousePress, Qt::MidButton).
                 addAction(jInputPattern::ZoomDelta, jInputPattern::MousePress, Qt::MidButton, Qt::ShiftModifier);
 
-	storage = new jMemoryStorage<float>(new float[100000000], 100000000);
+	const quint64 _arr_sz = 100000000;
+	qint32 * _arr = new qint32[_arr_sz];
+	for (quint64 _idx = 0; _idx < _arr_sz; _idx++)
+	{
+		_arr[_idx] = _idx;
+	}
+	storage = new jMemoryStorage<qint32>(_arr, _arr_sz);
 //	storage = new jFileStorage<qint16>("c:/temp/compress_test.random");
-	quint64 _storage_size = storage->storageSize();
+
 	connect(storage->storageControl(), SIGNAL(finished(quint64)), this, SLOT(on_storage_finished(quint64)));
-	storage->setSegmentSize();
+	storage->setSegmentSize(1024);
+	storage->setProcessedItemsHint(512);
 	storage->startProcessing();
+
+	cached_item1d.
+			setStorage(storage).
+			setVisible(ui.hugedata_visible->isChecked()).
+			setToolTip("item_huge_data");
+	view->addItem(&cached_item1d);
 
 	step = 10;
 	frames_count = 0;
@@ -204,6 +217,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 
 Mainwindow::~Mainwindow()
 {
+	cached_item1d.setStorage(0);
 	delete storage;
 }
 
@@ -256,7 +270,7 @@ void Mainwindow::timerEvent(QTimerEvent * _te)
 		prev_count = _counter;
 		prev_rendered_count = _rendered_counter;
 
-		JDEBUG("processed" << 100.0 * storage->itemsProcessed() / storage->storageSize());
+//		JDEBUG("processed" << 100.0 * storage->itemsProcessed() / storage->storageSize());
 	}
 }
 
@@ -339,6 +353,12 @@ void Mainwindow::on_gradient_visible_clicked()
 	sync.rebuild();
 }
 
+void Mainwindow::on_hugedata_visible_clicked()
+{
+	cached_item1d.setVisible(ui.hugedata_visible->isChecked());
+	sync.rebuild();
+}
+
 void Mainwindow::on_x_log_clicked()
 {
 	x_axis.setLog10ScaleEnabled(ui.x_log->isChecked());
@@ -359,5 +379,7 @@ void Mainwindow::on_show_legend_clicked()
 
 void Mainwindow::on_storage_finished(quint64 _msecs)
 {
-	QMessageBox::information(this, "", QString::number(_msecs));
+	QMessageBox::information(this, "Storage info", "Layers building finished at " +
+				 QString::number(_msecs / 1000.0, '.', 1) + "s, " +
+				 QString::number(storage->storageSize() * storage->itemSize() * 1000.0 / (_msecs * 1024.0 * 1024.0), '.', 1) + "MB/s");
 }

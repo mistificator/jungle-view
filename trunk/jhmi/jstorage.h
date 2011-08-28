@@ -29,8 +29,8 @@ public:
 	jStorageInterface() {}
 	virtual ~jStorageInterface() {}
 
-	enum ProcessingType {MinOnly = 0, MaxOnly = 1, MaxThenMin = 2, MinThenMax = 3, MinMaxInterleaved = 4};
-	virtual QByteArray processedArray(quint64 _start_item = 0, quint64 _end_item = 0, int _type = MinMaxInterleaved) const = 0;
+	enum ProcessingType {Minimums = 0, Maximums = 1, Source = 2, X = 3};
+	virtual QMap<int, QByteArray> processedArray(quint64 _start_item = 0, quint64 _end_item = 0) const = 0;
 
 	virtual jStorageInterface & setSegmentSize(quint64 _size = 4096) = 0;
 	virtual quint64 segmentSize() const = 0;
@@ -84,8 +84,8 @@ public:
 	jStorage & setGreaterFunc(greater_func _greater_func = & defaultGreater);
 	greater_func greaterFunc() const;
 
-	QVector<T> processedItems(quint64 _start_item = 0, quint64 _end_item = 0, int _type = MinMaxInterleaved) const;
-	QByteArray processedArray(quint64 _start_item = 0, quint64 _end_item = 0, int _type = MinMaxInterleaved) const;
+	QMap<int, QVector<T> > processedItems(quint64 _start_item = 0, quint64 _end_item = 0) const;
+	QMap<int, QByteArray> processedArray(quint64 _start_item = 0, quint64 _end_item = 0) const;
 
 	jStorageInterface & setProcessedItemsHint(quint64 _count = 4096);
 	quint64 processedItemsHint() const;

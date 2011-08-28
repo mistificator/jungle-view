@@ -46,7 +46,7 @@ public:
 	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
 	jItem & setData(void * _data, unsigned int _width, unsigned int _height = 1, bool _deep_copy = false);
 
-	jItem1D<T> & setDataModel(int _model);
+	virtual jItem1D<T> & setDataModel(int _model);
 	int dataModel() const;
 
 	jItem1D<T> & setLineStyle(int _style);
@@ -259,16 +259,13 @@ void jItem1D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
 				(_x_axis && _x_axis->isLog10ScaleEnabled()) ?
 				_x_axis->fromLog10(_src_rect.right() - _origin.x()) :
 				_src_rect.right() - _origin.x();
-			if (_fleft < 0)
-			{
-				_fleft = 0;
-			}
+
 			if (_fright > _width)
 			{
 				_fright = _width;
 			}
-			const qint32 _left = _fleft;
-			const qint32 _right = _fright;
+			const qint32 _left = ((qint32)_fleft) < 0 ? 0 : _fleft;
+			const qint32 _right = ((qint32)_fright) < 0 ? 0 : _fright;
 			const qreal _bar_width =
 				(_x_axis && _x_axis->isLog10ScaleEnabled()) ?
 				_x_axis->fromLog10(bar_width) :
@@ -583,6 +580,11 @@ QRectF jItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) co
 {
 	THREAD_SAFE(Read)
 	const unsigned int _width = size().width();
+	if (_width == 0)
+	{
+		THREAD_UNSAFE
+		return QRectF();
+	}
 	const qreal _offset_x = origin().x();
 	const qreal _offset_y = origin().y();
 	qreal _left, _right, _top, _bottom;
@@ -696,15 +698,8 @@ QRectF jItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) co
 	{
 		::qSwap(_top, _bottom);
 	}
-
-	if ((_top == _bottom) && (_top != 0))
-	{
-		THREAD_UNSAFE
-		return QRectF(QPointF(_left, _offset_y), QPointF(_right, _bottom));
-	}
 	THREAD_UNSAFE
-
-	return QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
+	return (_top == _bottom) ? QRectF(QPointF(_left, _top > 0 ? _offset_y : _top), QPointF(_right, _top > 0 ? _top : _offset_y)) : QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
 }
 
 // ------------------------------------------------------------------------

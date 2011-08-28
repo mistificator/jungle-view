@@ -165,6 +165,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QCheckBox" name="hugedata_visible">
+        <property name="text">
+         <string>Huge data</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="Line" name="line_3">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
@@ -225,16 +232,14 @@
      <x>0</x>
      <y>0</y>
      <width>614</width>
-     <height>20</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources>
-  <include location="mainwindow.qrc"/>
- </resources>
+ <resources/>
  <connections>
   <connection>
    <sender>mt_render</sender>
