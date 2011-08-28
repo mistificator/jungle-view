@@ -29,16 +29,16 @@ public:
 	jStorageInterface() {}
 	virtual ~jStorageInterface() {}
 
-	enum ProcessingType {Minimums = 0, Maximums = 1, Source = 2, X = 3};
+	enum ProcessedItemType {Minimums = 0, Maximums = 1, X = 2};
 	virtual QMap<int, QByteArray> processedArray(quint64 _start_item = 0, quint64 _end_item = 0) const = 0;
 
-	virtual jStorageInterface & setSegmentSize(quint64 _size = 4096) = 0;
+	virtual jStorageInterface & setSegmentSize(quint64 _size = 1024) = 0;
 	virtual quint64 segmentSize() const = 0;
 
 	virtual int itemSize() const = 0; // in bytes
 	virtual quint64 storageSize() const = 0;
 
-	virtual jStorageInterface & setProcessedItemsHint(quint64 _count = 4096) = 0;
+	virtual jStorageInterface & setProcessedItemsHint(quint64 _count = 1024) = 0;
 	virtual quint64 processedItemsHint() const = 0;
 
 	virtual void startProcessing(int _priority = QThread::LowestPriority) = 0;
@@ -72,7 +72,7 @@ public:
 
 	int itemSize() const; // in bytes
 
-	jStorageInterface & setSegmentSize(quint64 _size = 4096);
+	jStorageInterface & setSegmentSize(quint64 _size = 1024);
 	quint64 segmentSize() const;
 
 	jStorage & setSegmentFunc(segment_func _segment_func = & defaultSegmentProcessing);
@@ -87,7 +87,7 @@ public:
 	QMap<int, QVector<T> > processedItems(quint64 _start_item = 0, quint64 _end_item = 0) const;
 	QMap<int, QByteArray> processedArray(quint64 _start_item = 0, quint64 _end_item = 0) const;
 
-	jStorageInterface & setProcessedItemsHint(quint64 _count = 4096);
+	jStorageInterface & setProcessedItemsHint(quint64 _count = 1024);
 	quint64 processedItemsHint() const;
 
 	void startProcessing(int _priority = QThread::LowestPriority);

@@ -637,6 +637,8 @@ template <class T>
 QMap<int, QVector<T> > jStorage<T>::jStorageThread::items(quint64 _lo, quint64 _hi) const
 {
 	THREAD_SAFE(Read)
+	jStorage<T>::less_func _less_func = storage->lessFunc();
+	jStorage<T>::greater_func _greater_func = storage->greaterFunc();
 	QMap<int, QVector<T> > _result;
 	int _selected_layer = selectLayer(_lo, _hi);
 	JDEBUG("selected layer" << _selected_layer);
@@ -645,13 +647,50 @@ QMap<int, QVector<T> > jStorage<T>::jStorageThread::items(quint64 _lo, quint64 _
 		storage->setPosition(_lo);
 		T * _items;
 		const quint64 _items_count = storage->readItems(_items, _hi - _lo);
-		_result[jStorage<T>::Source].resize(_items_count);
-		::memcpy((void *)_result[jStorage<T>::Source].data(), _items, _items_count * sizeof(T));
+
+		qreal _seg_size = (qreal) _items_count / storage->processedItemsHint();
+
+		QVector<T> & _min = _result[jStorage<T>::Minimums];
+		QVector<T> & _max = _result[jStorage<T>::Maximums];
 		QVector<T> & _x = _result[jStorage<T>::X];
-		_x.resize(_items_count);
+
+		_min.resize(storage->processedItemsHint());
+		_max.resize(storage->processedItemsHint());
+		_x.resize(storage->processedItemsHint());
+
+		T * _min_data = const_cast<T *>(_min.constData());
+		T * _max_data = const_cast<T *>(_max.constData());
+		T * _x_data = const_cast<T *>(_x.constData());
+
+		const quint64 _items_count_x = storage->processedItemsHint();
+		for (quint64 _idx = 0; _idx < _items_count_x; _idx++)
+		{
+			_x_data[_idx] = _lo + (_idx * _seg_size);
+		}
+
+		for (qreal _idx = 0; _idx < _items_count; _idx += _seg_size)
+		{
+			quint64 _index = (quint64)(_idx / _seg_size);
+			T & _min_item = _min_data[_index];
+			T & _max_item = _max_data[_index];
+
+			_min_item = _items[(quint64)_idx];
+			_max_item = _items[(quint64)_idx];
+		}
 		for (quint64 _idx = 0; _idx < _items_count; _idx++)
 		{
-			_x[_idx] = _lo + _idx;
+			quint64 _index = (quint64)(_idx / _seg_size);
+			T & _min_item = _min_data[_index];
+			if (_less_func(_items[_idx], _min_item))
+			{
+				_min_item = _items[_idx];
+			}
+
+			T & _max_item = _max_data[_index];
+			if (_greater_func(_items[_idx], _max_item))
+			{
+				_max_item = _items[_idx];
+			}
 		}
 	}
 	else
