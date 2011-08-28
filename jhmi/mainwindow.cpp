@@ -196,8 +196,8 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 //	storage = new jFileStorage<qint16>("c:/temp/compress_test.random");
 
 	connect(storage->storageControl(), SIGNAL(finished(quint64)), this, SLOT(on_storage_finished(quint64)));
-	storage->setSegmentSize(1024);
-	storage->setProcessedItemsHint(512);
+	storage->setSegmentSize();
+	storage->setProcessedItemsHint();
 	storage->startProcessing();
 
 	cached_item1d.

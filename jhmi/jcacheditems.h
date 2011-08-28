@@ -138,34 +138,19 @@ void jCachedItem1D<T>::updateViewport(const QRectF & _rect)
 	}
 	QMap<int, QVector<T> > _items = strg->processedItems(_lo, _hi);
 	const QVector<T> & _x = _items[jStorageInterface::X];
-	if (_items[jStorageInterface::Source].count())
+	const QVector<T> & _min = _items[jStorageInterface::Minimums];
+	const QVector<T> & _max = _items[jStorageInterface::Maximums];
+	const int _items_count = qMin<int>(_min.count(), _max.count());
+	width = _items_count * 2;
+	items.resize(_items_count * 4);
+	for (int _idx = 0; _idx < _items_count; _idx++)
 	{
-		const QVector<T> & _source = _items[jStorageInterface::Source];
-		const int _items_count = _source.count();
-		width = _items_count;
-		items.resize(_items_count * 2);
-		for (int _idx = 0; _idx < _items_count; _idx++)
-		{
-			items[_idx * 2] = _x[_idx];
-			items[_idx * 2 + 1] = _source[_idx];
-		}
+		items[_idx * 4] = _x[_idx];
+		items[_idx * 4 + 1] = _min[_idx];
+		items[_idx * 4 + 2] = _x[_idx];
+		items[_idx * 4 + 3] = _max[_idx];
 	}
-	if (_items[jStorageInterface::Minimums].count() && _items[jStorageInterface::Maximums].count())
-	{
-		const QVector<T> & _min = _items[jStorageInterface::Minimums];
-		const QVector<T> & _max = _items[jStorageInterface::Maximums];
-		const int _items_count = qMin<int>(_min.count(), _max.count());
-		width = _items_count * 2;
-		items.resize(_items_count * 4);
-		for (int _idx = 0; _idx < _items_count; _idx++)
-		{
-			items[_idx * 4] = _x[_idx];
-			items[_idx * 4 + 1] = _min[_idx];
-			items[_idx * 4 + 2] = _x[_idx];
-			items[_idx * 4 + 3] = _max[_idx];
-		}
 
-	}
 	THREAD_UNSAFE
 }
 
@@ -196,37 +181,20 @@ QRectF jCachedItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_ax
 
 	_left = 0;
 	_right = strg->storageSize();
-	if (_items[jStorage<T>::Source].count())
+	foreach (const T & _item, _items[jStorageInterface::Minimums])
 	{
-		foreach (const T & _item, _items[jStorage<T>::Source])
+		if (_item < _top)
 		{
-			if (_item < _top)
-			{
-				_top = _item;
-			}
-			if (_item > _bottom)
-			{
-				_bottom = _item;
-			}
+			_top = _item;
 		}
 	}
-	if (_items[jStorageInterface::Minimums].count() && _items[jStorageInterface::Maximums].count())
+	foreach (const T & _item, _items[jStorageInterface::Maximums])
 	{
-		foreach (const T & _item, _items[jStorageInterface::Minimums])
+		if (_item > _bottom)
 		{
-			if (_item < _top)
-			{
-				_top = _item;
-			}
+			_bottom = _item;
 		}
-		foreach (const T & _item, _items[jStorageInterface::Maximums])
-		{
-			if (_item > _bottom)
-			{
-				_bottom = _item;
-			}
-		}	}
-
+	}
 
 	if (_x_axis && _x_axis->isLog10ScaleEnabled())
 	{
