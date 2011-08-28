@@ -595,13 +595,13 @@ public:
 	\return untyped pointer
 	\sa setData()
 	*/
-	const void * data() const;
+	virtual const void * data() const;
 	//! Returns measurements (width and height) of data.
 	/*!
 	\return size
 	\sa setData()
 	*/
-	QSize size() const;
+	virtual QSize size() const;
 	//! Returns size of one element (sample or point) of data.
 	/*!
 	\return size of one data element measured in bytes
@@ -833,9 +833,9 @@ public:
 	QVector<jItem *> showToolTip(const QPointF & _point);
 
 	QRectF itemsBoundingRect(bool _exclude_invisible = true) const;
-	void autoScaleX();
-	void autoScaleY();
-	void autoScale();
+	void autoScaleX(qreal _margin_x = 0.05); // 5%
+	void autoScaleY(qreal _margin_y = 0.05); // 5%
+	void autoScale(qreal _margin_x = 0.05, qreal _margin_y = 0.05);  // 5%
 
 	jView & setInputPattern(jInputPattern * _pattern);
 	jInputPattern * inputPattern() const;

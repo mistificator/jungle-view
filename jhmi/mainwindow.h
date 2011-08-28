@@ -5,6 +5,7 @@
 #include "jview.h"
 #include "jitems.h"
 #include "jstorage.h"
+#include "jcacheditems.h"
 
 class Mainwindow : public QMainWindow
 {
@@ -29,6 +30,7 @@ private:
 	jSelector highlight;
 	jAxis x_axis, y_axis;
 	jStorageInterface * storage;
+	jCachedItem1D<qint32> cached_item1d;
 
 	QMenu menu;
 
@@ -47,6 +49,7 @@ private slots:
 	void on_cos_visible_clicked();
 	void on_dots_visible_clicked();
 	void on_gradient_visible_clicked();
+	void on_hugedata_visible_clicked();
 	void on_x_log_clicked();
 	void on_y_log_clicked();
 	void on_show_legend_clicked();
