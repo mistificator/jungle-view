@@ -60,8 +60,8 @@ class jStorage : public jStorageInterface
 	COPY_FBD(jStorage)
 public:
 
-	typedef QVector<T> (*segment_func)(const QVector<T> &);
-	static QVector<T> defaultSegmentProcessing(const QVector<T> &);
+	typedef QVector<T> (*segment_func)(const T *, quint64, jStorage<T> *);
+	static QVector<T> defaultSegmentProcessing(const T *, quint64, jStorage<T> *);
 	typedef bool (*less_func)(const T &, const T &);
 	static bool defaultLess(const T &, const T &);
 	typedef bool (*greater_func)(const T &, const T &);
@@ -124,9 +124,9 @@ public:
 	jMemoryStorage(T * _items, quint64 _items_count, bool _deep_copy = false);
 	~jMemoryStorage();
 
-	jMemoryStorage & setStorageBuffer(T * _items, quint64 _items_count, bool _deep_copy = false);
-	quint64 storageSize() const;
-	bool isDeepCopy() const;
+	virtual jMemoryStorage & setStorageBuffer(T * _items, quint64 _items_count, bool _deep_copy = false);
+	virtual quint64 storageSize() const;
+	virtual bool isDeepCopy() const;
 protected:
 	quint64 readItems(T * & _items, quint64 _items_count);
 private:
@@ -146,19 +146,43 @@ public:
 	jFileStorage(const QString & _file_name, quint64 _offset = 0);
 	~jFileStorage();
 
-	jFileStorage & setStorageFile(const QString & _file_name);
+	virtual jFileStorage & setStorageFile(const QString & _file_name);
 	quint64 storageSize() const;
 
-	jFileStorage & setOffset(quint64 _offset); // in bytes
-	quint64 offset() const;
+	virtual jFileStorage & setOffset(quint64 _offset); // in bytes
+	virtual quint64 offset() const;
 protected:
 	quint64 readItems(T * & _items, quint64 _items_count);
-private:
 	quint64 offs;
 	QFile file;
 	QByteArray items;
 };
 
+// ------------------------------------------------------------------------
+/*
+class jWaveFile : public jFileStorage<qint64>
+{
+	COPY_FBD(jWaveFile)
+public:
+	static QVector<qint64> waveSegmentProcessing(const qint64 *, quint64, jStorage<qint64> *);
+
+	jWaveFile();
+	jWaveFile(const QString & _file_name);
+
+	jFileStorage & setStorageFile(const QString & _file_name);
+	quint64 storageSize() const;
+
+	jFileStorage & setOffset(quint64 _offset = 0); // ignored
+
+	qint16 channels() const;
+	qint16 bits() const;
+	int sampleRate() const;
+protected:
+	qint16 ch_count;
+	qint16 bits_per_sample;
+	int sample_rate;
+};
+*/
 // ------------------------------------------------------------------------
 
 #include "jstorage_p.h"
