@@ -15,7 +15,8 @@ SOURCES += \
     jhmi/main.cpp \
     jhmi/jview.cpp \
     jhmi/jdefs.cpp \
-    jhmi/jstoragehandler.cpp
+    jhmi/jstoragehandler.cpp \
+    jhmi/jwave.cpp
 
 HEADERS  += \
     jhmi/mainwindow.h \
@@ -26,7 +27,8 @@ HEADERS  += \
     jhmi/jstorage.h \
     jhmi/jstoragehandler.h \
     jhmi/jcacheditems.h \
-    jhmi/jstorage_p.h
+    jhmi/jstorage_p.h \
+    jhmi/jwave.h
 
 FORMS += \
     jhmi/mainwindow.ui

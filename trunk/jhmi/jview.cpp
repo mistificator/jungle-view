@@ -399,7 +399,6 @@ struct jSelector::Data
 		points[3].x = 0; points[3].y = 0;
 		points[4].x = 0; points[4].y = 0;
 		visible = true;
-		item.setDataModel(jItem1D<qreal>::PointData);
 		item.setData(points, 5);
 	}
 	~Data()
@@ -1275,7 +1274,6 @@ struct jMarker::Data
 		points[1].x = 0; points[1].y = 0;
 		value = 0.0;
 		orientation = Qt::Vertical;
-		item.setDataModel(jItem1D<double>::PointData);
 		item.setData(points, 2);
 	}
 	~Data()

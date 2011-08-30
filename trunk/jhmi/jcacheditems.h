@@ -5,20 +5,17 @@
 #include "jstorage.h"
 
 template <class T>
-class jCachedItem1D : public jItem1D<T>
+class jCachedItem1D : public jItem
 {
 	COPY_FBD(jCachedItem1D)
 public:
-	jCachedItem1D(jStorageInterface * _storage = 0, int _line_style = Lines, qreal _bar_width = 1.0);
+	jCachedItem1D(jStorageInterface * _storage = 0, int _line_style = jItem1D<T>::Lines, qreal _bar_width = 1.0);
 	~jCachedItem1D();
-
-	jItem1D<T> & setDataModel(int); // ignored
 
 	jCachedItem1D<T> & setChannel(int _channel = 0);
 	int channel() const;
 
 	jItem & setData(void * _data, unsigned int _width, unsigned int _height = 1, bool _deep_copy = false);
-	jCachedItem1D<T> & setFile(const QString & _file_name);
 	jCachedItem1D<T> & setStorage(jStorageInterface * _storage);
 	jStorage<T> * storage() const;
 
@@ -26,8 +23,21 @@ public:
 	QSize size() const;
 
 	void updateViewport(const QRectF & _rect);
+	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
+
+	int dataModel() const;
+
+	jCachedItem1D<T> & setLineStyle(int _style);
+	int lineStyle() const;
+
+	jCachedItem1D<T> & setBarWidth(qreal _width);
+	qreal barWidth() const;
+
+	bool intersects(const QRectF & _rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 	QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
+
 private:
+	jItem1D<T> * item1d;
 	jStorage<T> * strg;
 	bool internal_strg;
 	QVector<T> items;
@@ -39,7 +49,7 @@ private:
 
 template <class T>
 jCachedItem1D<T>::jCachedItem1D(jStorageInterface * _storage, int _line_style, qreal _bar_width) :
-	jItem1D<T>(jItem1D<T>::PointData, _line_style, _bar_width), strg(dynamic_cast<jStorage<T> *>(_storage))
+	jItem(), item1d(new jItem1D<T>(_line_style, _bar_width)), strg(dynamic_cast<jStorage<T> *>(_storage))
 {
 	internal_strg = _storage ? false : true;
 	width = 0;
@@ -53,12 +63,7 @@ jCachedItem1D<T>::~jCachedItem1D()
 	{
 		delete strg;
 	}
-}
-
-template <class T>
-jItem1D<T> & jCachedItem1D<T>::setDataModel(int)
-{
-	return * this;
+	delete item1d;
 }
 
 template <class T>
@@ -91,20 +96,6 @@ jItem & jCachedItem1D<T>::setData(void * _data, unsigned int _width, unsigned in
 		delete strg;
 	}
 	strg = new jMemoryStorage<T>(reinterpret_cast<T *>(_data), _width, _deep_copy);
-	internal_strg = true;
-	THREAD_UNSAFE
-	return * this;
-}
-
-template <class T>
-jCachedItem1D<T> & jCachedItem1D<T>::setFile(const QString & _file_name)
-{
-	THREAD_SAFE(Write)
-	if (internal_strg && strg)
-	{
-		delete strg;
-	}
-	strg = new jFileStorage<T>(_file_name);
 	internal_strg = true;
 	THREAD_UNSAFE
 	return * this;
@@ -176,8 +167,8 @@ void jCachedItem1D<T>::updateViewport(const QRectF & _rect)
 		items[_idx * 4 + 2] = _x[_idx];
 		items[_idx * 4 + 3] = _max[_idx];
 	}
-
 	THREAD_UNSAFE
+	item1d->setData((jItem1D<T>::Point *)items.constData(), width);
 }
 
 template <class T>
@@ -269,6 +260,52 @@ QRectF jCachedItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_ax
 	}
 	THREAD_UNSAFE
 	return (_top == _bottom) ? QRectF(QPointF(_left, _top > 0 ? _offset_y : _top), QPointF(_right, _top > 0 ? _top : _offset_y)) : QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
+}
+
+template <class T>
+void jCachedItem1D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0)
+{
+	if (isVisible() == false)
+	{
+		return;
+	}
+	item1d->render(_painter, _dst_rect, _src_rect, _x_axis, _y_axis);
+}
+
+template <class T>
+int jCachedItem1D<T>::dataModel() const
+{
+	return item1d->dataModel();
+}
+
+template <class T>
+jCachedItem1D<T> & jCachedItem1D<T>::setLineStyle(int _style)
+{
+	return item1d->setLineStyle(_style);
+}
+
+template <class T>
+int jCachedItem1D<T>::lineStyle() const
+{
+	return item1d->lineStyle();
+}
+
+template <class T>
+jCachedItem1D<T> & jCachedItem1D<T>::setBarWidth(qreal _width)
+{
+	return item1d->setBarWidth(_width);
+}
+
+template <class T>
+qreal jCachedItem1D<T>::barWidth() const
+{
+	return item1d->barWidth();
+}
+
+template <class T>
+bool jCachedItem1D<T>::intersects(const QRectF & _rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const
+{
+	return item1d->intersects(_rect, _x_axis, _y_axis);
 }
 
 #endif

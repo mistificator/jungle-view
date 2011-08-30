@@ -1,8 +1,17 @@
 #include "mainwindow.h"
 
-QString customRangeFunc(double _value, jAxis *)
+QString customRangeFunc(double _value, jAxis * _axis)
 {
-	return QString::number(_value, '.', 2);
+	double _b = qMax(qAbs(_axis->lo()), qAbs(_axis->hi()));
+	if (_b < 100)
+	{
+		return QString::number(_value, '.', 2);
+	}
+	if (_b < 1000)
+	{
+		return QString::number(_value, '.', 1);
+	}
+	return QString::number(_value, '.', 0);
 }
 
 Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)

@@ -23,7 +23,7 @@ private:
 	QStack<T> stack;
 };
 
-template <class T>
+template <class T, class TX = T>
 class jItem1D: public jItem
 {
 	COPY_FBD(jItem1D)
@@ -32,34 +32,43 @@ public:
 	enum {FlatData = 1, PointData = 2, RadialData = 4};
 	struct Point
 	{
-		T x, y;
+		T x;
+		TX y;
 	};
 	struct Radial
 	{
-		T v, t;
+		T v;
+		TX t;
 	};
 	typedef T Flat;
 
-	jItem1D(int _data_model = FlatData, int _line_style = Lines, qreal _bar_width = 1.0);
+	jItem1D(int _line_style = Lines, qreal _bar_width = 1.0);
 	~jItem1D();
 
 	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
-	jItem & setData(void * _data, unsigned int _width, unsigned int _height = 1, bool _deep_copy = false);
 
-	virtual jItem1D<T> & setDataModel(int _model);
+	jItem1D<T, TX> & setDataModel(int _model);
 	int dataModel() const;
 
-	jItem1D<T> & setLineStyle(int _style);
+	jItem1D<T, TX> & setLineStyle(int _style);
 	int lineStyle() const;
 
-	jItem1D<T> & setBarWidth(qreal _width);
+	jItem1D<T, TX> & setBarWidth(qreal _width);
 	qreal barWidth() const;
 
 	bool intersects(const QRectF & _rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 	QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
+
+	jItem1D<T, TX> & setData(Flat * _data, unsigned int _width, bool _deep_copy = false);
+	jItem1D<T, TX> & setData(Flat * _data, TX * _x, unsigned int _width, bool _deep_copy = false);
+	jItem1D<T, TX> & setData(Point * _data, unsigned int _width, bool _deep_copy = false);
+	jItem1D<T, TX> & setData(Radial * _data, unsigned int _width, bool _deep_copy = false);
+
+	const TX * x() const;
 private:
 	int data_model, line_style;
 	qreal bar_width;
+	TX * x_data;
 };
 
 template <class T>
@@ -83,6 +92,8 @@ public:
 	converter_func converterFunc() const;
 
 	bool intersects(const QRectF & _rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
+
+	jItem2D<T> & setData(T * _data, unsigned int _width, unsigned int _height, bool _deep_copy = false);
 private:
 	qint32 * convertToI32(void * _data_ptr, const QSize & _size);
 	int conversion_flags, format;
@@ -136,49 +147,53 @@ T jStack<T>::top(const T & _default)
 
 // ------------------------------------------------------------------------
 
-template <class T>
-jItem1D<T>::jItem1D(int _data_model, int _line_style, qreal _bar_width): jItem()
+template <class T, class TX>
+jItem1D<T, TX>::jItem1D(int _line_style, qreal _bar_width): jItem()
 {
+	x_data = 0;
 	this->
-		setDataModel(_data_model).
+		setDataModel(FlatData).
 		setLineStyle(_line_style).
 		setBarWidth(_bar_width);
 }
 
-template <class T>
-jItem1D<T>::~jItem1D()
+template <class T, class TX>
+jItem1D<T, TX>::~jItem1D()
 {
-
+	if (x_data && isDeepCopy())
+	{
+		delete [] x_data;
+	}
 }
 
-template <class T>
-jItem1D<T> & jItem1D<T>::setLineStyle(int _style)
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setLineStyle(int _style)
 {
 	SAFE_SET(line_style, _style);
 	return * this;
 }
 
-template <class T>
-int jItem1D<T>::lineStyle() const
+template <class T, class TX>
+int jItem1D<T, TX>::lineStyle() const
 {
 	return line_style;
 }
 
-template <class T>
-jItem1D<T> & jItem1D<T>::setBarWidth(qreal _width)
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setBarWidth(qreal _width)
 {
 	SAFE_SET(bar_width, _width);
 	return * this;
 }
 
-template <class T>
-qreal jItem1D<T>::barWidth() const
+template <class T, class TX>
+qreal jItem1D<T, TX>::barWidth() const
 {
 	return bar_width;
 }
 
-template <class T>
-jItem1D<T> & jItem1D<T>::setDataModel(int _model)
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setDataModel(int _model)
 {
 	SAFE_SET(data_model, _model);
 	switch (data_model)
@@ -208,16 +223,10 @@ jItem1D<T> & jItem1D<T>::setDataModel(int _model)
 	return * this;
 }
 
-template <class T>
-int jItem1D<T>::dataModel() const
+template <class T, class TX>
+int jItem1D<T, TX>::dataModel() const
 {
 	return data_model;
-}
-
-template <class T>
-jItem & jItem1D<T>::setData(void * _data, unsigned int _width, unsigned int _height, bool _deep_copy)
-{
-	return jItem::setData(_data, _width, _height, _deep_copy);
 }
 
 static bool radialSort(const QPointF & _p1, const QPointF & _p2)
@@ -225,8 +234,8 @@ static bool radialSort(const QPointF & _p1, const QPointF & _p2)
 	return (_p1.y() < _p2.y());
 }
 
-template <class T>
-void jItem1D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
+template <class T, class TX>
+void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
 {
 	THREAD_SAFE(Read)
 	if (isVisible() == false)
@@ -250,56 +259,99 @@ void jItem1D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
 	{
 	case FlatData:
 		{
-			const Flat * const _data = (const Flat * const)data();
-			qreal _fleft =
-				(_x_axis && _x_axis->isLog10ScaleEnabled()) ?
-				_x_axis->fromLog10(_src_rect.left() - _origin.x()) :
-				_src_rect.left() - _origin.x();
-			qreal _fright = 
-				(_x_axis && _x_axis->isLog10ScaleEnabled()) ?
-				_x_axis->fromLog10(_src_rect.right() - _origin.x()) :
-				_src_rect.right() - _origin.x();
+			const Flat * const _y_data = (const Flat * const)data();
+			if (x_data == 0)
+			{
+				qreal _fleft =
+					(_x_axis && _x_axis->isLog10ScaleEnabled()) ?
+					_x_axis->fromLog10(_src_rect.left() - _origin.x()) :
+					_src_rect.left() - _origin.x();
+				qreal _fright =
+					(_x_axis && _x_axis->isLog10ScaleEnabled()) ?
+					_x_axis->fromLog10(_src_rect.right() - _origin.x()) :
+					_src_rect.right() - _origin.x();
 
-			if (_fright > _width)
-			{
-				_fright = _width;
+				if (_fright > _width)
+				{
+					_fright = _width;
+				}
+				const qint32 _left = ((qint32)_fleft) < 0 ? 0 : _fleft;
+				const qint32 _right = ((qint32)_fright) < 0 ? 0 : _fright;
+				const qreal _bar_width =
+					(_x_axis && _x_axis->isLog10ScaleEnabled()) ?
+					_x_axis->fromLog10(bar_width) :
+					bar_width;
+				switch (line_style)
+				{
+				case Dots:
+				case Lines:
+					{
+						_points.reserve(_right - _left);
+						for (int _x = _left; _x < _right; _x++)
+						{
+							_points << QPointF(_x, -_y_data[_x]);
+						}
+						break;
+					}
+				case Ticks:
+					{
+						_points.reserve((_right - _left) * 2);
+						for (int _x = _left; _x < _right; _x++)
+						{
+							_points << QPointF(_x, -_y_data[_x]);
+							_points << QPointF( _x, 0);
+						}
+						break;
+					}
+				case Bars:
+					{
+						_rects.reserve(_right - _left);
+						for (int _x = _left; _x < _right; _x++)
+						{
+							_rects << QRectF(QPointF(_x - (_bar_width / 2.0), - _y_data[_x]), QSizeF(_bar_width, _y_data[_x]));
+						}
+					}
+				}
 			}
-			const qint32 _left = ((qint32)_fleft) < 0 ? 0 : _fleft;
-			const qint32 _right = ((qint32)_fright) < 0 ? 0 : _fright;
-			const qreal _bar_width =
-				(_x_axis && _x_axis->isLog10ScaleEnabled()) ?
-				_x_axis->fromLog10(bar_width) :
-				bar_width;
-			switch (line_style)
+			else
 			{
-			case Dots:
-			case Lines:
+				const qreal _bar_width =
+					(_x_axis && _x_axis->isLog10ScaleEnabled()) ?
+					_x_axis->fromLog10(bar_width) :
+					bar_width;
+				switch (line_style)
 				{
-					_points.reserve(_right - _left);
-					for (int _x = _left; _x < _right; _x++)
+				case Dots:
+				case Lines:
 					{
-						_points << QPointF(_x, -_data[_x]);
+						_points.reserve(_width);
+						for (unsigned int _idx = 0; _idx < _width; _idx++)
+						{
+							_points << QPointF(x_data[_idx], -_y_data[_idx]);
+						}
+						break;
 					}
-					break;
-				}
-			case Ticks:
-				{
-					_points.reserve((_right - _left) * 2);
-					for (int _x = _left; _x < _right; _x++)
+				case Ticks:
 					{
-						_points << QPointF(_x, -_data[_x]);
-						_points << QPointF( _x, 0);
+						_points.reserve(_width * 2);
+						for (unsigned int _idx = 0; _idx < _width; _idx++)
+						{
+							_points << QPointF(x_data[_idx], -_y_data[_idx]);
+							_points << QPointF(x_data[_idx], 0);
+						}
+						break;
 					}
-					break;
-				}
-			case Bars:
-				{
-					_rects.reserve(_right - _left);
-					for (int _x = _left; _x < _right; _x++)
+				case Bars:
 					{
-						_rects << QRectF(QPointF(_x - (_bar_width / 2.0), - _data[_x]), QSizeF(_bar_width, _data[_x]));
+						_rects.reserve(_width);
+						for (unsigned int _idx = 0; _idx < _width; _idx++)
+						{
+							_rects << QRectF(QPointF(x_data[_idx] - (_bar_width / 2.0), -_y_data[_idx]), QSizeF(_bar_width, _y_data[_idx]));
+						}
+						break;
 					}
 				}
+
 			}
 			break;
 		}
@@ -443,8 +495,8 @@ void jItem1D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
 	addCounter(_points.count() + _rects.count());
 }
 
-template <class T>
-bool jItem1D<T>::intersects(const QRectF & _rect, const jAxis * _x_axis, const jAxis * _y_axis) const
+template <class T, class TX>
+bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, const jAxis * _y_axis) const
 {
 	THREAD_SAFE(Read)
 	const unsigned int _width = size().width();
@@ -465,34 +517,69 @@ bool jItem1D<T>::intersects(const QRectF & _rect, const jAxis * _x_axis, const j
 	{
 	case FlatData:
 		{
-			const Flat * const _data = (const Flat * const)data();
-			switch (line_style)
+			const Flat * const _y_data = (const Flat * const)data();
+			if (x_data == 0)
 			{
-			case Dots:
-			case Lines:
+				switch (line_style)
 				{
-					for (unsigned int _x = 0; _x < _width; _x++)
+				case Dots:
+				case Lines:
 					{
-						if (_adj_rect.contains(QPointF(_x, _data[_x])))
+						for (unsigned int _x = 0; _x < _width; _x++)
 						{
-							THREAD_UNSAFE
-							return true;
+							if (_adj_rect.contains(QPointF(_x, _y_data[_x])))
+							{
+								THREAD_UNSAFE
+								return true;
+							}
 						}
+						break;
 					}
-					break;
+				case Ticks:
+				case Bars:
+					{
+						for (unsigned int _x = 0; _x < _width; _x++)
+						{
+							if (_adj_rect.intersects(QRectF(QPointF((int)_x - 1, _y_data[_x]), QPointF(_x + 1, 0))))
+							{
+								THREAD_UNSAFE
+								return true;
+							}
+						}
+						break;
+					}
 				}
-			case Ticks:
-			case Bars:
+			}
+			else
+			{
+				switch (line_style)
 				{
-					for (unsigned int _x = 0; _x < _width; _x++)
+				case Dots:
+				case Lines:
 					{
-						if (_adj_rect.intersects(QRectF(QPointF((int)_x - 1, _data[_x]), QPointF(_x + 1, 0))))
+						for (unsigned int _idx = 0; _idx < _width; _idx++)
 						{
-							THREAD_UNSAFE
-							return true;
+							if (_adj_rect.contains(QPointF(x_data[_idx], _y_data[_idx])))
+							{
+								THREAD_UNSAFE
+								return true;
+							}
 						}
+						break;
 					}
-					break;
+				case Ticks:
+				case Bars:
+					{
+						for (unsigned int _idx = 0; _idx < _width; _idx++)
+						{
+							if (_adj_rect.intersects(QRectF(QPointF((qreal)x_data[_idx] - 1, _y_data[_idx]), QPointF(x_data[_idx] + 1, 0))))
+							{
+								THREAD_UNSAFE
+								return true;
+							}
+						}
+						break;
+					}
 				}
 			}
 			break;
@@ -575,8 +662,8 @@ bool jItem1D<T>::intersects(const QRectF & _rect, const jAxis * _x_axis, const j
 	return false;
 }
 
-template <class T>
-QRectF jItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
+template <class T, class TX>
+QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 {
 	THREAD_SAFE(Read)
 	const unsigned int _width = size().width();
@@ -594,17 +681,44 @@ QRectF jItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) co
 	{
 	case FlatData:
 		{
-			const Flat * const _data = (const Flat * const)data();
-			_left = 0; _right = _width;
-			for (unsigned int _x = 0; _x < _width; _x++)
+			const Flat * const _y_data = (const Flat * const)data();
+			if (x_data == 0)
 			{
-				if (_data[_x] < _top)
+				_left = 0; _right = _width;
+				for (unsigned int _x = 0; _x < _width; _x++)
 				{
-					_top = _data[_x];
+					if (_y_data[_x] < _top)
+					{
+						_top = _y_data[_x];
+					}
+					if (_y_data[_x] > _bottom)
+					{
+						_bottom = _y_data[_x];
+					}
 				}
-				if (_data[_x] > _bottom)
+			}
+			else
+			{
+				for (unsigned int _idx = 0; _idx < _width; _idx++)
 				{
-					_bottom = _data[_x];
+					const qreal & _x = x_data[_idx];
+					const qreal & _y = _y_data[_idx];
+					if (_x < _left)
+					{
+						_left = _x;
+					}
+					if (_x > _right)
+					{
+						_right = _x;
+					}
+					if (_y < _top)
+					{
+						_top = _y;
+					}
+					if (_y > _bottom)
+					{
+						_bottom = _y;
+					}
 				}
 			}
 			break;
@@ -700,6 +814,72 @@ QRectF jItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) co
 	}
 	THREAD_UNSAFE
 	return (_top == _bottom) ? QRectF(QPointF(_left, _top > 0 ? _offset_y : _top), QPointF(_right, _top > 0 ? _top : _offset_y)) : QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
+}
+
+template <class T, class TX>
+const TX * jItem1D<T, TX>::x() const
+{
+	return x_data;
+}
+
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Flat * _data, unsigned int _width, bool _deep_copy)
+{
+	if (x_data && isDeepCopy())
+	{
+		delete [] x_data;
+		x_data = 0;
+	}
+	setDataModel(jItem1D<T, TX>::FlatData);
+	jItem::setData(_data, _width, 1, _deep_copy);
+	return * this;
+}
+
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Flat * _data, TX * _x, unsigned int _width, bool _deep_copy = false)
+{
+	if (x_data && isDeepCopy())
+	{
+		delete [] x_data;
+	}
+	if (_deep_copy)
+	{
+		x_data = new TX[_width];
+		::memcpy(x_data, _x, _width * sizeof(TX));
+	}
+	else
+	{
+		x_data = _x;
+	}
+	setDataModel(jItem1D<T, TX>::FlatData);
+	jItem::setData(_data, _width, 1, _deep_copy);
+	return * this;
+}
+
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Point * _data, unsigned int _width, bool _deep_copy)
+{
+	if (x_data && isDeepCopy())
+	{
+		delete [] x_data;
+		x_data = 0;
+	}
+	setDataModel(jItem1D<T, TX>::PointData);
+	jItem::setData(_data, _width, 1, _deep_copy);
+	return * this;
+}
+
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Radial * _data, unsigned int _width, bool _deep_copy)
+{
+	if (x_data && isDeepCopy())
+	{
+		delete [] x_data;
+		x_data = 0;
+	}
+	setDataModel(jItem1D<T, TX>::RadialData);
+	jItem::setData(_data, _width, 1, _deep_copy);
+	return * this;
 }
 
 // ------------------------------------------------------------------------
@@ -898,5 +1078,11 @@ bool jItem2D<T>::intersects(const QRectF & _rect, const jAxis * _x_axis, const j
 	return _rect.intersects(boundingRect(_x_axis, _y_axis));
 }
 
+template <class T>
+jItem2D<T> & jItem2D<T>::setData(T * _data, unsigned int _width, unsigned int _height, bool _deep_copy)
+{
+	jItem::setData(_data, _width, _height, _deep_copy);
+	return * this;
+}
 
 #endif
