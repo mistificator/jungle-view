@@ -198,6 +198,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 	connect(storage->storageControl(), SIGNAL(finished(quint64)), this, SLOT(on_storage_finished(quint64)));
 	storage->setSegmentSize();
 	storage->setProcessedItemsHint();
+	storage->setChannels(2);
 	storage->startProcessing();
 
 	cached_item1d.

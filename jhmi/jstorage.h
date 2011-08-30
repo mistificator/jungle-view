@@ -30,7 +30,7 @@ public:
 	virtual ~jStorageInterface() {}
 
 	enum ProcessedItemType {Minimums = 0, Maximums = 1, X = 2};
-	virtual QMap<int, QByteArray> processedArray(quint64 _start_item = 0, quint64 _end_item = 0) const = 0;
+	virtual QVector< QMap<int, QByteArray> > processedArray(quint64 _start_item = 0, quint64 _end_item = 0) const = 0;
 
 	virtual jStorageInterface & setSegmentSize(quint64 _size = 1024) = 0;
 	virtual quint64 segmentSize() const = 0;
@@ -46,6 +46,9 @@ public:
 	virtual bool isProcessingFinished() const = 0;
 	virtual quint64 itemsProcessed() const = 0;
 
+	virtual jStorageInterface & setChannels(int _count = 1) = 0;
+	virtual int channels() const = 0;
+
 	virtual jStorageHandler * storageControl() const = 0;
 
 	virtual QByteArray exportLayers() const = 0;
@@ -60,8 +63,8 @@ class jStorage : public jStorageInterface
 	COPY_FBD(jStorage)
 public:
 
-	typedef QVector<T> (*segment_func)(const T *, quint64, jStorage<T> *);
-	static QVector<T> defaultSegmentProcessing(const T *, quint64, jStorage<T> *);
+	typedef QVector< QVector<T> > (*segment_func)(const T *, quint64, jStorage<T> *);
+	static QVector< QVector<T> > defaultSegmentProcessing(const T *, quint64, jStorage<T> *);
 	typedef bool (*less_func)(const T &, const T &);
 	static bool defaultLess(const T &, const T &);
 	typedef bool (*greater_func)(const T &, const T &);
@@ -84,8 +87,8 @@ public:
 	jStorage & setGreaterFunc(greater_func _greater_func = & defaultGreater);
 	greater_func greaterFunc() const;
 
-	QMap<int, QVector<T> > processedItems(quint64 _start_item = 0, quint64 _end_item = 0) const;
-	QMap<int, QByteArray> processedArray(quint64 _start_item = 0, quint64 _end_item = 0) const;
+	QVector< QMap< int, QVector<T> > > processedItems(quint64 _start_item = 0, quint64 _end_item = 0) const;
+	QVector< QMap< int, QByteArray> > processedArray(quint64 _start_item = 0, quint64 _end_item = 0) const;
 
 	jStorageInterface & setProcessedItemsHint(quint64 _count = 1024);
 	quint64 processedItemsHint() const;
@@ -94,6 +97,9 @@ public:
 	void stopProcessing();
 	bool isProcessingFinished() const;
 	quint64 itemsProcessed() const;
+
+	jStorageInterface & setChannels(int _count = 1);
+	int channels() const;
 
 	jStorageHandler * storageControl() const;
 
@@ -105,6 +111,7 @@ protected:
 	virtual quint64 readItems(T * & _items, quint64 _items_count) = 0;
 private:
 	quint64 seek_pos, seg_size, hint;
+	int ch_count;
 	segment_func seg_func;
 	less_func l_func;
 	greater_func g_func;
@@ -158,31 +165,6 @@ protected:
 	QByteArray items;
 };
 
-// ------------------------------------------------------------------------
-/*
-class jWaveFile : public jFileStorage<qint64>
-{
-	COPY_FBD(jWaveFile)
-public:
-	static QVector<qint64> waveSegmentProcessing(const qint64 *, quint64, jStorage<qint64> *);
-
-	jWaveFile();
-	jWaveFile(const QString & _file_name);
-
-	jFileStorage & setStorageFile(const QString & _file_name);
-	quint64 storageSize() const;
-
-	jFileStorage & setOffset(quint64 _offset = 0); // ignored
-
-	qint16 channels() const;
-	qint16 bits() const;
-	int sampleRate() const;
-protected:
-	qint16 ch_count;
-	qint16 bits_per_sample;
-	int sample_rate;
-};
-*/
 // ------------------------------------------------------------------------
 
 #include "jstorage_p.h"

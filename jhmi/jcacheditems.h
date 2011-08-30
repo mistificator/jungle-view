@@ -14,6 +14,9 @@ public:
 
 	jItem1D<T> & setDataModel(int); // ignored
 
+	jCachedItem1D<T> & setChannel(int _channel = 0);
+	int channel() const;
+
 	jItem & setData(void * _data, unsigned int _width, unsigned int _height = 1, bool _deep_copy = false);
 	jCachedItem1D<T> & setFile(const QString & _file_name);
 	jCachedItem1D<T> & setStorage(jStorageInterface * _storage);
@@ -29,6 +32,7 @@ private:
 	bool internal_strg;
 	QVector<T> items;
 	int width;
+	int ch;
 };
 
 // ------------------------------------------------------------------------
@@ -39,6 +43,7 @@ jCachedItem1D<T>::jCachedItem1D(jStorageInterface * _storage, int _line_style, q
 {
 	internal_strg = _storage ? false : true;
 	width = 0;
+	ch = 0;
 }
 
 template <class T>
@@ -54,6 +59,27 @@ template <class T>
 jItem1D<T> & jCachedItem1D<T>::setDataModel(int)
 {
 	return * this;
+}
+
+template <class T>
+jCachedItem1D<T> & jCachedItem1D<T>::setChannel(int _channel)
+{
+	if (_channel < 0)
+	{
+		_channel = 0;
+	}
+	if (strg && (_channel >= strg->channels()))
+	{
+		_channel = strg->channels() - 1;
+	}
+	SAFE_SET(ch, _channel);
+	return * this;
+}
+
+template <class T>
+int jCachedItem1D<T>::channel() const
+{
+	return ch;
 }
 
 template <class T>
@@ -136,7 +162,7 @@ void jCachedItem1D<T>::updateViewport(const QRectF & _rect)
 		THREAD_UNSAFE;
 		return;
 	}
-	QMap<int, QVector<T> > _items = strg->processedItems(_lo, _hi);
+	QMap<int, QVector<T> > _items = strg->processedItems(_lo, _hi).at(ch);
 	const QVector<T> & _x = _items[jStorageInterface::X];
 	const QVector<T> & _min = _items[jStorageInterface::Minimums];
 	const QVector<T> & _max = _items[jStorageInterface::Maximums];
@@ -177,10 +203,19 @@ QRectF jCachedItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_ax
 	_left = 1e+37; _right = -1e+37;
 	_top = 1e+37; _bottom = -1e+37;
 
-	QMap<int, QVector<T> > _items = strg->processedItems();
+	QMap<int, QVector<T> > _items = strg->processedItems().at(ch);
 
-	_left = 0;
-	_right = strg->storageSize();
+	foreach (const T & _item, _items[jStorageInterface::X])
+	{
+		if (_item < _left)
+		{
+			_left = _item;
+		}
+		if (_item > _right)
+		{
+			_right = _item;
+		}
+	}
 	foreach (const T & _item, _items[jStorageInterface::Minimums])
 	{
 		if (_item < _top)
