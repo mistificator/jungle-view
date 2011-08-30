@@ -199,6 +199,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\jwave.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\main.cpp"
 				>
 			</File>
@@ -212,6 +216,22 @@
 			Filter="h"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\jcacheditems.h"
+				>
+			</File>
+			<File
+				RelativePath=".\jdefs.h"
+				>
+			</File>
+			<File
+				RelativePath=".\jstorage.h"
+				>
+			</File>
+			<File
+				RelativePath=".\jstorage_p.h"
+				>
+			</File>
 			<File
 				RelativePath=".\jstoragehandler.h"
 				>
@@ -263,6 +283,10 @@
 						Outputs="&quot;.\GeneratedFiles\$(ConfigurationName)\moc_$(InputName).cpp&quot;"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\jwave.h"
+				>
 			</File>
 			<File
 				RelativePath=".\mainwindow.h"
