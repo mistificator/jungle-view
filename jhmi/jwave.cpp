@@ -1,21 +1,31 @@
 #include "jwave.h"
 
-QVector< QVector<qint64> > jWaveFile::waveSegmentProcessing(const qint64 * _seg_data, quint64 _seg_size, jStorage<qint64> * _base_storage)
+QVector< QVector<qint64> > jWaveFile::waveSegmentProcessing(const QVector<qint64> & _items, jStorage<qint64> * _base_storage)
 {
 	jWaveFile * _storage = dynamic_cast<jWaveFile *>(_base_storage);
 	const int _channels = _storage->channels();
-	const quint64 _step = _storage->bits() * _channels / 8;
-	const quint64 _items_count = _seg_size /_step;
+	const quint64 _items_count = _items.count() * _storage->itemSize() * 8 / (_storage->bits() * _channels);
+//	JDEBUG("wave seg" << _items_count);
 	QVector< QVector<qint64> > _result;
+	return _result;
 	_result.resize(_channels);
+
+	const qint64 * _seg_data = _items.data();
 
 	for (int _channel = 0; _channel < _channels; _channel++)
 	{
 		_result[_channel].resize(_items_count);
-		quint64 _offset = 0;
-		qint64 * _result_data = const_cast<qint64 *>(_result[_channel].constData());
+		quint64 _offset = _channel;
+		QVector<qint64> & _result_data = _result[_channel];
 		switch (_storage->bits())
 		{
+		case 8:
+			for (quint64 _idx = 0; _idx < _items_count; _idx++)
+			{
+				_result_data[_idx] = * (reinterpret_cast<const qint8 *>(_seg_data) + _offset);
+				_offset += _channels;
+			}
+			break;
 		case 16:
 			for (quint64 _idx = 0; _idx < _items_count; _idx++)
 			{
@@ -93,4 +103,25 @@ qint16 jWaveFile::bits() const
 int jWaveFile::sampleRate() const
 {
 	return sample_rate;
+}
+
+QVector<qint64> jWaveFile::readItems( quint64 _items_count)
+{
+	THREAD_SAFE(Write)
+	qint64 _file_pos = offs + position() * (bits() / 8) * channels();
+	if (_file_pos < file.size())
+	{
+//		JDEBUG("seek" << _file_pos << "/" << file.size() << "items" << _items_count);
+		file.seek(_file_pos);
+		items = file.read(_items_count * (bits() / 8));
+	}
+	else
+	{
+		items.clear();
+	}
+	QVector<qint64> _result;
+	_result.resize(items.count() / sizeof(qint64));
+	::memcpy(_result.data(), items.data(), items.count());
+	THREAD_UNSAFE
+	return _result;
 }

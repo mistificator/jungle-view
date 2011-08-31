@@ -4,70 +4,57 @@
 #include "jitems.h"
 #include "jstorage.h"
 
-template <class T>
-class jCachedItem1D : public jItem
+template <class T, class TX = T>
+class jCachedItem1D : public jItem1D<T, TX>
 {
 	COPY_FBD(jCachedItem1D)
 public:
-	jCachedItem1D(jStorageInterface * _storage = 0, int _line_style = jItem1D<T>::Lines, qreal _bar_width = 1.0);
+	jCachedItem1D(jStorageInterface * _storage = 0, int _channel = 0, int _line_style = jItem1D<T, TX>::Lines, qreal _bar_width = 1.0);
 	~jCachedItem1D();
 
-	jCachedItem1D<T> & setChannel(int _channel = 0);
+	jCachedItem1D<T, TX> & setChannel(int _channel = 0);
 	int channel() const;
 
-	jItem & setData(void * _data, unsigned int _width, unsigned int _height = 1, bool _deep_copy = false);
-	jCachedItem1D<T> & setStorage(jStorageInterface * _storage);
-	jStorage<T> * storage() const;
+	jCachedItem1D<T, TX> & setStorage(jStorageInterface * _storage);
+	jStorage<T, TX> * storage() const;
 
 	const void * data() const;
 	QSize size() const;
 
 	void updateViewport(const QRectF & _rect);
-	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
-
-	int dataModel() const;
-
-	jCachedItem1D<T> & setLineStyle(int _style);
-	int lineStyle() const;
-
-	jCachedItem1D<T> & setBarWidth(qreal _width);
-	qreal barWidth() const;
-
-	bool intersects(const QRectF & _rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 	QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 
 private:
-	jItem1D<T> * item1d;
-	jStorage<T> * strg;
-	bool internal_strg;
+	jStorage<T, TX> * strg;
 	QVector<T> items;
+	QVector<TX> x_data;
 	int width;
 	int ch;
+protected:
+	jItem1D<T, TX> & setData(Flat *, unsigned int, bool)			{ return * this; }
+	jItem1D<T, TX> & setData(Flat *, TX *, unsigned int, bool)		{ return * this; }
+	jItem1D<T, TX> & setData(Point * , unsigned int, bool)			{ return * this; }
+	jItem1D<T, TX> & setData(Radial *, unsigned int, bool)			{ return * this; }
 };
 
 // ------------------------------------------------------------------------
 
-template <class T>
-jCachedItem1D<T>::jCachedItem1D(jStorageInterface * _storage, int _line_style, qreal _bar_width) :
-	jItem(), item1d(new jItem1D<T>(_line_style, _bar_width)), strg(dynamic_cast<jStorage<T> *>(_storage))
+template <class T, class TX>
+jCachedItem1D<T, TX>::jCachedItem1D(jStorageInterface * _storage, int _channel, int _line_style, qreal _bar_width) :
+	jItem1D<T, TX>(_line_style, _bar_width), strg(dynamic_cast<jStorage<T, TX> *>(_storage))
 {
-	internal_strg = _storage ? false : true;
 	width = 0;
-	ch = 0;
+	ch = _channel;
 }
 
-template <class T>
-jCachedItem1D<T>::~jCachedItem1D()
+template <class T, class TX>
+jCachedItem1D<T, TX>::~jCachedItem1D()
 {
-	if (internal_strg && strg)
-	{
-		delete strg;
-	}
-	delete item1d;
+
 }
 
-template <class T>
-jCachedItem1D<T> & jCachedItem1D<T>::setChannel(int _channel)
+template <class T, class TX>
+jCachedItem1D<T, TX> & jCachedItem1D<T, TX>::setChannel(int _channel)
 {
 	if (_channel < 0)
 	{
@@ -81,49 +68,30 @@ jCachedItem1D<T> & jCachedItem1D<T>::setChannel(int _channel)
 	return * this;
 }
 
-template <class T>
-int jCachedItem1D<T>::channel() const
+template <class T, class TX>
+int jCachedItem1D<T, TX>::channel() const
 {
 	return ch;
 }
 
-template <class T>
-jItem & jCachedItem1D<T>::setData(void * _data, unsigned int _width, unsigned int, bool _deep_copy = false)
+template <class T, class TX>
+jCachedItem1D<T, TX> & jCachedItem1D<T, TX>::setStorage(jStorageInterface * _storage)
 {
 	THREAD_SAFE(Write)
-	if (internal_strg && strg)
-	{
-		delete strg;
-	}
-	strg = new jMemoryStorage<T>(reinterpret_cast<T *>(_data), _width, _deep_copy);
-	internal_strg = true;
-	THREAD_UNSAFE
-	return * this;
-}
-
-template <class T>
-jCachedItem1D<T> & jCachedItem1D<T>::setStorage(jStorageInterface * _storage)
-{
-	THREAD_SAFE(Write)
-	if (internal_strg && strg)
-	{
-		delete strg;
-	}
-	strg = dynamic_cast<jStorage<T> *>(_storage);
-	internal_strg = false;
+	strg = dynamic_cast<jStorage<T, TX> *>(_storage);
 	THREAD_UNSAFE
 	return * this;
 }
 
 
-template <class T>
-const void * jCachedItem1D<T>::data() const
+template <class T, class TX>
+const void * jCachedItem1D<T, TX>::data() const
 {
-	return SAFE_GET(items.constData());
+	return SAFE_GET(items.data());
 }
 
-template <class T>
-QSize jCachedItem1D<T>::size() const
+template <class T, class TX>
+QSize jCachedItem1D<T, TX>::size() const
 {
 	if (strg == 0)
 	{
@@ -135,8 +103,8 @@ QSize jCachedItem1D<T>::size() const
 	return _size;
 }
 
-template <class T>
-void jCachedItem1D<T>::updateViewport(const QRectF & _rect)
+template <class T, class TX>
+void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 {
 	if (strg == 0)
 	{
@@ -153,8 +121,9 @@ void jCachedItem1D<T>::updateViewport(const QRectF & _rect)
 		THREAD_UNSAFE;
 		return;
 	}
-	QMap<int, QVector<T> > _items = strg->processedItems(_lo, _hi).at(ch);
-	const QVector<T> & _x = _items[jStorageInterface::X];
+
+	QMap<int, QVector<T> > _items = strg->processedItems(_lo, _hi, &x_data).at(ch);
+
 	const QVector<T> & _min = _items[jStorageInterface::Minimums];
 	const QVector<T> & _max = _items[jStorageInterface::Maximums];
 	const int _items_count = qMin<int>(_min.count(), _max.count());
@@ -162,49 +131,47 @@ void jCachedItem1D<T>::updateViewport(const QRectF & _rect)
 	items.resize(_items_count * 4);
 	for (int _idx = 0; _idx < _items_count; _idx++)
 	{
-		items[_idx * 4] = _x[_idx];
+		items[_idx * 4] = x_data[_idx];
 		items[_idx * 4 + 1] = _min[_idx];
-		items[_idx * 4 + 2] = _x[_idx];
+		items[_idx * 4 + 2] = x_data[_idx];
 		items[_idx * 4 + 3] = _max[_idx];
 	}
 	THREAD_UNSAFE
-	item1d->setData((jItem1D<T>::Point *)items.constData(), width);
+
+	jItem1D<T, TX>::setData((jItem1D<T, TX>::Point *)items.data(), width);
+
 }
 
-template <class T>
-jStorage<T> * jCachedItem1D<T>::storage() const
+template <class T, class TX>
+jStorage<T, TX> * jCachedItem1D<T, TX>::storage() const
 {
 	return strg;
 }
 
 
-template <class T>
-QRectF jCachedItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
+template <class T, class TX>
+QRectF jCachedItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 {
 	THREAD_SAFE(Read)
-	const unsigned int _width = size().width();
-	if (_width == 0)
-	{
-		THREAD_UNSAFE
-		return QRectF();
-	}
+
 	const qreal _offset_x = origin().x();
 	const qreal _offset_y = origin().y();
 	qreal _left, _right, _top, _bottom;
 	_left = 1e+37; _right = -1e+37;
 	_top = 1e+37; _bottom = -1e+37;
 
-	QMap<int, QVector<T> > _items = strg->processedItems().at(ch);
+	QVector<TX> _vx;
+	QMap<int, QVector<T> > _items = strg->processedItems(0, 0, &_vx).at(ch);
 
-	foreach (const T & _item, _items[jStorageInterface::X])
+	foreach (const TX & _x, _vx)
 	{
-		if (_item < _left)
+		if (_x < _left)
 		{
-			_left = _item;
+			_left = _x;
 		}
-		if (_item > _right)
+		if (_x > _right)
 		{
-			_right = _item;
+			_right = _x;
 		}
 	}
 	foreach (const T & _item, _items[jStorageInterface::Minimums])
@@ -260,52 +227,6 @@ QRectF jCachedItem1D<T>::boundingRect(const jAxis * _x_axis, const jAxis * _y_ax
 	}
 	THREAD_UNSAFE
 	return (_top == _bottom) ? QRectF(QPointF(_left, _top > 0 ? _offset_y : _top), QPointF(_right, _top > 0 ? _top : _offset_y)) : QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
-}
-
-template <class T>
-void jCachedItem1D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0)
-{
-	if (isVisible() == false)
-	{
-		return;
-	}
-	item1d->render(_painter, _dst_rect, _src_rect, _x_axis, _y_axis);
-}
-
-template <class T>
-int jCachedItem1D<T>::dataModel() const
-{
-	return item1d->dataModel();
-}
-
-template <class T>
-jCachedItem1D<T> & jCachedItem1D<T>::setLineStyle(int _style)
-{
-	return item1d->setLineStyle(_style);
-}
-
-template <class T>
-int jCachedItem1D<T>::lineStyle() const
-{
-	return item1d->lineStyle();
-}
-
-template <class T>
-jCachedItem1D<T> & jCachedItem1D<T>::setBarWidth(qreal _width)
-{
-	return item1d->setBarWidth(_width);
-}
-
-template <class T>
-qreal jCachedItem1D<T>::barWidth() const
-{
-	return item1d->barWidth();
-}
-
-template <class T>
-bool jCachedItem1D<T>::intersects(const QRectF & _rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const
-{
-	return item1d->intersects(_rect, _x_axis, _y_axis);
 }
 
 #endif
