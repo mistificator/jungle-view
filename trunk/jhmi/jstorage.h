@@ -29,8 +29,8 @@ public:
 	jStorageInterface() {}
 	virtual ~jStorageInterface() {}
 
-	enum ProcessedItemType {Minimums = 0, Maximums = 1, X = 2};
-	virtual QVector< QMap<int, QByteArray> > processedArray(quint64 _start_item = 0, quint64 _end_item = 0) const = 0;
+	enum ProcessedItemType {Minimums = 0, Maximums = 1};
+	virtual QVector< QMap<int, QByteArray> > processedArray(quint64 _start_item = 0, quint64 _end_item = 0, QByteArray * _x = 0) const = 0;
 
 	virtual jStorageInterface & setSegmentSize(quint64 _size = 1024) = 0;
 	virtual quint64 segmentSize() const = 0;
@@ -57,14 +57,14 @@ public:
 
 // ------------------------------------------------------------------------
 
-template <class T>
+template <class T, class TX = T>
 class jStorage : public jStorageInterface
 {
 	COPY_FBD(jStorage)
 public:
 
-	typedef QVector< QVector<T> > (*segment_func)(const T *, quint64, jStorage<T> *);
-	static QVector< QVector<T> > defaultSegmentProcessing(const T *, quint64, jStorage<T> *);
+	typedef QVector< QVector<T> > (*segment_func)(const QVector<T> &, jStorage<T, TX> *);
+	static QVector< QVector<T> > defaultSegmentProcessing(const QVector<T> &, jStorage<T, TX> *);
 	typedef bool (*less_func)(const T &, const T &);
 	static bool defaultLess(const T &, const T &);
 	typedef bool (*greater_func)(const T &, const T &);
@@ -87,8 +87,8 @@ public:
 	jStorage & setGreaterFunc(greater_func _greater_func = & defaultGreater);
 	greater_func greaterFunc() const;
 
-	QVector< QMap< int, QVector<T> > > processedItems(quint64 _start_item = 0, quint64 _end_item = 0) const;
-	QVector< QMap< int, QByteArray> > processedArray(quint64 _start_item = 0, quint64 _end_item = 0) const;
+	QVector< QMap< int, QVector<T> > > processedItems(quint64 _start_item = 0, quint64 _end_item = 0, QVector<TX> * _x = 0) const;
+	QVector< QMap< int, QByteArray> > processedArray(quint64 _start_item = 0, quint64 _end_item = 0, QByteArray * _x = 0) const;
 
 	jStorageInterface & setProcessedItemsHint(quint64 _count = 1024);
 	quint64 processedItemsHint() const;
@@ -106,9 +106,9 @@ public:
 	QByteArray exportLayers() const;
 	bool importLayers(const QByteArray & _saved_layers);
 protected:
-	jStorage & setPosition(quint64 _item_position);
+	virtual jStorage & setPosition(quint64 _item_position);
 	quint64 position() const;
-	virtual quint64 readItems(T * & _items, quint64 _items_count) = 0;
+	virtual QVector<T> readItems(quint64 _items_count) = 0;
 private:
 	quint64 seek_pos, seg_size, hint;
 	int ch_count;
@@ -122,8 +122,8 @@ private:
 
 // ------------------------------------------------------------------------
 
-template <class T>
-class jMemoryStorage : public jStorage<T>
+template <class T, class TX = T>
+class jMemoryStorage : public jStorage<T, TX>
 {
 	COPY_FBD(jMemoryStorage)
 public:
@@ -135,7 +135,7 @@ public:
 	virtual quint64 storageSize() const;
 	virtual bool isDeepCopy() const;
 protected:
-	quint64 readItems(T * & _items, quint64 _items_count);
+	QVector<T> readItems(quint64 _items_count);
 private:
 	T * items;
 	quint64 items_count;
@@ -144,8 +144,8 @@ private:
 
 // ------------------------------------------------------------------------
 
-template <class T>
-class jFileStorage : public jStorage<T>
+template <class T, class TX = T>
+class jFileStorage : public jStorage<T, TX>
 {
 	COPY_FBD(jFileStorage)
 public:
@@ -159,7 +159,7 @@ public:
 	virtual jFileStorage & setOffset(quint64 _offset); // in bytes
 	virtual quint64 offset() const;
 protected:
-	quint64 readItems(T * & _items, quint64 _items_count);
+	QVector<T> readItems(quint64 _items_count);
 	quint64 offs;
 	QFile file;
 	QByteArray items;

@@ -579,17 +579,6 @@ public:
 	*/
 	QString toolTip() const;
 
-	//! Directly sets pointer to input data with its measurements.
-	/*!
-	Remember that total number of elements (samples or points) of data must be not less than _width * _height.
-	\param _data untyped pointer to input data
-	\param _width width of data (measured in points or samples)
-	\param _height height of data (measured in points or samples)
-	\param _deep_copy flag that tells to make or not a deep copy of input data
-	\return reference
-	\sa data(), width(), height(), bytesPerItem(), isDeepCopy()
-	*/
-	virtual jItem & setData(void * _data, unsigned int _width, unsigned int _height = 1, bool _deep_copy = false);
 	//! Returns pointer to data.
 	/*!
 	\return untyped pointer
@@ -672,6 +661,18 @@ public:
 	*/
 	virtual QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 protected:
+	//! Directly sets pointer to input data with its measurements.
+	/*!
+	Remember that total number of elements (samples or points) of data must be not less than _width * _height.
+	\param _data untyped pointer to input data
+	\param _width width of data (measured in points or samples)
+	\param _height height of data (measured in points or samples)
+	\param _deep_copy flag that tells to make or not a deep copy of input data
+	\return reference
+	\sa data(), width(), height(), bytesPerItem(), isDeepCopy()
+	*/
+	virtual jItem & setData(void * _data, unsigned int _width, unsigned int _height = 1, bool _deep_copy = false);
+
 	//! Sets size of one element (sample or point) of data.
 	/*!
 	This method is usually called from constructors of jItem sublasses.

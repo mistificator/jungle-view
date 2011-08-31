@@ -509,6 +509,8 @@ struct jViewport::Data
 	{
 		history << QRectF();
 		selector.setVisible(false);
+		minimum_size = QSizeF(0, 0);
+		maximum_size = QSizeF(1e+38, 1e+38);
 	}
 	~Data()
 	{

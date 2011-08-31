@@ -68,9 +68,9 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 	::memset(gfx_dots, 0, sizeof(gfx_dots));
 
 	item1d.
+		setData(_gfx1d, sizeof(_gfx1d) / sizeof(_gfx1d[0]), true).
 		setPen(QPen(Qt::red, 5, Qt::SolidLine)).
 		setBrush(QBrush(Qt::green, Qt::Dense5Pattern)).
-		setData(_gfx1d, sizeof(_gfx1d) / sizeof(_gfx1d[0]), 1, true).
 		setOrigin(QPointF(0, 7)).
 		setZ(1).
 		setToolTip("<i>item1d</i>");
@@ -79,25 +79,22 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		setLineStyle(jItem1D<short>::Lines);
 
 	item_cos.
+		setData(_gfx_cos, sizeof(_gfx_cos) / sizeof(_gfx_cos[0]), true).
 		setZ(-1).
 		setBrush(Qt::black).
 		setOrigin(QPointF(-300, 100)).
-		setData(_gfx_cos, sizeof(_gfx_cos) / sizeof(_gfx_cos[0]), 1, true).
 		setToolTip("item_cos");
 
 	item_cos.
 		setLineStyle(jItem1D<qreal>::Ticks);
 
 	item_dots.
+		setLineStyle(jItem1D<short>::Dots).
+		setData(gfx_dots, sizeof(gfx_dots) / sizeof(gfx_dots[0])).
 		setPen(QPen(Qt::green, 7, Qt::SolidLine, Qt::RoundCap)).
 		setBrush(QBrush(Qt::green, Qt::SolidPattern)).
 		setOrigin(QPointF(500, 200)).
-		setToolTip("item_dots").
-		setData(gfx_dots, sizeof(gfx_dots) / sizeof(gfx_dots[0]));
-
-	item_dots.
-		setLineStyle(jItem1D<short>::Dots).
-		setDataModel(jItem1D<qreal>::PointData);
+		setToolTip("item_dots");
 
 	highlight.
 		setVisible(false).

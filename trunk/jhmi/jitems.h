@@ -28,8 +28,8 @@ class jItem1D: public jItem
 {
 	COPY_FBD(jItem1D)
 public:
-	enum {Lines = 1, Ticks = 2, Bars = 4, Dots = 8};
-	enum {FlatData = 1, PointData = 2, RadialData = 4};
+	enum {Lines = 1, Ticks = 2, Bars = 3, Dots = 4};
+	enum {FlatData = 1, PointData = 2, RadialData = 3};
 	struct Point
 	{
 		T x;
@@ -47,7 +47,6 @@ public:
 
 	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
 
-	jItem1D<T, TX> & setDataModel(int _model);
 	int dataModel() const;
 
 	jItem1D<T, TX> & setLineStyle(int _style);
@@ -59,16 +58,18 @@ public:
 	bool intersects(const QRectF & _rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 	QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 
-	jItem1D<T, TX> & setData(Flat * _data, unsigned int _width, bool _deep_copy = false);
-	jItem1D<T, TX> & setData(Flat * _data, TX * _x, unsigned int _width, bool _deep_copy = false);
-	jItem1D<T, TX> & setData(Point * _data, unsigned int _width, bool _deep_copy = false);
-	jItem1D<T, TX> & setData(Radial * _data, unsigned int _width, bool _deep_copy = false);
+	virtual jItem1D<T, TX> & setData(Flat * _data, unsigned int _width, bool _deep_copy = false);
+	virtual jItem1D<T, TX> & setData(Flat * _data, TX * _x, unsigned int _width, bool _deep_copy = false);
+	virtual jItem1D<T, TX> & setData(Point * _data, unsigned int _width, bool _deep_copy = false);
+	virtual jItem1D<T, TX> & setData(Radial * _data, unsigned int _width, bool _deep_copy = false);
 
 	const TX * x() const;
 private:
 	int data_model, line_style;
 	qreal bar_width;
 	TX * x_data;
+protected:
+	virtual jItem1D<T, TX> & setDataModel(int _model);
 };
 
 template <class T>
