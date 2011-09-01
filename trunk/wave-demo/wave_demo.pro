@@ -9,7 +9,6 @@ QT       += core gui
 TARGET = wave_demo
 TEMPLATE = app
 
-
 SOURCES += \
     mainwindow.cpp \
     main.cpp \
@@ -22,11 +21,10 @@ HEADERS  += \
     ../jhmi/jview.h \
     ../jhmi/jitems.h \
     ../jhmi/jdefs.h \
-    ../jhmi/jstorage_p.h \
     ../jhmi/jstorage.h \
+    ../jhmi/jstorage_p.h \
     ../jhmi/jstoragehandler.h \
     ../jhmi/jcacheditems.h \
-    ../jhmi/jstorage_p.h \
     ../jhmi/jwave.h \
     mainwindow.h
 
@@ -35,3 +33,5 @@ FORMS += \
 
 RESOURCES += \
     mainwindow.qrc
+
+QMAKE_CXX += -fpermissive

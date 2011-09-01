@@ -1604,7 +1604,7 @@ int jInputPattern::lastDelta() const
 bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 {
 	QMouseEvent *	_me	= 0;
-	QKeyEvent *		_ke	= 0;
+	QKeyEvent *	_ke	= 0;
 	QWheelEvent *	_we	= 0;
 	int _method = UnknownMethod;
 	QVector<Data::ActionEntry> _actions;
@@ -2182,6 +2182,7 @@ void jView::userCommand(int _action, int /*_method*/, int /*_code*/, int _modifi
 			if (d->in_zoom)
 			{
 				d->viewport.selector().setRect(d->viewport.adjustRect(d->screenToAxis(rect(), QRectF(d->press_point, _move_point))));
+				d->renderer->rebuild();
 			}
 			d->move_point = _move_point;
 		}
@@ -2231,6 +2232,7 @@ void jView::userCommand(int _action, int /*_method*/, int /*_code*/, int _modifi
 			d->viewport.pan(_p1.x() - _p2.x(), _p1.y() - _p2.y());
 			d->updateViewports(d->viewport.rect());
 			setCursor(Qt::ClosedHandCursor);
+			d->renderer->rebuild();
 			d->move_point = _move_point;
 		}
 		break;

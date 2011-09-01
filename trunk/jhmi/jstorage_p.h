@@ -132,7 +132,7 @@ bool jStorage<T, TX>::defaultLess(const T & _op1, const T & _op2)
 }
 
 template <class T, class TX>
-jStorage<T, TX> & jStorage<T, TX>::setLessFunc(less_func _less_func = & defaultLess)
+jStorage<T, TX> & jStorage<T, TX>::setLessFunc(less_func _less_func)
 {
 	SAFE_SET(l_func, _less_func);
 	return * this;
@@ -151,7 +151,7 @@ bool jStorage<T, TX>::defaultGreater(const T & _op1, const T & _op2)
 }
 
 template <class T, class TX>
-jStorage<T, TX> & jStorage<T, TX>::setGreaterFunc(greater_func _greater_func = & defaultGreater)
+jStorage<T, TX> & jStorage<T, TX>::setGreaterFunc(greater_func _greater_func)
 {
 	SAFE_SET(g_func, _greater_func);
 	return * this;
