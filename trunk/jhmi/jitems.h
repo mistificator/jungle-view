@@ -675,14 +675,15 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
 	}
 	const qreal _offset_x = origin().x();
 	const qreal _offset_y = origin().y();
-	qreal _left, _right, _top, _bottom;
-	_left = 1e+37; _right = -1e+37;
-	_top = 1e+37; _bottom = -1e+37;
+	TX _left, _right;
+	T _top, _bottom;
 	switch (data_model)
 	{
 	case FlatData:
 		{
 			const Flat * const _y_data = (const Flat * const)data();
+			_top = _y_data[0];
+			_bottom = _y_data[0];
 			if (x_data == 0)
 			{
 				_left = 0; _right = _width;
@@ -700,6 +701,8 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
 			}
 			else
 			{
+				_left = x_data[0];
+				_right = x_data[0];
 				for (unsigned int _idx = 0; _idx < _width; _idx++)
 				{
 					const qreal & _x = x_data[_idx];
@@ -727,6 +730,10 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
 	case PointData:
 		{
 			const Point * const _data = (const Point * const)data();
+			_left = _data[0].x;
+			_right = _data[0].x;
+			_top = _data[0].y;
+			_bottom = _data[0].y;
 			for (unsigned int _idx = 0; _idx < _width; _idx++)
 			{
 				const qreal & _x = _data[_idx].x;
@@ -753,6 +760,10 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
 	case RadialData:
 		{
 			const Radial * const _data = (const Radial * const)data();
+			_left = _data[0].v * ::cosf(_data[0].t);
+			_right = _data[0].v * ::cosf(_data[0].t);
+			_top = _data[0].v * ::sinf(_data[0].t);
+			_bottom = _data[0].v * ::sinf(_data[0].t);
 			for (unsigned int _idx = 0; _idx < _width; _idx++)
 			{
 				const qreal & _x = _data[_idx].v * ::cosf(_data[_idx].t);

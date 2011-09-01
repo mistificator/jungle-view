@@ -1,11 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QtGui/QMainWindow>
+#include <QMainWindow>
+#include <QProgressBar>
 #include "ui_mainwindow.h"
 #include "../jhmi/jview.h"
 #include "../jhmi/jwave.h"
-#include "../jhmi/jcacheditems.h"
 
 class MainWindow : public QMainWindow
 {
@@ -17,13 +17,15 @@ public:
 
 private:
 	Ui::MainWindowClass ui;
-//	jWaveFile wave_file;
-	jFileStorage<qint16, qreal> wave_file;
+	QProgressBar * pb;
+	jWaveFile wave_file;
 	QVector<jItem *> wave_items;
 	jAxis x_axis, y_axis;
+	static QString range_convert(double _value, jAxis *);
 private slots:
 	void on_actionOpen_triggered();
 	void on_actionQuit_triggered();
+	void on_actionExportSnapshot_triggered();
 	void onLayersAdjusted();
 };
 

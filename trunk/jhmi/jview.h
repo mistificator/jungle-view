@@ -31,7 +31,7 @@ public:
 	//! Prototype for axis value-to-label converter function (range function).
 	/*!
 	See default_range_convert() for parameters explanation.
-	\sa default_range_convert(), setRange(), lo(), hi(), rangeFunc()
+	\sa default_range_convert(), setRange(), lo(), hi(), rangeFunc(), setRangeFunc()
 	*/
 	typedef QString (*range_func)(double, jAxis *);
 	//! Default value-to-label function (range function).
@@ -39,7 +39,7 @@ public:
 	\param _value value of axis tick
 	\param _axis pointer to axis
 	\return formatted text
-	\sa range_func, setRange(), lo(), hi(), rangeFunc()
+	\sa range_func, setRange(), lo(), hi(), rangeFunc(), setRangeFunc()
 	*/
 	static QString default_range_convert(double _value, jAxis *);
 	//! Sets range of values for the axis and range function.
@@ -48,25 +48,32 @@ public:
 	\param _hi high boundary of interval
 	\param _range_func pointer to function
 	\return reference
-	\sa range_func, default_range_convert(), lo(), hi(), rangeFunc()
+	\sa range_func, default_range_convert(), lo(), hi(), rangeFunc(), setRangeFunc()
 	*/
 	jAxis & setRange(double _lo, double _hi, range_func _range_func = &default_range_convert);
+	//! Sets range function for the axis.
+	/*!
+	\param _range_func pointer to function
+	\return reference
+	\sa range_func, default_range_convert(), setRange(), lo(), hi(), rangeFunc()
+	*/
+	jAxis & setRangeFunc(range_func _range_func = &default_range_convert);
 	//! Returns low boundary of interval.
 	/*!
 	\return low boundary of interval
-	\sa range_func, default_range_convert(), setRange(), hi(), rangeFunc()
+	\sa range_func, default_range_convert(), setRange(), hi(), rangeFunc(), setRangeFunc()
 	*/
 	double lo() const;
 	//! Returns high boundary of interval.
 	/*!
 	\return high boundary of interval
-	\sa range_func, default_range_convert(), setRange(), lo(), rangeFunc()
+	\sa range_func, default_range_convert(), setRange(), lo(), rangeFunc(), setRangeFunc()
 	*/
 	double hi() const;
 	//! Returns pointer to current value-to-label converter function (range function).
 	/*!
 	\return pointer to function
-	\sa range_func, default_range_convert(), setRange(), lo(), hi()
+	\sa range_func, default_range_convert(), setRange(), lo(), hi(), setRangeFunc()
 	*/
 	range_func rangeFunc() const;
 

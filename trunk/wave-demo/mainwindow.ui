@@ -41,6 +41,7 @@
      <string>File</string>
     </property>
     <addaction name="actionOpen"/>
+    <addaction name="actionExportSnapshot"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -60,6 +61,14 @@
   <action name="actionQuit">
    <property name="text">
     <string>Quit</string>
+   </property>
+  </action>
+  <action name="actionExportSnapshot">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Export snapshot</string>
    </property>
   </action>
  </widget>

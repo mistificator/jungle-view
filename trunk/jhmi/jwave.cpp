@@ -1,127 +1,165 @@
 #include "jwave.h"
+#include "jcacheditems.h"
+#include "jstorage.h"
 
-QVector< QVector<qint64> > jWaveFile::waveSegmentProcessing(const QVector<qint64> & _items, jStorage<qint64> * _base_storage)
+struct jWaveFile::Data
 {
-	jWaveFile * _storage = dynamic_cast<jWaveFile *>(_base_storage);
-	const int _channels = _storage->channels();
-	const quint64 _items_count = _items.count() * _storage->itemSize() * 8 / (_storage->bits() * _channels);
-//	JDEBUG("wave seg" << _items_count);
-	QVector< QVector<qint64> > _result;
-	return _result;
-	_result.resize(_channels);
-
-	const qint64 * _seg_data = _items.data();
-
-	for (int _channel = 0; _channel < _channels; _channel++)
+	qint16 bits_per_sample, ch_count;
+	int sample_rate;
+	QString file_name;
+	Data()
 	{
-		_result[_channel].resize(_items_count);
-		quint64 _offset = _channel;
-		QVector<qint64> & _result_data = _result[_channel];
-		switch (_storage->bits())
+		bits_per_sample = 0;
+		sample_rate = 0;
+		ch_count = 0;
+		helper = 0;
+	}
+	~Data()
+	{
+		if (helper)
 		{
-		case 8:
-			for (quint64 _idx = 0; _idx < _items_count; _idx++)
-			{
-				_result_data[_idx] = * (reinterpret_cast<const qint8 *>(_seg_data) + _offset);
-				_offset += _channels;
-			}
-			break;
-		case 16:
-			for (quint64 _idx = 0; _idx < _items_count; _idx++)
-			{
-				_result_data[_idx] = * (reinterpret_cast<const qint16 *>(_seg_data) + _offset);
-				_offset += _channels;
-			}
-			break;
-		case 32:
-			for (quint64 _idx = 0; _idx < _items_count; _idx++)
-			{
-				_result_data[_idx] = * (reinterpret_cast<const qint32 *>(_seg_data) + _offset);
-				_offset += _channels;
-			}
-			break;
-		case 64:
-			for (quint64 _idx = 0; _idx < _items_count; _idx++)
-			{
-				_result_data[_idx] = * (_seg_data + _offset);
-				_offset += _channels;
-			}
-			break;
+			delete helper;
 		}
 	}
-	return _result;
+
+	class HelperInterface
+	{
+	public:
+		HelperInterface() {}
+		virtual ~HelperInterface() {}
+		virtual jItem * createItem(int _channel) const = 0;
+		virtual jStorageInterface * storage() const = 0;
+	};
+
+	template <class T, class TX>
+	class Helper : public HelperInterface
+	{
+	public:
+		Helper(const QString & _file_name, int _channels) : HelperInterface()
+		{
+			strg = new jFileStorage<T, TX>(_file_name, 44);
+			strg->setChannels(_channels);
+		}
+		~Helper()
+		{
+			delete strg;
+		}
+		jItem * createItem(int _channel) const
+		{
+			if ((_channel < 0) || (_channel >= strg->channels()))
+			{
+				return 0;
+			}
+			return new jCachedItem1D<T, TX>(strg, _channel);
+		}
+		jStorageInterface * storage() const
+		{
+			return strg;
+		}
+	private:
+		jStorageInterface * strg;
+	};
+
+	HelperInterface * helper;
+};
+
+jWaveFile::jWaveFile() : d(new Data())
+{
 }
 
-jWaveFile::jWaveFile() : jFileStorage<qint64>()
+jWaveFile::jWaveFile(const QString & _file_name, bool _start_loading) : d(new Data())
 {
-	bits_per_sample = 0;
-	sample_rate = 0;
-	setOffset(0);
+	setFile(_file_name, _start_loading);
 }
 
-jWaveFile::jWaveFile(const QString & _file_name) : jFileStorage<qint64>()
+jWaveFile::~jWaveFile()
 {
-	bits_per_sample = 0;
-	sample_rate = 0;
-	setStorageFile(_file_name);
+	delete d;
 }
 
-jFileStorage<qint64> & jWaveFile::setStorageFile(const QString & _file_name)
+jWaveFile & jWaveFile::setFile(const QString & _file_name, bool _start_loading)
 {
-	qint16 _ch_count;
-	jFileStorage<qint64>::setStorageFile(_file_name);
 	THREAD_SAFE(Write)
-	file.seek(22);
-	file.read(reinterpret_cast<char *>(& _ch_count), sizeof(_ch_count));
-	file.seek(24);
-	file.read(reinterpret_cast<char *>(& sample_rate), sizeof(sample_rate));
-	file.seek(34);
-	file.read(reinterpret_cast<char *>(& bits_per_sample), sizeof(bits_per_sample));
+	if (d->helper)
+	{
+		delete d->helper;
+	}
+	QFile _file(d->file_name = _file_name);
+	_file.setPermissions(QFile::ReadOther);
+	_file.open(QFile::ReadOnly);
+	_file.seek(22);
+	_file.read(reinterpret_cast<char *>(& d->ch_count), sizeof(d->ch_count));
+	_file.seek(24);
+	_file.read(reinterpret_cast<char *>(& d->sample_rate), sizeof(d->sample_rate));
+	_file.seek(34);
+	_file.read(reinterpret_cast<char *>(& d->bits_per_sample), sizeof(d->bits_per_sample));
+	_file.close();
+	switch (d->bits_per_sample)
+	{
+	case 8:
+		d->helper = new Data::Helper<qint8, qint64>(_file_name, d->ch_count);
+		break;
+	case 16:
+		d->helper = new Data::Helper<qint16, qint64>(_file_name, d->ch_count);
+		break;
+	case 32:
+		d->helper = new Data::Helper<qint32, qint64>(_file_name, d->ch_count);
+		break;
+	case 64:
+		d->helper = new Data::Helper<qint64, qint64>(_file_name, d->ch_count);
+		break;
+	}
+	if (_start_loading)
+	{
+		d->helper->storage()->startProcessing();
+	}
 	THREAD_UNSAFE
-	jFileStorage<qint64>::setSegmentFunc(& waveSegmentProcessing);
-	jFileStorage<qint64>::setChannels(_ch_count);
-	return setOffset(0);
-}
-
-jFileStorage<qint64> & jWaveFile::setOffset(quint64)
-{
-	SAFE_SET(offs, (quint64)44);
 	return * this;
 }
-
-jStorageInterface & jWaveFile::setChannels(int)
-{
-	return * this;
-}
-
 
 qint16 jWaveFile::bits() const
 {
-	return bits_per_sample;
+	return d->bits_per_sample;
 }
 
 int jWaveFile::sampleRate() const
 {
-	return sample_rate;
+	return d->sample_rate;
 }
 
-QVector<qint64> jWaveFile::readItems( quint64 _items_count)
+qint16 jWaveFile::channels() const
 {
-	THREAD_SAFE(Write)
-	qint64 _file_pos = offs + position() * (bits() / 8) * channels();
-	if (_file_pos < file.size())
+	return d->ch_count;
+}
+
+jItem * jWaveFile::createItem(int _channel) const
+{
+	if (d->helper == 0)
 	{
-//		JDEBUG("seek" << _file_pos << "/" << file.size() << "items" << _items_count);
-		file.seek(_file_pos);
-		items = file.read(_items_count * (bits() / 8));
+		return 0;
 	}
-	else
+	return SAFE_GET(d->helper->createItem(_channel));
+}
+
+jStorageInterface * jWaveFile::storage() const
+{
+	if (d->helper == 0)
 	{
-		items.clear();
+		return 0;
 	}
-	QVector<qint64> _result;
-	_result.resize(items.count() / sizeof(qint64));
-	::memcpy(_result.data(), items.data(), items.count());
-	THREAD_UNSAFE
-	return _result;
+	return SAFE_GET(d->helper->storage());
+}
+
+jStorageHandler * jWaveFile::storageControl() const
+{
+	if (d->helper == 0)
+	{
+		return 0;
+	}
+	return SAFE_GET(d->helper->storage()->storageControl());
+}
+
+QString jWaveFile::fileName() const
+{
+	return d->file_name;
 }

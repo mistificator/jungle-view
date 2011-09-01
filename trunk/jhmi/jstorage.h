@@ -1,7 +1,7 @@
 #ifndef __JSTORAGE_H__
 #define __JSTORAGE_H__
 
-#include "jview.h"
+#include "jdefs.h"
 #include "jstoragehandler.h"
 
 /*

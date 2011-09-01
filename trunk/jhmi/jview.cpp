@@ -121,6 +121,14 @@ jAxis & jAxis::setRange(double _lo, double _hi, jAxis::range_func _range_func)
 	return * this;
 }
 
+jAxis & jAxis::setRangeFunc(range_func _range_func)
+{
+	THREAD_SAFE(Write);
+	d->range_func = _range_func ? _range_func : &jAxis::default_range_convert;
+	THREAD_UNSAFE
+	return * this;
+}
+
 double jAxis::lo() const
 {
 	return d->lo;
@@ -256,9 +264,9 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 			const int _y = _dst_rect.bottom() - _tick_length - _pen.width() * 1.5;
 			_painter.drawLine(
 				_dst_rect.left(),
-				_dst_rect.bottom() - _pen.width() + 1,
+				_dst_rect.bottom() + (_pen.width() > 1 ? - _pen.width() + 1 : -1),
 				_dst_rect.right(),
-				_dst_rect.bottom() - _pen.width() + 1
+				_dst_rect.bottom() + (_pen.width() > 1 ? - _pen.width() + 1 : -1)
 				);
 			for (int _idx = 0; _idx < _ticks.count(); _idx++)
 			{
@@ -587,6 +595,10 @@ void jViewport::clearHistory()
 
 jViewport & jViewport::setZoomFullView(const QRectF & _rect)
 {
+	if (_rect.isValid() == false)
+	{
+		return * this;
+	}
 	THREAD_SAFE(Write)
 	clearHistory();
 	if (d->maximum_size == QSizeF(-1, -1))
@@ -613,6 +625,10 @@ QRectF jViewport::rectBase() const
 
 void jViewport::adjustZoomFullView(const QRectF & _rect)
 {
+	if (_rect.isValid() == false)
+	{
+		return;
+	}
 	if (_rect == SAFE_GET(d->base))
 	{
 		return;
@@ -634,6 +650,10 @@ void jViewport::adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis)
 
 void jViewport::zoomIn(const QRectF & _rect)
 {
+	if (_rect.isValid() == false)
+	{
+		return;
+	}
 	THREAD_SAFE(Write)
 	QRectF _adj_rect = d->adjustRect(_rect);
 	QVector<QRectF>::iterator _it = qFind(d->history.begin(), d->history.end(), _adj_rect);
@@ -672,8 +692,8 @@ void jViewport::zoomOut()
 	{
 		d->history.erase(d->history.end() - 1);
 		QRectF _history_back = d->history.back();
+		JDEBUG(_history_back);
 		THREAD_UNSAFE
-		emit zoomedOut(_history_back);
 	}
 	else
 	{
@@ -2146,10 +2166,13 @@ void jView::userCommand(int _action, int /*_method*/, int /*_code*/, int _modifi
 				_rect =	QRectF(QPointF(_axis_point.x() - (_zoom_rect.width() * _k) * 2.0, _axis_point.y()) , 
 					QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
 			}
-			d->viewport.zoomIn(_rect);
-			d->updateViewports(d->viewport.rect());
-			d->adjustCoordinator(rect(), _wheel_point);
-			d->renderer->rebuild();
+			if (_rect.isValid())
+			{
+				d->viewport.zoomIn(_rect);
+				d->updateViewports(d->viewport.rect());
+				d->adjustCoordinator(rect(), _wheel_point);
+				d->renderer->rebuild();
+			}
 		}
 		break;
 	case jInputPattern::ZoomMove:

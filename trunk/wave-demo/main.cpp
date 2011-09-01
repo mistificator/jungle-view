@@ -1,4 +1,4 @@
-#include "../wave-demo/mainwindow.h"
+#include "mainwindow.h"
 #include <QtGui/QApplication>
 
 int main(int argc, char *argv[])
