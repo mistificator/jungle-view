@@ -31,6 +31,10 @@ MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
 	ui.statusBar->addWidget(pb = new QProgressBar());
 	pb->setVisible(false);
 
+	ui.view->setBackground(Qt::lightGray);
+	ui.view->lazyRenderer().
+			setMaxThreads(2).
+			setEnabled(true);
 	ui.view->setXAxis(
 		&x_axis.
 		setGridPen(QPen(Qt::black, 1, Qt::DotLine)).
@@ -42,8 +46,8 @@ MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
 		setRangeFunc(&range_convert)
 		);
 	ui.view->viewport().selector().
-		setPen(QPen(Qt::green, 1, Qt::DotLine)).
-		setBackground(QColor(255, 255, 255, 40));
+		setPen(QPen(Qt::green, 2, Qt::DotLine)).
+		setBackground(QColor(255, 255, 255, 60));
 	ui.view->coordinator().label().
 		setPen(QPen(Qt::white)).
 		setBackground(QBrush(QColor(0, 0, 0, 120), Qt::SolidPattern)).
@@ -85,6 +89,7 @@ void MainWindow::on_actionOpen_triggered()
 	{
 		wave_items[_idx] = wave_file.createItem(_idx);
 		wave_items[_idx]->
+			setZ(_idx).
 			setPen(QPen((Qt::GlobalColor)(Qt::darkRed + _idx), 1, Qt::SolidLine));
 	}
 	ui.view->addItems(wave_items);

@@ -23,8 +23,8 @@ Features:
 
 class jStorageInterface
 {
-	COPY_FBD(jStorageInterface)
 	DECL_MUTEX
+	COPY_FBD(jStorageInterface)
 public:
 	jStorageInterface() {}
 	virtual ~jStorageInterface() {}

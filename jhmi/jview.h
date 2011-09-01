@@ -766,7 +766,7 @@ public:
 
 	QVector<int> actions() const;
 	QVector<int> actionMethods(int _action) const;
-	QVector<int> actionCodes(int _action, int _method, QVector<int> & _modifiers = QVector<int>()) const;
+	QVector<int> actionCodes(int _action, int _method, QVector<int> & _modifiers) const;
 	QVector<int> actionModifiers(int _action, int _method) const;
 
 	QPointF lastMousePosition() const;

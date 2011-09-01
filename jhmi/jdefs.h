@@ -28,9 +28,14 @@ public:
 	jMutex(): QReadWriteLock(QReadWriteLock::Recursive) {}
 };
 
-#define DECL_MUTEX protected: mutable jMutex rw_lock;
-#define THREAD_SAFE(_TYPE_)  /*JDEBUG("mutex lock");*/ rw_lock.lockFor##_TYPE_();
-#define THREAD_UNSAFE rw_lock.unlock(); /*JDEBUG("mutex unlock");*/
+#define DECL_MUTEX protected: mutable jMutex rw_lock; \
+	void jMutexLockForWrite() const { rw_lock.lockForWrite(); } \
+	void jMutexLockForRead() const { rw_lock.lockForRead(); } \
+	void jMutexUnlock() const { rw_lock.unlock(); } \
+	jMutex & jMutexRef() const { return rw_lock; }
+
+#define THREAD_SAFE(_TYPE_)  /*JDEBUG("mutex lock");*/ jMutexLockFor##_TYPE_();
+#define THREAD_UNSAFE jMutexUnlock(); /*JDEBUG("mutex unlock");*/
 
 template <class T> void jSafeProperty(T & _property, const T & _value, QReadWriteLock & _lock)
 {
@@ -48,7 +53,7 @@ template <class T> T jSafeProperty(const T & _property, QReadWriteLock & _lock)
 	return _result;
 }
 
-#define SAFE_SET(_PROPERTY_, _VALUE_) ::jSafeProperty(_PROPERTY_, _VALUE_, rw_lock);
-#define SAFE_GET(_PROPERTY_) ::jSafeProperty(_PROPERTY_, rw_lock)
+#define SAFE_SET(_PROPERTY_, _VALUE_) ::jSafeProperty(_PROPERTY_, _VALUE_, jMutexRef());
+#define SAFE_GET(_PROPERTY_) ::jSafeProperty(_PROPERTY_, jMutexRef())
 
 #endif

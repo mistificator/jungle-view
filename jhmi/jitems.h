@@ -201,23 +201,23 @@ jItem1D<T, TX> & jItem1D<T, TX>::setDataModel(int _model)
 	{
 	case FlatData:
 		{
-			setBytesPerItem(sizeof(jItem1D<T>::Flat));
+			setBytesPerItem(sizeof(typename jItem1D<T>::Flat));
 			break;
 		}
 	case PointData:
 		{
-			setBytesPerItem(sizeof(jItem1D<T>::Point));
+			setBytesPerItem(sizeof(typename jItem1D<T>::Point));
 			break;
 		}
 	case RadialData:
 		{
-			setBytesPerItem(sizeof(jItem1D<T>::Radial));
+			setBytesPerItem(sizeof(typename jItem1D<T>::Radial));
 			break;
 		}
 	default:
 		{
 			SAFE_SET(data_model, (int)FlatData);
-			setBytesPerItem(sizeof(jItem1D<T>::Flat));
+			setBytesPerItem(sizeof(typename jItem1D<T>::Flat));
 			break;
 		}
 	}

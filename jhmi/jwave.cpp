@@ -50,7 +50,7 @@ struct jWaveFile::Data
 			{
 				return 0;
 			}
-			return new jCachedItem1D<T, TX>(strg, _channel);
+			return new jCachedItem1D<T, TX>(strg, _channel, jCachedItem1D<T, TX>::Lines);
 		}
 		jStorageInterface * storage() const
 		{

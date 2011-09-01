@@ -31,10 +31,10 @@ private:
 	int width;
 	int ch;
 protected:
-	jItem1D<T, TX> & setData(Flat *, unsigned int, bool)			{ return * this; }
-	jItem1D<T, TX> & setData(Flat *, TX *, unsigned int, bool)		{ return * this; }
-	jItem1D<T, TX> & setData(Point * , unsigned int, bool)			{ return * this; }
-	jItem1D<T, TX> & setData(Radial *, unsigned int, bool)			{ return * this; }
+	jItem1D<T, TX> & setData(typename jItem1D<T, TX>::Flat *, unsigned int, bool)			{ return * this; }
+	jItem1D<T, TX> & setData(typename jItem1D<T, TX>::Flat *, TX *, unsigned int, bool)		{ return * this; }
+	jItem1D<T, TX> & setData(typename jItem1D<T, TX>::Point * , unsigned int, bool)			{ return * this; }
+	jItem1D<T, TX> & setData(typename jItem1D<T, TX>::Radial *, unsigned int, bool)			{ return * this; }
 };
 
 // ------------------------------------------------------------------------
