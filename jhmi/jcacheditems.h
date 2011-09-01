@@ -122,23 +122,25 @@ void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 		return;
 	}
 
-	QMap<int, QVector<T> > _items = strg->processedItems(_lo, _hi, &x_data).at(ch);
+	QVector<TX> _vx;
+	QMap<int, QVector<T> > _items = strg->processedItems(_lo, _hi, &_vx).at(ch);
 
-	const QVector<T> & _min = _items[jStorageInterface::Minimums];
-	const QVector<T> & _max = _items[jStorageInterface::Maximums];
-	const int _items_count = qMin<int>(_min.count(), _max.count());
-	width = _items_count * 2;
-	items.resize(_items_count * 4);
-	for (int _idx = 0; _idx < _items_count; _idx++)
+	QVector<T> & _min = _items[jStorageInterface::Minimums];
+	QVector<T> & _max = _items[jStorageInterface::Maximums];
+	x_data.resize(2 * qMin<int>(_min.count(), _max.count()));
+	items.resize(x_data.count());
+	for (int _idx = 0; _idx < items.count(); _idx += 2)
 	{
-		items[_idx * 4] = x_data[_idx];
-		items[_idx * 4 + 1] = _min[_idx];
-		items[_idx * 4 + 2] = x_data[_idx];
-		items[_idx * 4 + 3] = _max[_idx];
+		items[_idx] = _min[_idx / 2];
+		items[_idx + 1] = _max[_idx / 2];
+		x_data[_idx] = _vx[_idx / 2];
+		x_data[_idx + 1] = _vx[_idx / 2];
 	}
+
+	width = items.count();
 	THREAD_UNSAFE
 
-	jItem1D<T, TX>::setData((jItem1D<T, TX>::Point *)items.data(), width);
+	jItem1D<T, TX>::setData(items.data(), x_data.data(), width, true);
 
 }
 
@@ -156,12 +158,25 @@ QRectF jCachedItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _
 
 	const qreal _offset_x = origin().x();
 	const qreal _offset_y = origin().y();
-	qreal _left, _right, _top, _bottom;
-	_left = 1e+37; _right = -1e+37;
-	_top = 1e+37; _bottom = -1e+37;
+	TX _left, _right;
+	T _top, _bottom;
 
 	QVector<TX> _vx;
 	QMap<int, QVector<T> > _items = strg->processedItems(0, 0, &_vx).at(ch);
+
+	if (_vx.count())
+	{
+		_left = _vx[0];
+		_right = _vx[0];
+	}
+	if (_items[jStorageInterface::Minimums].count())
+	{
+		_top = _items[jStorageInterface::Minimums][0];
+	}
+	if (_items[jStorageInterface::Maximums].count())
+	{
+		_bottom = _items[jStorageInterface::Maximums][0];
+	}
 
 	foreach (const TX & _x, _vx)
 	{

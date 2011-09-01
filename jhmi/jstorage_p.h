@@ -63,7 +63,6 @@ QVector< QMap< int, QByteArray> > jStorage<T, TX>::processedArray(quint64 _start
 template <class T, class TX>
 jStorage<T, TX> & jStorage<T, TX>::setPosition(quint64 _item_position)
 {
-//	SAFE_SET(seek_pos, (_item_position < storageSize()) ? _item_position : storageSize());
 	seek_pos = (_item_position < storageSize()) ? _item_position : storageSize();
 	return * this;
 }
@@ -373,9 +372,8 @@ template <class T, class TX>
 QVector<T> jFileStorage<T, TX>::readItems(quint64 _items_count)
 {
 	THREAD_SAFE(Write)
-	file.seek(offs + position() * sizeof(T) * channels());
+	file.seek(offs + (position() * sizeof(T) / channels()) * channels());
 	items = file.read(_items_count * sizeof(T));
-	items.resize(_items_count * sizeof(T));
 	QVector<T> _result;
 	_result.resize(items.count() / sizeof(T));
 	::memcpy(_result.data(), items.data(), items.count());
@@ -469,6 +467,7 @@ void jStorage<T, TX>::jStorageThread::run()
 
 	if (finished)
 	{
+		items_processed = storage->storageSize();
 		storage->storageControl()->emitFinished(_msecs);
 	}
 	if (stop_thread)
@@ -771,7 +770,7 @@ QVector< QMap<int, QVector<T> > > jStorage<T, TX>::jStorageThread::items(quint64
 				const quint64 _items_count_x = _x->count();
 				for (quint64 _idx = 0; _idx < _items_count_x; _idx++)
 				{
-					(* _x)[_idx] = (qreal)(_lo_item + (_idx * _seg_size)) / _channels;
+					(* _x)[_idx] = (_lo_item / _channels) + (_idx * _seg_size);
 				}
 			}
 
@@ -837,7 +836,7 @@ QByteArray jStorage<T, TX>::jStorageThread::exportLayers() const
 	THREAD_SAFE(Read)
 	ds << storage->storageSize();
 	ds << layers.count();
-	for (int _channel = 0; _channel < storage->channels(); _channel++)
+	for (int _channel = 0; _channel < layers.count(); _channel++)
 	{
 		ds << layers[_channel].count();
 		foreach (const Layer & _layer, layers[_channel])
@@ -868,7 +867,7 @@ bool jStorage<T, TX>::jStorageThread::importLayers(const QByteArray & _saved_lay
 		JDEBUG("import failed, wrong size");
 		return false;
 	}
-	quint64 _channels;
+	int _channels;
 	ds >> _channels;
 	if (_channels != storage->channels())
 	{
@@ -885,6 +884,7 @@ bool jStorage<T, TX>::jStorageThread::importLayers(const QByteArray & _saved_lay
 		layers[_channel].resize(_layers_count);
 		for (int _idx = 0; _idx < _layers_count; _idx++)
 		{
+			JDEBUG("importing channel" << _channel + 1 << "/" << _channels << "layer" << _idx + 1 << "/" << _layers_count);
 			Layer & _layer = layers[_channel][_idx];
 			ds >> _layer.seg_count;
 			ds >> _layer.processed;
@@ -894,6 +894,7 @@ bool jStorage<T, TX>::jStorageThread::importLayers(const QByteArray & _saved_lay
 		}
 	}
 	finished = true;
+	items_processed = storage->storageSize();
 	THREAD_UNSAFE
 	quint64 _msecs = _time_stamp.msecsTo(QDateTime::currentDateTime());
 	JDEBUG("import finished" << _msecs);
