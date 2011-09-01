@@ -836,6 +836,8 @@ QByteArray jStorage<T, TX>::jStorageThread::exportLayers() const
 	THREAD_SAFE(Read)
 	ds << storage->storageSize();
 	ds << layers.count();
+	ds << storage->segmentSize();
+	ds << storage->processedItemsHint();
 	for (int _channel = 0; _channel < layers.count(); _channel++)
 	{
 		ds << layers[_channel].count();
@@ -875,6 +877,10 @@ bool jStorage<T, TX>::jStorageThread::importLayers(const QByteArray & _saved_lay
 		JDEBUG("import failed, wrong channels number");
 		return false;
 	}
+	quint64 _segment_size;
+	ds >> _segment_size;
+	quint64 _hint;
+	ds >> _hint;
 	layers.clear();
 	layers.resize(_channels);
 	for (int _channel = 0; _channel < _channels; _channel++)
@@ -896,6 +902,8 @@ bool jStorage<T, TX>::jStorageThread::importLayers(const QByteArray & _saved_lay
 	finished = true;
 	items_processed = storage->storageSize();
 	THREAD_UNSAFE
+	storage->setSegmentSize(_segment_size);
+	storage->setProcessedItemsHint(_hint);
 	quint64 _msecs = _time_stamp.msecsTo(QDateTime::currentDateTime());
 	JDEBUG("import finished" << _msecs);
 	storage->storageControl()->emitLayersAdjusted();
