@@ -79,6 +79,7 @@ void MainWindow::on_actionOpen_triggered()
 	connect(wave_file.storageControl(), SIGNAL(finished(quint64)), this, SLOT(onLayersAdjusted()));
 	connect(wave_file.storageControl(), SIGNAL(stopped()), this, SLOT(onLayersAdjusted()));
 	
+	wave_file.storage()->setSegmentSize(1024 * wave_file.channels());
 	wave_items.resize(wave_file.channels());
 	for (int _idx = 0; _idx < wave_items.count(); _idx++)
 	{
