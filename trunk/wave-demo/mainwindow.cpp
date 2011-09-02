@@ -3,7 +3,7 @@
 
 QString MainWindow::range_convert(double _value, jAxis *)
 {
-	qint64 _value_i64 = _value;
+	qint64 _value_i64 = _value + 0.5;
 	QString _label;
 	int _count = 0;
 	while (_value_i64 != 0)
