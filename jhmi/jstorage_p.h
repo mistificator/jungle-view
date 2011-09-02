@@ -764,41 +764,53 @@ QVector< QMap<int, QVector<T> > > jStorage<T, TX>::jStorageThread::items(quint64
 
 			QVector<T> & _items_data = _items[_channel];
 
+			const qreal _lo_seg = _lo_item / _channels;
+			const qreal _lo_seg_stable = (quint64)(_lo_seg / _seg_size) * _seg_size;
+			const qreal _lo_seg_div = _lo_seg_stable / _seg_size;
+			const qreal _hi_seg = _lo_seg + _items_count;
 			if (_x)
 			{
 				_x->resize(_arr_sz);
-				const quint64 _items_count_x = _x->count();
-				for (quint64 _idx = 0; _idx < _items_count_x; _idx++)
+				for (quint64 _idx = 0; _idx < _arr_sz; _idx++)
 				{
-					(* _x)[_idx] = (_lo_item / _channels) + (_idx * _seg_size);
+					(* _x)[_idx] = _lo_seg_stable + ((_idx + 1) * _seg_size);
 				}
 			}
 
-			for (qreal _idx = 0; _idx < _items_count; _idx += _seg_size)
+			for (qreal _idx = _lo_seg_stable + _seg_size; _idx < _hi_seg; _idx += _seg_size)
 			{
-				const quint64 _index = (quint64)(_idx / _seg_size);
+				const quint64 _index = (_idx / _seg_size) - _lo_seg_div;
+				if (_index >= _arr_sz)
+				{
+					break;
+				}
+				const quint64 _idx_offs = _idx - _lo_seg;
 				T & _min_item = _min[_index];
 				T & _max_item = _max[_index];
 
-				_min_item = _items_data[(quint64)_idx];
-				_max_item = _items_data[(quint64)_idx];
+				_min_item = _items_data[_idx_offs];
+				_max_item = _items_data[_idx_offs];
 			}
-			for (quint64 _idx = 0; _idx < _items_count; _idx++)
+			for (qreal _idx = _lo_seg; _idx < _hi_seg; _idx+= 1.0)
 			{
-				const quint64 _index = (quint64)(_idx / _seg_size);
-				T & _min_item = _min[_index];
-				if (_less_func(_items_data[_idx], _min_item))
+				const quint64 _index = (_idx / _seg_size) - _lo_seg_div;
+				if (_index >= _arr_sz)
 				{
-					_min_item = _items_data[_idx];
+					break;
+				}
+				const quint64 _idx_offs = _idx - _lo_seg;
+				T & _min_item = _min[_index];
+				if (_less_func(_items_data[_idx_offs], _min_item))
+				{
+					_min_item = _items_data[_idx_offs];
 				}
 
 				T & _max_item = _max[_index];
-				if (_greater_func(_items_data[_idx], _max_item))
+				if (_greater_func(_items_data[_idx_offs], _max_item))
 				{
-					_max_item = _items_data[_idx];
+					_max_item = _items_data[_idx_offs];
 				}
 			}
-
 		}
 
 	}
