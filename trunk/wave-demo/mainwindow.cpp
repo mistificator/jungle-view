@@ -34,15 +34,19 @@ MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
 	ui.view->setBackground(Qt::lightGray);
 	ui.view->lazyRenderer().
 			setMaxThreads(2).
-			setEnabled(true);
+			setEnabled(false);
 	ui.view->setXAxis(
 		&x_axis.
 		setGridPen(QPen(Qt::black, 1, Qt::DotLine)).
+		setFont(QFont("Arial Narrow")).
+		setBackground(QColor(255, 255, 255, 60)).
 		setRangeFunc(&range_convert)
 		);
 	ui.view->setYAxis(
 		&y_axis.
 		setGridPen(QPen(Qt::black, 1, Qt::DotLine)).
+		setFont(QFont("Arial Narrow")).
+		setBackground(QColor(255, 255, 255, 60)).
 		setRangeFunc(&range_convert)
 		);
 	ui.view->viewport().selector().
@@ -50,8 +54,18 @@ MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
 		setBackground(QColor(255, 255, 255, 60));
 	ui.view->coordinator().label().
 		setPen(QPen(Qt::white)).
-		setBackground(QBrush(QColor(0, 0, 0, 120), Qt::SolidPattern)).
+		setBackground(QColor(0, 0, 0, 120)).
 		setFont(QFont("Arial Narrow"));
+
+	ui.preview->lazyRenderer().
+		setEnabled(false);
+	ui.preview->selector().
+		setPen(QPen(Qt::yellow, 1, Qt::DotLine)).
+		setBackground(QColor(0, 255, 0, 100));
+
+	ui.preview->
+		setBackground(Qt::lightGray).
+		setView(ui.view);
 }
 
 MainWindow::~MainWindow()
@@ -126,6 +140,7 @@ void MainWindow::onLayersAdjusted()
 	pb->setValue(wave_file.storage()->itemsProcessed() * 100.0 / wave_file.storage()->storageSize());
 	pb->setVisible(pb->value() < 100);
 	ui.actionExportSnapshot->setEnabled(pb->value() == 100);
-	ui.view->autoScale();
+	ui.view->autoScale(0.005, 0.05);
 	ui.view->rebuild();
+	ui.preview->rebuild();
 }

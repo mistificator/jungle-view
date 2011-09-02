@@ -18,18 +18,17 @@ public:
 	jCachedItem1D<T, TX> & setStorage(jStorageInterface * _storage);
 	jStorage<T, TX> * storage() const;
 
-	const void * data() const;
-	QSize size() const;
-
 	void updateViewport(const QRectF & _rect);
 	QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 
+	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
+	void renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
 private:
 	jStorage<T, TX> * strg;
 	QVector<T> items;
 	QVector<TX> x_data;
-	int width;
 	int ch;
+	jMutex local_mtx;
 protected:
 	jItem1D<T, TX> & setData(typename jItem1D<T, TX>::Flat *, unsigned int, bool)			{ return * this; }
 	jItem1D<T, TX> & setData(typename jItem1D<T, TX>::Flat *, TX *, unsigned int, bool)		{ return * this; }
@@ -43,7 +42,6 @@ template <class T, class TX>
 jCachedItem1D<T, TX>::jCachedItem1D(jStorageInterface * _storage, int _channel, int _line_style, qreal _bar_width) :
 	jItem1D<T, TX>(_line_style, _bar_width), strg(dynamic_cast<jStorage<T, TX> *>(_storage))
 {
-	width = 0;
 	ch = _channel;
 }
 
@@ -83,26 +81,6 @@ jCachedItem1D<T, TX> & jCachedItem1D<T, TX>::setStorage(jStorageInterface * _sto
 	return * this;
 }
 
-
-template <class T, class TX>
-const void * jCachedItem1D<T, TX>::data() const
-{
-	return SAFE_GET(items.data());
-}
-
-template <class T, class TX>
-QSize jCachedItem1D<T, TX>::size() const
-{
-	if (strg == 0)
-	{
-		return QSize();
-	}
-	THREAD_SAFE(Read)                
-	QSize _size(width, 1);
-	THREAD_UNSAFE
-	return _size;
-}
-
 template <class T, class TX>
 void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 {
@@ -117,7 +95,6 @@ void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 	if ((_lo == _hi) || (_hi == 0))
 	{
 		items.clear();
-		width = 0;
 		THREAD_UNSAFE;
 		return;
 	}
@@ -137,11 +114,11 @@ void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 		x_data[_idx + 1] = _vx[_idx / 2];
 	}
 
-	width = items.count();
 	THREAD_UNSAFE
 
-	jItem1D<T, TX>::setData(items.data(), x_data.data(), width, true);
-
+	local_mtx.lockForWrite();
+	jItem1D<T, TX>::setData(items.data(), x_data.data(), items.count(), true);
+	local_mtx.unlock();
 }
 
 template <class T, class TX>
@@ -242,6 +219,42 @@ QRectF jCachedItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _
 	}
 	THREAD_UNSAFE
 	return (_top == _bottom) ? QRectF(QPointF(_left, _top > 0 ? _offset_y : _top), QPointF(_right, _top > 0 ? _top : _offset_y)) : QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
+}
+
+template <class T, class TX>
+void jCachedItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0)
+{
+	local_mtx.lockForWrite();
+	jItem1D<T, TX>::render(_painter, _dst_rect, _src_rect, _x_axis, _y_axis);
+	local_mtx.unlock();
+}
+
+template <class T, class TX>
+void jCachedItem1D<T, TX>::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0)
+{
+	QVector<TX> _vx;
+	QMap<int, QVector<T> > _items = strg->processedItems(0, 0, &_vx).at(ch);
+
+	QVector<T> & _min = _items[jStorageInterface::Minimums];
+	QVector<T> & _max = _items[jStorageInterface::Maximums];
+	QVector<TX> _pv_x_data;
+	_pv_x_data.resize(2 * qMin<int>(_min.count(), _max.count()));
+	QVector<T> _pv_items;
+	_pv_items.resize(_pv_x_data.count());
+	for (int _idx = 0; _idx < _pv_items.count(); _idx += 2)
+	{
+		_pv_items[_idx] = _min[_idx / 2];
+		_pv_items[_idx + 1] = _max[_idx / 2];
+		_pv_x_data[_idx] = _vx[_idx / 2];
+		_pv_x_data[_idx + 1] = _vx[_idx / 2];
+	}
+
+	local_mtx.lockForWrite();
+	jItem1D<T, TX>::setData(_pv_items.data(), _pv_x_data.data(), _pv_items.count(), true);
+	jItem1D<T, TX>::render(_painter, _dst_rect, _src_rect, _x_axis, _y_axis); 
+	// return back data
+	jItem1D<T, TX>::setData(items.data(), x_data.data(), items.count(), true);
+	local_mtx.unlock();
 }
 
 #endif
