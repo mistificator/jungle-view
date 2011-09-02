@@ -692,8 +692,8 @@ void jViewport::zoomOut()
 	{
 		d->history.erase(d->history.end() - 1);
 		QRectF _history_back = d->history.back();
-		JDEBUG(_history_back);
 		THREAD_UNSAFE
+		emit zoomedOut(_history_back);
 	}
 	else
 	{
@@ -2633,7 +2633,7 @@ struct jPreview::Data
 			_delta_x = 0; 
 		}
 		view->viewport().pan(_delta_x, _delta_y);
-		view->lazyRenderer().rebuild();
+		view->rebuild();
 	}
 	void pan(const QRect & _rect, const QMouseEvent * _me)
 	{
@@ -2673,16 +2673,16 @@ struct jPreview::Data
 			_delta_x = 0; 
 		}
 		view->viewport().pan(_delta_x, _delta_y);
-		view->lazyRenderer().rebuild();
+		view->rebuild();
 	}
-        void zoomFullView(const QRectF &, const QMouseEvent *)
+    void zoomFullView(const QRectF &, const QMouseEvent *)
 	{
 		if (view == 0)
 		{
 			return;
 		}
 		view->viewport().zoomFullView();
-		view->lazyRenderer().rebuild();
+		view->rebuild();
 	}
 	void wheelScale(const QRectF & _rect, const QWheelEvent * _we)
 	{

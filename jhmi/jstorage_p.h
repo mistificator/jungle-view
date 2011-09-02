@@ -324,12 +324,18 @@ template <class T, class TX>
 jFileStorage<T, TX>::jFileStorage(): jStorage<T, TX>()
 {
 	setOffset(0);
+	setCacheSize(0);
+	cache_start = 0;
+	cache_end = 0;
 }
 
 template <class T, class TX>
 jFileStorage<T, TX>::jFileStorage(const QString & _file_name, quint64 _offset): jStorage<T, TX>()
 {
 	setOffset(_offset);
+	setCacheSize(0);
+	cache_start = 0;
+	cache_end = 0;
 	setStorageFile(_file_name);
 }
 
@@ -372,11 +378,38 @@ template <class T, class TX>
 QVector<T> jFileStorage<T, TX>::readItems(quint64 _items_count)
 {
 	THREAD_SAFE(Write)
-	file.seek(offs + (position() * sizeof(T) / channels()) * channels());
-	items = file.read(_items_count * sizeof(T));
+	qint64 _pos_start = offs + (position() * sizeof(T) / channels()) * channels();
+	qint64 _bytes_to_read = _items_count * sizeof(T);
+	qint64 _pos_end = _pos_start + _bytes_to_read;
+	_pos_start = qMax<qint64>(offs, _pos_start);
+	_pos_end = qMin<qint64>(file.size(), _pos_start + _bytes_to_read);
+	if ((_pos_start < (qint64)cache_start) || (_pos_end > (qint64)cache_end))
+	{
+		if (_items_count > segmentSize())
+		{
+			cache_start = qMin<qint64>(qMax<qint64>(_pos_start - (cache_size / 2), offs), file.size());
+			cache_end = qMax<qint64>(qMin<qint64>(_pos_end + (cache_size / 2), file.size()), offs);
+		}
+		else
+		{
+			cache_start = _pos_start;
+			cache_end = _pos_end;
+		}
+		file.seek(cache_start);
+		items = file.read(cache_end - cache_start);
+	}
+	
+	if (cache_start > cache_end)
+	{
+		cache_start = cache_end;
+	}
+	if (_pos_start > _pos_end)
+	{
+		_pos_start = _pos_end;
+	}
 	QVector<T> _result;
-	_result.resize(items.count() / sizeof(T));
-	::memcpy(_result.data(), items.data(), items.count());
+	_result.resize((_pos_end - _pos_start) / sizeof(T));
+	::memcpy(_result.data(), items.data() + (_pos_start - cache_start), _pos_end - _pos_start);
 	THREAD_UNSAFE
 	return _result;
 }
@@ -394,6 +427,20 @@ quint64 jFileStorage<T, TX>::offset() const
 {
 	return offs;
 }
+
+template <class T, class TX>
+jFileStorage<T, TX> &  jFileStorage<T, TX>::setCacheSize(quint64 _size)
+{
+	SAFE_SET(cache_size, _size);
+	return * this;
+}
+
+template <class T, class TX>
+quint64  jFileStorage<T, TX>::cacheSize() const
+{
+	return cache_size;
+}
+
 
 // ------------------------------------------------------------------------
 
@@ -418,6 +465,7 @@ private:
 	bool finished;
 	bool stop_thread;
 	quint64 items_processed;
+	bool first_run;
 
 	struct Layer
 	{
@@ -454,6 +502,7 @@ jStorage<T, TX>::jStorageThread::~jStorageThread()
 template <class T, class TX>
 void jStorage<T, TX>::jStorageThread::run()
 {
+	first_run = true;
 	splitStorage();
 	QDateTime _time_stamp = QDateTime::currentDateTime();
 	while ((!stop_thread) && (!finished))
@@ -528,13 +577,15 @@ void jStorage<T, TX>::jStorageThread::segmentState(int _layer_number, quint64 _s
 	{
 		_lo_item = 0;
 		_hi_item = 0;
+		_processed = false;
 		return;
 	}
-	Layer _layer = layers[0][_layer_number];
+	const Layer & _layer = layers[0][_layer_number];
 	if (_segment_number >= ::ceil(_layer.seg_count))
 	{
 		_lo_item = 0;
 		_hi_item = 0;
+		_processed = false;
 		return;
 	}
 	_processed = _layer.processed[_segment_number];
@@ -592,27 +643,29 @@ bool jStorage<T, TX>::jStorageThread::adjustLayers()
 		return true;
 	}
 	bool _layer0_finished = true;
-	quint64 _step = _layers_count * 2;
+	quint64 _step = ::pow(2.0f, _layers_count);
 	const quint64 _seg_size0 = storage->segmentSize();
 	const int _channels = storage->channels();
 
+	THREAD_SAFE(Read)
+	QVector<bool> _processed_copy = layers[0][0].processed;
+	THREAD_UNSAFE
+
 	for (quint64 _seg_idx = 0; _seg_idx < _seg_count; )
 	{
-		bool _processed;
-		quint64 _lo, _hi;
-		THREAD_SAFE(Read)
-		segmentState(0, _seg_idx, _lo, _hi, _processed);
-		THREAD_UNSAFE
-		if (_processed)
+		if (_processed_copy[_seg_idx])
 		{
 			_seg_idx++;
 			continue;
 		}
+		bool _processed;
+		quint64 _lo, _hi;
+		THREAD_SAFE(Write)
+		segmentState(0, _seg_idx, _lo, _hi, _processed);
 		if (_hi < _lo)
 		{
 			_hi = _lo;
 		}
-		THREAD_SAFE(Read)
 		QVector< QVector<T> > _items = preprocessedReadItems(_lo, _hi);
 		THREAD_UNSAFE
 		for (int _channel = 0; _channel < _items.count(); _channel++)
@@ -638,21 +691,32 @@ bool jStorage<T, TX>::jStorageThread::adjustLayers()
 				items_processed += _items_count;
 				const quint64 _seg_idx_sub_end = qMin<quint64>(_seg_count, _seg_idx + _step);
 				Layer & _layer0 = layers[_channel][0];
-				for (quint64 _seg_idx_sub = _seg_idx; _seg_idx_sub < _seg_idx_sub_end; _seg_idx_sub++)
+				_layer0.min[_seg_idx] = _min;
+				_layer0.max[_seg_idx] = _max;
+				_layer0.x[_seg_idx] = (qreal)(_seg_size0 * _seg_idx) / _channels;
+				_layer0.processed[_seg_idx] = true;
+				if (first_run)
 				{
-					if (_layer0.processed[_seg_idx_sub] == false)
+					for (quint64 _seg_idx_sub = _seg_idx + 1; _seg_idx_sub < _seg_idx_sub_end; _seg_idx_sub++)
 					{
-						_layer0.min[_seg_idx_sub] = _min;
-						_layer0.max[_seg_idx_sub] = _max;
-						_layer0.x[_seg_idx_sub] = (qreal)(_seg_size0 * _seg_idx_sub) / _channels;
+						if (_layer0.processed[_seg_idx_sub] == false)
+						{
+							_layer0.min[_seg_idx_sub] = _min;
+							_layer0.max[_seg_idx_sub] = _max;
+							_layer0.x[_seg_idx_sub] = (qreal)(_seg_size0 * _seg_idx_sub) / _channels;
+						}
 					}
 				}
-				_layer0.processed[_seg_idx] = true;
 				THREAD_UNSAFE
 			}
 		}
 		_seg_idx += _step;
 		_layer0_finished = false;
+	}
+
+	if (first_run)
+	{
+		first_run = false;
 	}
 
 	if (stop_thread)
@@ -743,7 +807,11 @@ QVector< QMap<int, QVector<T> > > jStorage<T, TX>::jStorageThread::items(quint64
 	int _selected_layer = selectLayer(_lo_item, _hi_item);
 	if (_selected_layer == -1)
 	{
+		THREAD_UNSAFE
+		THREAD_SAFE(Write)
 		QVector< QVector<T> > _items = preprocessedReadItems(_lo_item, _hi_item);
+		THREAD_UNSAFE
+		THREAD_SAFE(Read)
 
 		for (int _channel = 0; _channel < _items.count(); _channel++)
 		{

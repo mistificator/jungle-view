@@ -158,9 +158,12 @@ public:
 
 	virtual jFileStorage & setOffset(quint64 _offset); // in bytes
 	virtual quint64 offset() const;
+
+	jFileStorage & setCacheSize(quint64 _size = 0);
+	quint64 cacheSize() const;
 protected:
 	QVector<T> readItems(quint64 _items_count);
-	quint64 offs;
+	quint64 offs, cache_start, cache_end, cache_size;
 	QFile file;
 	QByteArray items;
 };
