@@ -66,9 +66,9 @@ public:
 	typedef QVector< QVector<T> > (*segment_func)(const QVector<T> &, jStorage<T, TX> *);
 	static QVector< QVector<T> > defaultSegmentProcessing(const QVector<T> &, jStorage<T, TX> *);
 	typedef bool (*less_func)(const T &, const T &);
-	static bool defaultLess(const T &, const T &);
+	inline static bool defaultLess(const T &, const T &);
 	typedef bool (*greater_func)(const T &, const T &);
-	static bool defaultGreater(const T &, const T &);
+	inline static bool defaultGreater(const T &, const T &);
 
 	jStorage();
 	~jStorage();

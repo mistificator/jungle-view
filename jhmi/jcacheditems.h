@@ -84,6 +84,7 @@ jCachedItem1D<T, TX> & jCachedItem1D<T, TX>::setStorage(jStorageInterface * _sto
 template <class T, class TX>
 void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 {
+//	JTIME_START
 	if (strg == 0)
 	{
 		return;
@@ -102,6 +103,8 @@ void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 	QVector<TX> _vx;
 	QMap<int, QVector<T> > _items = strg->processedItems(_lo, _hi, &_vx).at(ch);
 
+//	JTIME_DIFF("getting items")
+
 	QVector<T> & _min = _items[jStorageInterface::Minimums];
 	QVector<T> & _max = _items[jStorageInterface::Maximums];
 	x_data.resize(2 * qMin<int>(_min.count(), _max.count()));
@@ -116,9 +119,14 @@ void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 
 	THREAD_UNSAFE
 
+//	JTIME_DIFF("reshape arrays")
+
 	local_mtx.lockForWrite();
-	jItem1D<T, TX>::setData(items.data(), x_data.data(), items.count(), true);
+	jItem1D<T, TX>::setData(items.data(), x_data.data(), items.count());
 	local_mtx.unlock();
+
+//	JTIME_DIFF("setting data")
+//	JTIME_ELAPSED("total")
 }
 
 template <class T, class TX>
@@ -250,10 +258,10 @@ void jCachedItem1D<T, TX>::renderPreview(QPainter & _painter, const QRectF & _ds
 	}
 
 	local_mtx.lockForWrite();
-	jItem1D<T, TX>::setData(_pv_items.data(), _pv_x_data.data(), _pv_items.count(), true);
+	jItem1D<T, TX>::setData(_pv_items.data(), _pv_x_data.data(), _pv_items.count());
 	jItem1D<T, TX>::render(_painter, _dst_rect, _src_rect, _x_axis, _y_axis); 
 	// return back data
-	jItem1D<T, TX>::setData(items.data(), x_data.data(), items.count(), true);
+	jItem1D<T, TX>::setData(items.data(), x_data.data(), items.count());
 	local_mtx.unlock();
 }
 
