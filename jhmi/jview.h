@@ -474,6 +474,9 @@ public:
 	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
 };
 
+class jItemHandler;
+class jInputPattern;
+
 //! Class jItem represents one graphical item of jView widget.
 /*!
  Class jItem is an abstract class with pure virtual method render() which renders item on jView widget.
@@ -667,6 +670,11 @@ public:
 	\return rectangle
 	*/
 	virtual QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
+
+	jItem & setInputPattern(const jInputPattern & _pattern);
+	jInputPattern & inputPattern() const;
+	jItemHandler * itemControl() const;
+	virtual void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 protected:
 	//! Directly sets pointer to input data with its measurements.
 	/*!
@@ -693,6 +701,19 @@ protected:
 	\param _count number of primitives
 	*/
 	void addCounter(quint64 _count);
+};
+
+class jItemHandler : public QObject
+{
+	Q_OBJECT
+	PDATA
+public:
+	jItemHandler(jItem * _item);
+	~jItemHandler();
+
+	jItem * item() const;
+public slots:
+	void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 };
 
 class jMarker
@@ -725,6 +746,8 @@ class jInputPattern : public QObject
 	PDATA
 public:
 	jInputPattern(QObject * _parent = 0);
+	jInputPattern(const jInputPattern & _other, QObject * _parent = 0);
+	jInputPattern & operator = (const jInputPattern & _other);
 	~jInputPattern();
 
 	jInputPattern & setDefaultPattern();
@@ -774,8 +797,6 @@ public:
 	int lastKeyboardKey() const;
 	int lastModifiers() const;
 	int lastDelta() const;
-
-	jInputPattern * copy() const;
 signals:
 	void actionAccepted(int, int, int, int, QPointF);		// action, method, code, modifier, mouse position
 protected:
@@ -845,8 +866,8 @@ public:
 	void autoScaleY(qreal _margin_y = 0.05); // 5%
 	void autoScale(qreal _margin_x = 0.05, qreal _margin_y = 0.05);  // 5%
 
-	jView & setInputPattern(jInputPattern * _pattern);
-	jInputPattern * inputPattern() const;
+	jView & setInputPattern(const jInputPattern & _pattern);
+	jInputPattern & inputPattern() const;
 public slots:
 	void rebuild();
 	virtual void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
@@ -885,8 +906,13 @@ public:
 
 	QSize minimumSizeHint() const;
 
-	jPreview & setInputPattern(jInputPattern * _pattern);
-	jInputPattern * inputPattern() const;
+	jPreview & setInputPattern(const jInputPattern & _pattern);
+	jInputPattern & inputPattern() const;
+
+	jPreview & setXAxisVisible(bool _state);
+	bool isXAxisVisible() const;
+	jPreview & setYAxisVisible(bool _state);
+	bool isYAxisVisible() const;
 public slots:
 	void rebuild();
 	virtual void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position

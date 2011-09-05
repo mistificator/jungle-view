@@ -64,12 +64,36 @@ public:
 	virtual jItem1D<T, TX> & setData(Radial * _data, unsigned int _width, bool _deep_copy = false);
 
 	const TX * x() const;
+
+	jItem1D<T, TX> & setSymbol(const QImage & _img);
+	QImage symbol() const;	
 private:
 	int data_model, line_style;
 	qreal bar_width;
 	TX * x_data;
+	QImage symbol_img;
 protected:
 	virtual jItem1D<T, TX> & setDataModel(int _model);
+};
+
+template <class T, class TX = T>
+class jFigureItem : public jItem1D<T, TX>
+{
+	COPY_FBD(jFigureItem)
+public:
+	jFigureItem();
+	~jFigureItem();
+
+	jFigureItem & setArcSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
+	jFigureItem & setChordSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
+	jFigureItem & setEllipseSymbol(const QRectF & _rectangle);
+	jFigureItem & setPieSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
+	jFigureItem & setRectSymbol(const QRectF & _rectangle);
+	jFigureItem & setRoundedRectSymbol(const QRectF & _rect, qreal _xRadius, qreal _yRadius, Qt::SizeMode _mode = Qt::AbsoluteSize);
+private:
+	QImage symbol_img;
+	QPainter * createPainter(const QRectF & _rectangle);
+	void deletePainter(QPainter * & _painter);
 };
 
 template <class T>
@@ -256,6 +280,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 	const qreal _offset_y = _src_rect.top() + _src_rect.bottom() - _origin.y();
 	const QSize _size = size();
 	const unsigned int _width = _size.width();
+	QImage _symbol_img = symbol_img;
 	switch (data_model)
 	{
 	case FlatData:
@@ -490,6 +515,15 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 					_painter.drawRect(_transform.mapRect(_rect));
 				}
 				break;
+			}
+		}
+		if ((_symbol_img.width() > 0) && (_symbol_img.height() > 0))
+		{
+			const qreal _img_offs_x = _symbol_img.width() / 2.0;
+			const qreal _img_offs_y = _symbol_img.height() / 2.0;
+			foreach (const QPointF & _pt, _transform.map(_points))
+			{
+				_painter.drawImage(QPointF(_pt.x() - _img_offs_x, _pt.y() - _img_offs_y), _symbol_img);
 			}
 		}
 	}
@@ -891,6 +925,104 @@ jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Radial * _data
 	}
 	setDataModel(jItem1D<T, TX>::RadialData);
 	jItem::setData(_data, _width, 1, _deep_copy);
+	return * this;
+}
+
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setSymbol(const QImage & _img)
+{
+	SAFE_SET(symbol_img, _img);
+	return * this;
+}
+
+template <class T, class TX>
+QImage jItem1D<T, TX>::symbol() const
+{
+	return SAFE_GET(symbol_img);
+}
+
+// ------------------------------------------------------------------------
+
+template <class T, class TX>
+jFigureItem<T, TX>::jFigureItem() : jItem1D<T, TX>(jItem1D<T, TX>::Dots)
+{
+}
+
+template <class T, class TX>
+jFigureItem<T, TX>::~jFigureItem()
+{
+}
+
+template <class T, class TX>
+QPainter * jFigureItem<T, TX>::createPainter(const QRectF & _rectangle)
+{
+	SAFE_SET(symbol_img, QImage(_rectangle.size().toSize(), QImage::Format_ARGB32));
+	symbol_img.fill(0x000000ff);
+	QPainter * _painter = new QPainter(& symbol_img);
+	_painter->setPen(pen());
+	_painter->setBrush(brush());
+	return _painter;
+}
+
+template <class T, class TX>
+void jFigureItem<T, TX>::deletePainter(QPainter * & _painter)
+{
+	delete _painter;
+	_painter = 0;
+	setSymbol(symbol_img);
+}
+
+template <class T, class TX>
+jFigureItem<T, TX> & jFigureItem<T, TX>::setArcSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle)
+{
+	QPainter * _painter = createPainter(_rectangle);
+	_painter->drawArc(_rectangle, _startAngle, _spanAngle);
+	deletePainter(_painter);
+	return * this;
+}
+
+template <class T, class TX>
+jFigureItem<T, TX> & jFigureItem<T, TX>::setChordSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle)
+{
+	QPainter * _painter = createPainter(_rectangle);
+	_painter->drawChord(_rectangle, _startAngle, _spanAngle);
+	deletePainter(_painter);
+	return * this;
+}
+
+template <class T, class TX>
+jFigureItem<T, TX> & jFigureItem<T, TX>::setEllipseSymbol(const QRectF & _rectangle)
+{
+	QPainter * _painter = createPainter(_rectangle);
+	_painter->drawEllipse(_rectangle);
+	deletePainter(_painter);
+	return * this;
+}
+
+template <class T, class TX>
+jFigureItem<T, TX> & jFigureItem<T, TX>::setPieSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle)
+{
+	QPainter * _painter = createPainter(_rectangle);
+	_painter->drawPie(_rectangle, _startAngle, _spanAngle);
+	deletePainter(_painter);
+	return * this;
+}
+
+template <class T, class TX>
+jFigureItem<T, TX> & jFigureItem<T, TX>::setRectSymbol(const QRectF & _rectangle)
+{
+	QPainter * _painter = createPainter(_rectangle);
+	_painter->drawRect(_rectangle);
+	deletePainter(_painter);
+	return * this;
+}
+
+template <class T, class TX>
+jFigureItem<T, TX> & jFigureItem<T, TX>::setRoundedRectSymbol( const QRectF & _rect, qreal _xRadius, qreal _yRadius, Qt::SizeMode _mode)
+{
+	QPainter * _painter = createPainter(_rectangle);
+	_painter->drawRoundedRect(_rect, _xRadius, _yRadius, _mode);
+	deletePainter(_painter);
 	return * this;
 }
 

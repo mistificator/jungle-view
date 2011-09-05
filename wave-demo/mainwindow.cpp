@@ -65,7 +65,8 @@ MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
 
 	ui.preview->
 		setBackground(Qt::lightGray).
-		setView(ui.view);
+		setView(ui.view).
+		setXAxisVisible(true);
 }
 
 MainWindow::~MainWindow()

@@ -89,12 +89,27 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		setLineStyle(jItem1D<qreal>::Ticks);
 
 	item_dots.
-		setLineStyle(jItem1D<short>::Dots).
+		setPen(QPen(Qt::green)).
+		setBrush(QBrush(Qt::green, Qt::SolidPattern));
+
+	item_dots.
+		setEllipseSymbol(QRectF(0, 0, 30, 30)).
 		setData(gfx_dots, sizeof(gfx_dots) / sizeof(gfx_dots[0])).
-		setPen(QPen(Qt::green, 7, Qt::SolidLine, Qt::RoundCap)).
-		setBrush(QBrush(Qt::green, Qt::SolidPattern)).
 		setOrigin(QPointF(500, 200)).
 		setToolTip("item_dots");
+
+	h_ruler.
+		setPen(QPen(Qt::blue, 2)).
+		setBrush(Qt::blue);
+
+	h_ruler.
+		setRange(100, 500).
+		setY(200).
+		setRectSymbol(QRectF(0, 0, 2, 20)).
+		setZ(4).
+		setToolTip("h_ruler");
+	view->installEventFilter(&h_ruler.inputPattern());
+
 
 	highlight.
 		setVisible(false).
@@ -126,7 +141,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 			Qt::gray
 		).
 		setItems(
-			QVector<jItem *>() << &item_dots << &item2d << &item1d << &item_cos
+			QVector<jItem *>() << &item_dots << &item2d << &item1d << &item_cos << &h_ruler
 		).
 		setSelectors(
 			QVector<jSelector *>() << &highlight
@@ -188,7 +203,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		setBehavior(jLegend::Complex);
 	view_legend->show();
 
-	view->inputPattern()->
+	view->inputPattern().
                 addAction(jInputPattern::ZoomFullView, jInputPattern::MousePress, Qt::MidButton).
                 addAction(jInputPattern::ZoomDelta, jInputPattern::MousePress, Qt::MidButton, Qt::ShiftModifier);
 

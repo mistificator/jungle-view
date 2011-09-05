@@ -16,7 +16,8 @@ SOURCES += \
     jview.cpp \
     jdefs.cpp \
     jstoragehandler.cpp \
-    jwave.cpp
+    jwave.cpp \
+    jruleritems.cpp
 
 HEADERS  += \
     mainwindow.h \
@@ -28,7 +29,8 @@ HEADERS  += \
     jstoragehandler.h \
     jcacheditems.h \
     jstorage_p.h \
-    jwave.h
+    jwave.h \
+    jruleritems.h
 
 FORMS += \
     mainwindow.ui
