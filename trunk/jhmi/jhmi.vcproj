@@ -229,6 +229,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\jruleritems.h"
+				>
+			</File>
+			<File
 				RelativePath=".\jstorage.h"
 				>
 			</File>

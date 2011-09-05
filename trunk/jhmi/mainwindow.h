@@ -6,6 +6,7 @@
 #include "jitems.h"
 #include "jstorage.h"
 #include "jcacheditems.h"
+#include "jruleritems.h"
 
 class Mainwindow : public QMainWindow
 {
@@ -25,12 +26,13 @@ private:
 	jItem1D<short> item1d;
 	jItem2D<double> item2d;
 	jItem1D<qreal> item_cos;
-	jItem1D<qreal> item_dots;
+	jFigureItem<qreal> item_dots;
 	jItem1D<qreal>::Point gfx_dots[100];
 	jSelector highlight;
 	jAxis x_axis, y_axis;
 	jStorageInterface * storage;
 	jCachedItem1D<qint32> cached_item1d;
+	jHRulerItem h_ruler;
 
 	QMenu menu;
 

@@ -1091,6 +1091,8 @@ struct jItem::Data
 	double z;
 	QString tooltip;
 	quint64 counter;
+	jInputPattern pattern;
+	jItemHandler * item_control;
 	Data() 
 	{
 		counter = 0;
@@ -1101,6 +1103,7 @@ struct jItem::Data
 		z = 0;
 		deep_copy = false;
 		visible = true;
+		pattern.setDefaultPattern();
 	}
 	~Data()
 	{
@@ -1121,11 +1124,13 @@ struct jItem::Data
 
 jItem::jItem(): d(new Data())
 {
-
+	d->item_control = new jItemHandler(this);
+	QObject::connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), d->item_control, SLOT(userCommand(int, int, int, int, QPointF)));
 }
 
 jItem::~jItem()
 {
+	delete d->item_control;
 	delete d;
 }
 
@@ -1282,6 +1287,64 @@ QRectF jItem::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 	return QRectF(d->origin, QSizeF(_w, _h));
 }
 
+jItem & jItem::setInputPattern(const jInputPattern & _pattern)
+{
+	QObject::disconnect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), d->item_control, SLOT(userCommand(int, int, int, int, QPointF)));
+	SAFE_SET(d->pattern, _pattern);
+	QObject::connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), d->item_control, SLOT(userCommand(int, int, int, int, QPointF)));
+	return * this;
+}
+
+jInputPattern & jItem::inputPattern() const
+{
+	return d->pattern;
+}
+
+jItemHandler * jItem::itemControl() const
+{
+	return d->item_control;
+}
+
+void jItem::userCommand(int, int, int, int, QPointF) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+{
+
+}
+
+// ------------------------------------------------------------------------
+
+struct jItemHandler::Data
+{
+	jItem * item;
+	Data()
+	{
+
+	}
+	~Data()
+	{
+
+	}
+};
+
+jItemHandler::jItemHandler(jItem * _item): QObject(), d(new Data())
+{
+	d->item = _item;
+}
+
+jItemHandler::~jItemHandler()
+{
+	delete d;
+}
+
+void jItemHandler::userCommand(int _action, int _method, int _buttons, int _modifier, QPointF _mpos) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+{
+	d->item->userCommand(_action, _method, _buttons, _modifier, _mpos);
+}
+
+jItem * jItemHandler::item() const
+{
+	return d->item;
+}
+
 // ------------------------------------------------------------------------
 
 struct jMarker::Data
@@ -1404,6 +1467,9 @@ struct jInputPattern::Data
 	int last_btn, last_key, last_modifier;
 	Data()
 	{
+		last_btn = 0;
+		last_key = 0;
+		last_modifier = 0;
 	}
 	~Data()
 	{
@@ -1516,6 +1582,28 @@ struct jInputPattern::Data
 
 jInputPattern::jInputPattern(QObject * _parent): QObject(_parent), d(new Data())
 {
+}
+
+jInputPattern::jInputPattern(const jInputPattern & _other, QObject * _parent): QObject(_parent), d(new Data())
+{
+	d->actions = _other.d->actions;
+	d->last_btn = _other.d->last_btn;
+	d->last_key = _other.d->last_key;
+	d->last_modifier = _other.d->last_modifier;
+	d->last_mouse_pos = _other.d->last_mouse_pos;
+}
+
+jInputPattern & jInputPattern::operator = (const jInputPattern & _other)
+{
+	if (&_other != this)
+	{
+		d->actions = _other.d->actions;
+		d->last_btn = _other.d->last_btn;
+		d->last_key = _other.d->last_key;
+		d->last_modifier = _other.d->last_modifier;
+		d->last_mouse_pos = _other.d->last_mouse_pos;
+	}
+	return * this;
 }
 
 jInputPattern::~jInputPattern()
@@ -1688,16 +1776,9 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 		{
 			emit actionAccepted(_entry.action, _method, _code, _modifier, _mpos);
 		}
-		return true;
+//		return true;
 	}
 	return _object->eventFilter(_object, _event);
-}
-
-jInputPattern * jInputPattern::copy() const
-{
-	jInputPattern * _pattern = new jInputPattern();
-	_pattern->d->actions = d->actions;
-	return _pattern;
 }
 
 // ------------------------------------------------------------------------
@@ -1718,11 +1799,10 @@ struct jView::Data
 	bool in_zoom;
 	QCursor before_pan_cursor;
 	jLazyRenderer * renderer;
-	jInputPattern * pattern;
+	jInputPattern pattern;
 	Data()
 	{
-		pattern = new jInputPattern();
-		pattern->setDefaultPattern();
+		pattern.setDefaultPattern();
 		x_axis = 0;
 		y_axis = 0;
 		in_zoom = false;
@@ -1737,7 +1817,6 @@ struct jView::Data
 	}
 	~Data()
 	{
-		pattern->deleteLater();
 	}
 	QTransform screenToAxisTransform(const QRectF & _screen_rect) const
 	{
@@ -1834,21 +1913,21 @@ struct jView::Data
 		_instance->setCursor(Qt::CrossCursor);
 		_instance->setFocusPolicy(Qt::WheelFocus);
 
-		_instance->installEventFilter(pattern);
+		_instance->installEventFilter(&pattern);
 	}
 };
 
 jView::jView(QWidget * _parent)
 	: JUNGLE_WIDGET_CLASS(_parent), d(new Data())
 {
-	connect(d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
 	d->init(this);
 }
 
 jView::jView(jAxis * _x_axis, jAxis * _y_axis, QWidget * _parent)
 	: JUNGLE_WIDGET_CLASS(_parent), d(new Data())
 {
-	connect(d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
 	d->init(this);
 
 	this->
@@ -2514,23 +2593,17 @@ void jView::autoScale(qreal _margin_x, qreal _margin_y)
 	}
 }
 
-jView & jView::setInputPattern(jInputPattern * _pattern)
+jView & jView::setInputPattern(const jInputPattern & _pattern)
 {
-	if (_pattern && (_pattern != d->pattern))
-	{
-		if (d->pattern)
-		{
-			removeEventFilter(d->pattern);
-			d->pattern->deleteLater();
-		}
-		d->pattern = _pattern->copy();
-		connect(d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
-		installEventFilter(d->pattern);
-	}
+	disconnect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	removeEventFilter(&d->pattern);
+	d->pattern = _pattern;
+	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	installEventFilter(&d->pattern);
 	return * this;
 }
 
-jInputPattern * jView::inputPattern() const
+jInputPattern & jView::inputPattern() const
 {
 	return d->pattern;
 }
@@ -2545,17 +2618,18 @@ struct jPreview::Data
 	int orientation;
 	QPoint prev_point, press_point;
 	jLazyRenderer * renderer;
-	jInputPattern * pattern;
+	jInputPattern pattern;
+	bool x_axis_visible, y_axis_visible;
 	Data()
 	{
-		pattern = new jInputPattern();
-		pattern->setDefaultPattern();
+		pattern.setDefaultPattern();
 		view = 0;
 		orientation = Qt::Vertical | Qt::Horizontal;
+		x_axis_visible = false;
+		y_axis_visible = false;
 	}
 	~Data()
 	{
-		pattern->deleteLater();
 	}
 	static bool itemZSort(const jItem * _item1, const jItem * _item2)
 	{
@@ -2713,8 +2787,8 @@ jPreview::jPreview(QWidget * _parent)
 		setMaxThreads(1).
 		setEnabled(false);
 	installEventFilter(d->renderer);
-	connect(d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
-	installEventFilter(d->pattern);
+	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	installEventFilter(&d->pattern);
 }
 
 jPreview::jPreview(jView * _view, QWidget * _parent)
@@ -2789,11 +2863,19 @@ void jPreview::render(QPainter & _painter) const
 	QRectF _zoom_rect = d->view->viewport().rectBase();
 	QVector<jItem *> _items = d->view->items();
 	::qSort(_items.begin(), _items.end(), &Data::itemZSort);
-	const jAxis * _x_axis = d->view->xAxis();
-	const jAxis * _y_axis = d->view->yAxis();
+	jAxis * _x_axis = const_cast<jAxis *>(d->view->xAxis());
+	jAxis * _y_axis = const_cast<jAxis *>(d->view->yAxis());
 	foreach (jItem * _item, _items)
 	{
 		_item->renderPreview(_painter, _rect, _zoom_rect, _x_axis, _y_axis);
+	}
+	if (d->x_axis_visible && _x_axis && ((d->orientation & Qt::Horizontal) == Qt::Horizontal))
+	{
+		_x_axis->render(_painter, _rect, Qt::Horizontal, _zoom_rect.left(), _zoom_rect.right());
+	}
+	if (d->y_axis_visible && _y_axis && ((d->orientation & Qt::Vertical) == Qt::Vertical))
+	{
+		_y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top());
 	}
 	d->updateSelector();
 	d->selector.render(_painter, _rect, _zoom_rect);
@@ -2826,23 +2908,17 @@ int jPreview::orientation() const
 	return d->orientation;
 }
 
-jPreview & jPreview::setInputPattern(jInputPattern * _pattern)
+jPreview & jPreview::setInputPattern(const jInputPattern & _pattern)
 {
-	if (_pattern && (_pattern != d->pattern))
-	{
-		if (d->pattern)
-		{
-			removeEventFilter(d->pattern);
-			d->pattern->deleteLater();
-		}
-		d->pattern = _pattern->copy();
-		connect(d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
-		installEventFilter(d->pattern);
-	}
+	disconnect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	removeEventFilter(&d->pattern);
+	d->pattern = _pattern;
+	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	installEventFilter(&d->pattern);
 	return * this;
 }
 
-jInputPattern * jPreview::inputPattern() const
+jInputPattern & jPreview::inputPattern() const
 {
 	return d->pattern;
 }
@@ -2884,6 +2960,29 @@ void jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifie
 void jPreview::rebuild()
 {
 	d->renderer->rebuild();
+}
+
+
+jPreview & jPreview::setXAxisVisible(bool _state)
+{
+	SAFE_SET(d->x_axis_visible, _state);
+	return * this;
+}
+
+bool jPreview::isXAxisVisible() const
+{
+	return d->x_axis_visible;
+}
+
+jPreview & jPreview::setYAxisVisible(bool _state)
+{
+	SAFE_SET(d->y_axis_visible, _state);
+	return * this;
+}
+
+bool jPreview::isYAxisVisible() const
+{
+	return d->y_axis_visible;
 }
 
 // ------------------------------------------------------------------------
