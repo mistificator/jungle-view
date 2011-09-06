@@ -108,8 +108,6 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		setRectSymbol(QRectF(0, 0, 2, 20)).
 		setZ(4).
 		setToolTip("h_ruler");
-	view->installEventFilter(&h_ruler.inputPattern());
-
 
 	highlight.
 		setVisible(false).
@@ -205,7 +203,8 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 
 	view->inputPattern().
                 addAction(jInputPattern::ZoomFullView, jInputPattern::MousePress, Qt::MidButton).
-                addAction(jInputPattern::ZoomDelta, jInputPattern::MousePress, Qt::MidButton, Qt::ShiftModifier);
+                addAction(jInputPattern::ZoomDelta, jInputPattern::MousePress, Qt::MidButton, Qt::ShiftModifier).
+				addAction(jInputPattern::ContextMenuRequested, jInputPattern::KeyPress, Qt::Key_Menu);
 
 	const quint64 _arr_sz = 100000000;
 	qint32 * _arr = new qint32[_arr_sz];
@@ -258,6 +257,7 @@ void Mainwindow::timerEvent(QTimerEvent * _te)
 {
 	if (_te->timerId() == fast_timer)
 	{
+		/*
 		QPointF _origin = item2d.origin();
 		if ((_origin.x() > 3000) || (_origin.x() < 0))
 		{
@@ -270,6 +270,7 @@ void Mainwindow::timerEvent(QTimerEvent * _te)
 			gfx_dots[_idx].x = ::qrand() / 8.0;
 			gfx_dots[_idx].y = ::qrand() / 256.0;
 		}
+		*/
 		view->rebuild();
 		preview->rebuild();
 		frames_count++;

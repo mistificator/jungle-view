@@ -2,90 +2,105 @@
 
 // ------------------------------------------------------------------------
 
+struct jHRulerItem::Data
+{
+	qreal x1_val, x2_val;
+	qreal y_val;
+	jHRulerItem * item;
+	Data(jHRulerItem * _item)
+	{
+		x1_val = 0;
+		x2_val = 0;
+		y_val = 0;
+		item = _item;
+	}
+	~Data()
+	{
+	}
+	void update()
+	{
+		jHRulerItem::Point _points[2];
+		_points[0].x = x1_val; _points[0].y = y_val;
+		_points[1].x = x2_val; _points[1].y = y_val;
+		item->jFigureItem<qreal>::setData(_points, 2, true);
+	}
+};
+
 jHRulerItem::jHRulerItem() : jFigureItem<qreal>()
 {
-	x1_val = 0;
-	x2_val = 0;
-	y_val = 0;
+	d = new Data(this);
 	setLineStyle(jHRulerItem::Lines);
+	inputPattern().setEnabled(true);
 }
 
 jHRulerItem::~jHRulerItem()
 {
 }
 
-void jHRulerItem::update()
-{
-	jHRulerItem::Point _points[2];
-	_points[0].x = x1_val; _points[0].y = y_val;
-	_points[1].x = x2_val; _points[1].y = y_val;
-	jFigureItem<qreal>::setData(_points, 2, true);
-}
-
 jHRulerItem & jHRulerItem::setRange(const qreal & _x1, const qreal & _x2)
 {
 	THREAD_SAFE(Write)
-	x1_val = _x1;
-	x2_val = _x2;
+	d->x1_val = _x1;
+	d->x2_val = _x2;
 	THREAD_UNSAFE
-	update();
+	d->update();
 	return * this;
 }
 
 qreal jHRulerItem::x1() const
 {
-	return x1_val;
+	return d->x1_val;
 }
 
 qreal jHRulerItem::x2() const
 {
-	return x2_val;
+	return d->x2_val;
 }
 
 qreal jHRulerItem::dx() const
 {
-	return SAFE_GET(x2_val - x1_val);
+	return SAFE_GET(d->x2_val - d->x1_val);
 }
 
 
 jHRulerItem & jHRulerItem::setY(const qreal & _y)
 {
-	SAFE_SET(y_val, _y);
-	update();
+	SAFE_SET(d->y_val, _y);
+	d->update();
 	return * this;
 }
 
 qreal jHRulerItem::y() const
 {
-	return y_val;
+	return d->y_val;
 }
 
 void jHRulerItem::moveHorizontal(const qreal & dx)
 {
 	THREAD_SAFE(Write)
-	x1_val += dx;
-	x2_val += dx;
+	d->x1_val += dx;
+	d->x2_val += dx;
 	THREAD_UNSAFE
-	update();
+	d->update();
 }
 
 void jHRulerItem::moveVertical(const qreal & dy)
 {
 	THREAD_SAFE(Write)
-	y_val += dy;
+	d->y_val += dy;
 	THREAD_UNSAFE
-	update();
+	d->update();
 }
 
 void jHRulerItem::moveTo(jHRulerItem::Point _pt)
 {
 	THREAD_SAFE(Write)
-	qreal _dx = x2_val - x1_val;
-	x1_val = _pt.x;
-	x2_val = x1_val + _dx;
-	y_val = _pt.y;
+	qreal _dx = d->x2_val - d->x1_val;
+	d->x1_val = _pt.x;
+	d->x2_val = d->x1_val + _dx;
+	d->y_val = _pt.y;
 	THREAD_UNSAFE
-	update();
+	d->update();
 }
 
 QRectF jHRulerItem::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
@@ -99,8 +114,8 @@ QRectF jHRulerItem::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) c
 	}
 	const qreal _offset_x = origin().x();
 	const qreal _offset_y = origin().y();
-	qreal _left = x1_val - 1, _right = x2_val + 1;
-	qreal _top = y_val + 1, _bottom = y_val - 1;
+	qreal _left = d->x1_val - 1, _right = d->x2_val + 1;
+	qreal _top = d->y_val + 1, _bottom = d->y_val - 1;
 
 	if (_x_axis && _x_axis->isLog10ScaleEnabled())
 	{
@@ -164,9 +179,40 @@ bool jHRulerItem::intersects(const QRectF & _rect, const jAxis * _x_axis, const 
 	return _adj_rect.intersects(_br);
 }
 
-void jHRulerItem::userCommand(int _action, int _method, int _buttons, int _modifier, QPointF _mpos) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+bool jHRulerItem::userCommand(int _action, int _method, int _buttons, int _modifier, QPointF _mpos, QWidget * _w) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 {
-
+	jView * _view = dynamic_cast<jView *>(_w);
+	if (_view == 0)
+	{
+		return false;
+	}
+	switch (_action)
+	{
+	case jInputPattern::MoveItemLeft:
+		moveHorizontal(-1.0);
+		_view->rebuild();
+		return true;
+	case jInputPattern::MoveItemRight:
+		moveHorizontal(1.0);
+		_view->rebuild();
+		return true;
+	case jInputPattern::MoveItemUp:
+		moveVertical(1.0);
+		_view->rebuild();
+		return true;
+	case jInputPattern::MoveItemDown:
+		moveVertical(-1.0);
+		_view->rebuild();
+		return true;
+	case jInputPattern::ItemMenuRequested:
+		itemControl()->emitContextMenuRequested(_w->mapToGlobal(_mpos.toPoint()));
+		return true;
+	case jInputPattern::ItemPanStart:
+	case jInputPattern::ItemPanMove:
+	case jInputPattern::ItemPanEnd:
+		return true;
+	}
+	return false;
 }
 
 // ------------------------------------------------------------------------

@@ -1103,6 +1103,7 @@ struct jItem::Data
 		z = 0;
 		deep_copy = false;
 		visible = true;
+		pattern.setEnabled(false);
 		pattern.setDefaultPattern();
 	}
 	~Data()
@@ -1125,7 +1126,7 @@ struct jItem::Data
 jItem::jItem(): d(new Data())
 {
 	d->item_control = new jItemHandler(this);
-	QObject::connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), d->item_control, SLOT(userCommand(int, int, int, int, QPointF)));
+	QObject::connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF, QWidget *)), d->item_control, SLOT(actionAccepted(int, int, int, int, QPointF, QWidget *)), Qt::DirectConnection);
 }
 
 jItem::~jItem()
@@ -1289,9 +1290,7 @@ QRectF jItem::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 
 jItem & jItem::setInputPattern(const jInputPattern & _pattern)
 {
-	QObject::disconnect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), d->item_control, SLOT(userCommand(int, int, int, int, QPointF)));
 	SAFE_SET(d->pattern, _pattern);
-	QObject::connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), d->item_control, SLOT(userCommand(int, int, int, int, QPointF)));
 	return * this;
 }
 
@@ -1305,9 +1304,9 @@ jItemHandler * jItem::itemControl() const
 	return d->item_control;
 }
 
-void jItem::userCommand(int, int, int, int, QPointF) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+bool jItem::userCommand(int, int, int, int, QPointF, QWidget *) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 {
-
+	return false;
 }
 
 // ------------------------------------------------------------------------
@@ -1315,9 +1314,12 @@ void jItem::userCommand(int, int, int, int, QPointF) // jInputPattern::Action, j
 struct jItemHandler::Data
 {
 	jItem * item;
+	bool enabled;
+	int from, to;
 	Data()
 	{
-
+		from = jInputPattern::ItemActionGroupBegin;
+		to = jInputPattern::ItemActionGroupEnd;
 	}
 	~Data()
 	{
@@ -1335,14 +1337,58 @@ jItemHandler::~jItemHandler()
 	delete d;
 }
 
-void jItemHandler::userCommand(int _action, int _method, int _buttons, int _modifier, QPointF _mpos) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+void jItemHandler::actionAccepted(int _action, int _method, int _buttons, int _modifier, QPointF _mpos, QWidget * _w) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 {
-	d->item->userCommand(_action, _method, _buttons, _modifier, _mpos);
+	jInputPattern * _pattern = dynamic_cast<jInputPattern *>(sender());
+	if (_pattern == 0)
+	{
+		return;
+	}
+	if ((_action < d->from) || (_action > d->to))
+	{
+		return;
+	}
+	jView * _view = dynamic_cast<jView *>(_w);
+	if (_view)
+	{
+		QRectF _rect = _view->screenToAxis(QRectF(_mpos.x() - 1, (_view->height() - _mpos.y()) - 1, 3, 3));
+		if (d->item->intersects(_rect, _view->xAxis(), _view->yAxis()) == false)
+		{
+			return;
+		}
+	}
+	_pattern->setProperty("accepted", (int)d->item->userCommand(_action, _method, _buttons, _modifier, _mpos, _w));
 }
 
 jItem * jItemHandler::item() const
 {
 	return d->item;
+}
+
+jItemHandler & jItemHandler::setPatternFilter(int _from, int _to)
+{
+	d->from = qMin<int>(qMax<int>(_from, jInputPattern::ItemActionGroupBegin), jInputPattern::ItemActionGroupEnd);
+	d->to = qMax<int>(qMin<int>(_to, jInputPattern::ItemActionGroupEnd), jInputPattern::ItemActionGroupBegin);
+	if (d->from > d->to)
+	{
+		::qSwap(d->from, d->to);
+	}
+	return * this;
+}
+
+int jItemHandler::patternFilterFrom() const
+{
+	return d->from;
+}
+
+int jItemHandler::patternFilterTo() const
+{
+	return d->to;
+}
+
+void jItemHandler::emitContextMenuRequested(QPoint _pt)
+{
+	emit contextMenuRequested(_pt);
 }
 
 // ------------------------------------------------------------------------
@@ -1461,15 +1507,21 @@ struct jInputPattern::Data
 		{
 			return (action == _other.action) && (method == _other.method) && (code == _other.code) && (modifier == _other.modifier);
 		}
+		bool operator <(const ActionEntry & _other) const
+		{
+			return (action < _other.action);
+		}
 	};
 	QMap<int, QVector<ActionEntry> > actions;
 	QPointF last_mouse_pos;
 	int last_btn, last_key, last_modifier;
+	bool enabled;
 	Data()
 	{
 		last_btn = 0;
 		last_key = 0;
 		last_modifier = 0;
+		enabled = true;
 	}
 	~Data()
 	{
@@ -1494,7 +1546,15 @@ struct jInputPattern::Data
 			addAction(jInputPattern::ZoomFullView, jInputPattern::MouseDoubleClick, Qt::LeftButton).
 			addAction(jInputPattern::PanStart, jInputPattern::MousePress, Qt::RightButton).
 			addAction(jInputPattern::PanEnd, jInputPattern::MouseRelease, Qt::RightButton).
-			addAction(jInputPattern::PanMove, jInputPattern::MouseMove, Qt::RightButton);
+			addAction(jInputPattern::PanMove, jInputPattern::MouseMove, Qt::RightButton).
+			addAction(jInputPattern::MoveItemLeft, jInputPattern::KeyPress, Qt::Key_Left).
+			addAction(jInputPattern::MoveItemRight, jInputPattern::KeyPress, Qt::Key_Right).
+			addAction(jInputPattern::MoveItemUp, jInputPattern::KeyPress, Qt::Key_Up).
+			addAction(jInputPattern::MoveItemDown, jInputPattern::KeyPress, Qt::Key_Down).
+			addAction(jInputPattern::ItemPanStart, jInputPattern::MousePress, Qt::RightButton).
+			addAction(jInputPattern::ItemPanEnd, jInputPattern::MouseRelease, Qt::RightButton).
+			addAction(jInputPattern::ItemPanMove, jInputPattern::MouseMove, Qt::RightButton).
+			addAction(jInputPattern::ItemMenuRequested, jInputPattern::MousePress, Qt::RightButton);
 	}
 	void addEntry(int _action, int _method, int _code, int _modifier)
 	{
@@ -1576,6 +1636,7 @@ struct jInputPattern::Data
 				}
 			}
 		}
+		::qSort(_accepted.begin(), _accepted.end()); 
 		return _accepted;
 	}
 };
@@ -1689,8 +1750,23 @@ int jInputPattern::lastDelta() const
 	return d->last_modifier;
 }
 
+jInputPattern & jInputPattern::setEnabled(bool _state)
+{
+	d->enabled = _state;
+	return * this;
+}
+
+bool jInputPattern::isEnabled() const
+{
+	return d->enabled;
+}
+
 bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 {
+	if (d->enabled == false)
+	{
+		return false;
+	}
 	QMouseEvent *	_me	= 0;
 	QKeyEvent *	_ke	= 0;
 	QWheelEvent *	_we	= 0;
@@ -1772,11 +1848,17 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 	d->last_key = _code;
 	if (_actions.count())
 	{
+		bool _accepted = false;
 		foreach (Data::ActionEntry _entry, _actions)
 		{
-			emit actionAccepted(_entry.action, _method, _code, _modifier, _mpos);
+			setProperty("accepted", false);
+			emit actionAccepted(_entry.action, _method, _code, _modifier, _mpos, dynamic_cast<QWidget *>(_object));
+			if (property("accepted").toBool())
+			{
+				_accepted = true;
+			}
 		}
-//		return true;
+		return _accepted;
 	}
 	return _object->eventFilter(_object, _event);
 }
@@ -1920,14 +2002,14 @@ struct jView::Data
 jView::jView(QWidget * _parent)
 	: JUNGLE_WIDGET_CLASS(_parent), d(new Data())
 {
-	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF, QWidget *)), this, SLOT(actionAccepted(int, int, int, int, QPointF, QWidget *)), Qt::DirectConnection);
 	d->init(this);
 }
 
 jView::jView(jAxis * _x_axis, jAxis * _y_axis, QWidget * _parent)
 	: JUNGLE_WIDGET_CLASS(_parent), d(new Data())
 {
-	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF, QWidget *)), this, SLOT(actionAccepted(int, int, int, int, QPointF, QWidget *)), Qt::DirectConnection);
 	d->init(this);
 
 	this->
@@ -1987,6 +2069,7 @@ jView & jView::addItem(jItem * _item)
 {
 	THREAD_SAFE(Write)
 	d->items << _item;
+	installEventFilter(& d->items.back()->inputPattern());
 	THREAD_UNSAFE
 	return * this;
 }
@@ -1995,19 +2078,32 @@ jView & jView::addItems(const QVector<jItem *> & _items)
 {
 	THREAD_SAFE(Write)
 	d->items << _items;
+	for (int _idx = d->items.count() - _items.count(); _idx < d->items.count(); _idx++)
+	{
+		installEventFilter(& d->items[_idx]->inputPattern());
+	}
 	THREAD_UNSAFE
 	return * this;
 }
 
 jView & jView::setItem(jItem * _item)
 {
-	SAFE_SET(d->items, QVector<jItem *>() << _item);
+	THREAD_SAFE(Write)
+	d->items = QVector<jItem *>() << _item;
+	installEventFilter(& d->items.back()->inputPattern());
+	THREAD_UNSAFE
 	return * this;
 }
 
 jView & jView::setItems(const QVector<jItem *> & _items)
 {
-	SAFE_SET(d->items, _items);
+	THREAD_SAFE(Write)
+	d->items = _items;
+	for (int _idx = 0; _idx < d->items.count(); _idx++)
+	{
+		installEventFilter(& d->items[_idx]->inputPattern());
+	}
+	THREAD_UNSAFE
 	return * this;
 }
 
@@ -2017,6 +2113,7 @@ jView & jView::removeItem(jItem * _item)
 	QVector<jItem *>::iterator _it = ::qFind(d->items.begin(), d->items.end(), _item);
 	if (_it != d->items.end())
 	{
+		removeEventFilter(& (* _it)->inputPattern());
 		d->items.erase(_it);
 	}
 	THREAD_UNSAFE
@@ -2031,6 +2128,7 @@ jView & jView::removeItems(const QVector<jItem *> & _items)
 		QVector<jItem *>::iterator _it = ::qFind(d->items.begin(), d->items.end(), _item);
 		if (_it != d->items.end())
 		{
+			removeEventFilter(& (* _it)->inputPattern());
 			d->items.erase(_it);
 		}
 	}
@@ -2041,6 +2139,10 @@ jView & jView::removeItems(const QVector<jItem *> & _items)
 void jView::clear()
 {
 	THREAD_SAFE(Write)
+	for (int _idx = 0; _idx < d->items.count(); _idx++)
+	{
+		removeEventFilter(& d->items[_idx]->inputPattern());
+	}
 	d->items.clear();
 	THREAD_UNSAFE
 }
@@ -2123,7 +2225,20 @@ void jView::render(QPainter & _painter) const
 	THREAD_UNSAFE
 }
 
-void jView::userCommand(int _action, int /*_method*/, int /*_code*/, int _modifier, QPointF _mpos)
+void jView::actionAccepted(int _action, int _method, int _code, int _modifier, QPointF _mpos, QWidget * _w)
+{
+	if (_w != this)
+	{
+		return;
+	}
+	if ((_action < jInputPattern::WidgetActionGroupBegin) || (_action > jInputPattern::WidgetActionGroupEnd))
+	{
+		return;
+	}
+	d->pattern.setProperty("accepted", (int)userCommand(_action, _method, _code, _modifier, _mpos, _w));
+}
+
+bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, QPointF _mpos, QWidget * _w)
 {
 	switch (_action)
 	{
@@ -2240,7 +2355,7 @@ void jView::userCommand(int _action, int /*_method*/, int /*_code*/, int _modifi
 			{
 				if (_zoom_rect.width() * 2.0 > d->viewport.maximumSize().width())
 				{
-					return;
+					return false;
 				}
 				_rect =	QRectF(QPointF(_axis_point.x() - (_zoom_rect.width() * _k) * 2.0, _axis_point.y()) , 
 					QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
@@ -2332,13 +2447,13 @@ void jView::userCommand(int _action, int /*_method*/, int /*_code*/, int _modifi
 		d->renderer->rebuild();
 		break;
 	case jInputPattern::ContextMenuRequested:
-		if (d->press_point == d->release_point)
+		if ((d->press_point == d->release_point) || (_method == jInputPattern::KeyPress) || (_method == jInputPattern::KeyRelease))
 		{
 			emit contextMenuRequested(mapToGlobal(_mpos.toPoint()));
 		}
 		break;
 	}
-	
+	return true;
 }
 
 void jView::mouseMoveEvent(QMouseEvent * _me)
@@ -2595,11 +2710,7 @@ void jView::autoScale(qreal _margin_x, qreal _margin_y)
 
 jView & jView::setInputPattern(const jInputPattern & _pattern)
 {
-	disconnect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
-	removeEventFilter(&d->pattern);
 	d->pattern = _pattern;
-	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
-	installEventFilter(&d->pattern);
 	return * this;
 }
 
@@ -2787,7 +2898,7 @@ jPreview::jPreview(QWidget * _parent)
 		setMaxThreads(1).
 		setEnabled(false);
 	installEventFilter(d->renderer);
-	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
+	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF, QWidget *)), this, SLOT(actionAccepted(int, int, int, int, QPointF, QWidget *)), Qt::DirectConnection);
 	installEventFilter(&d->pattern);
 }
 
@@ -2800,8 +2911,10 @@ jPreview::jPreview(jView * _view, QWidget * _parent)
 		setEnabled(false);
 	installEventFilter(d->renderer);
 
-	this->
-		setView(_view);
+	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF, QWidget *)), this, SLOT(actionAccepted(int, int, int, int, QPointF, QWidget *)), Qt::DirectConnection);
+	installEventFilter(&d->pattern);
+
+	setView(_view);
 }
 
 jPreview::~jPreview()
@@ -2910,11 +3023,7 @@ int jPreview::orientation() const
 
 jPreview & jPreview::setInputPattern(const jInputPattern & _pattern)
 {
-	disconnect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
-	removeEventFilter(&d->pattern);
 	d->pattern = _pattern;
-	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF)), this, SLOT(userCommand(int, int, int, int, QPointF)));
-	installEventFilter(&d->pattern);
 	return * this;
 }
 
@@ -2923,8 +3032,21 @@ jInputPattern & jPreview::inputPattern() const
 	return d->pattern;
 }
 
-void jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifier, QPointF _mpos)
+void jPreview::actionAccepted(int _action, int _method, int _code, int _modifier, QPointF _mpos, QWidget * _w)
 {
+	d->pattern.setProperty("accepted", (int)userCommand(_action, _method, _code, _modifier, _mpos, _w));
+}
+
+bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifier, QPointF _mpos, QWidget * _w)
+{
+	if (_w != this)
+	{
+		return false;
+	}
+	if (_action > jInputPattern::WidgetActionGroupEnd)
+	{
+		return false;
+	}
 	QMouseEvent * _me = new QMouseEvent(QEvent::MouseButtonRelease, _mpos.toPoint(), (Qt::MouseButton)_code, (Qt::MouseButtons)_code, (Qt::KeyboardModifiers)_modifier);
 	QWheelEvent * _we = new QWheelEvent(_mpos.toPoint(), _modifier, (Qt::MouseButtons)_code, Qt::NoModifier);
 	switch (_action)
@@ -2955,6 +3077,7 @@ void jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifie
 	}
 	delete _we;
 	delete _me;
+	return true;
 }
 
 void jPreview::rebuild()

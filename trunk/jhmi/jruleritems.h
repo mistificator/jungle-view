@@ -8,6 +8,7 @@
 
 class jHRulerItem : public jFigureItem<qreal>
 {
+	PDATA
 	COPY_FBD(jHRulerItem)
 public:
 	jHRulerItem();
@@ -25,14 +26,10 @@ public:
 	void moveVertical(const qreal & dy);
 	void moveTo(jHRulerItem::Point _pt);
 
-	void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+	bool userCommand(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 
 	QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 	bool intersects(const QRectF & _rect, const jAxis * _x_axis, const jAxis * _y_axis) const;
-private:
-	qreal x1_val, x2_val;
-	qreal y_val;
-	void update();
 protected:
 	jItem1D<qreal> & setData(jItem1D<qreal>::Flat *, unsigned int, bool)			{ return * this; }
 	jItem1D<qreal> & setData(jItem1D<qreal>::Flat *, qreal *, unsigned int, bool)		{ return * this; }
