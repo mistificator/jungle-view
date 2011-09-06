@@ -24,6 +24,13 @@ QString MainWindow::range_convert(double _value, jAxis *)
 	return _label;
 }
 
+int MainWindow::g_sample_rate = 8000;
+
+QString MainWindow::time_convert(double _value, jAxis *)
+{
+	return QTime(0, 0, 0).addMSecs(_value * 1000.0 / g_sample_rate).toString("mm:ss.zzz");
+}
+
 MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
@@ -40,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
 		setGridPen(QPen(Qt::black, 1, Qt::DotLine)).
 		setFont(QFont("Arial Narrow")).
 		setBackground(QColor(255, 255, 255, 60)).
-		setRangeFunc(&range_convert)
+		setRangeFunc(&time_convert)
 		);
 	ui.view->setYAxis(
 		&y_axis.
@@ -98,6 +105,9 @@ void MainWindow::on_actionOpen_triggered()
 	connect(wave_file.storageControl(), SIGNAL(finished(quint64)), this, SLOT(onLayersAdjusted()));
 	connect(wave_file.storageControl(), SIGNAL(stopped()), this, SLOT(onLayersAdjusted()));
 	
+	g_sample_rate = wave_file.sampleRate();
+	x_axis.setStep(10, g_sample_rate / 100.0);
+	y_axis.setStep(10, 10);
 	wave_file.storage()->setSegmentSize(1024 * wave_file.channels());
 	wave_items.resize(wave_file.channels());
 	for (int _idx = 0; _idx < wave_items.count(); _idx++)
