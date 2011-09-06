@@ -625,7 +625,7 @@ void jStorage<T, TX>::jStorageThread::prevLayerRange(int _layer_number, quint64 
 template <class T, class TX>
 bool jStorage<T, TX>::jStorageThread::adjustLayers()
 {
-	JTIME_START
+//	JTIME_START
 	THREAD_SAFE(Read)
 	if ((layers.count() == 0) || finished)
 	{
@@ -656,7 +656,7 @@ bool jStorage<T, TX>::jStorageThread::adjustLayers()
 	bool * _processed_copy = layers[0][0].processed.data();
 	THREAD_UNSAFE
 
-	JTIME_DIFF("starting layer0 cycle")
+//	JTIME_DIFF("starting layer0 cycle")
 	for (quint64 _seg_idx = 0; _seg_idx < _seg_count; )
 	{
 		if (_processed_copy[_seg_idx])
@@ -721,7 +721,7 @@ bool jStorage<T, TX>::jStorageThread::adjustLayers()
 		_seg_idx += _step;
 		_layer0_finished = false;
 	}
-	JTIME_DIFF("layer0 iteration ended")
+//	JTIME_DIFF("layer0 iteration ended")
 
 	if (first_run)
 	{
@@ -784,8 +784,8 @@ bool jStorage<T, TX>::jStorageThread::adjustLayers()
 	}
 	THREAD_UNSAFE
 
-	JTIME_DIFF("adjusting iteration ended")
-	JTIME_ELAPSED("total")
+//	JTIME_DIFF("adjusting iteration ended")
+//	JTIME_ELAPSED("total")
 
 	SAFE_SET(finished, _layer0_finished);
 	return finished;

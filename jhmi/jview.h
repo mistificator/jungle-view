@@ -674,7 +674,7 @@ public:
 	jItem & setInputPattern(const jInputPattern & _pattern);
 	jInputPattern & inputPattern() const;
 	jItemHandler * itemControl() const;
-	virtual void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+	virtual bool userCommand(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 protected:
 	//! Directly sets pointer to input data with its measurements.
 	/*!
@@ -712,8 +712,16 @@ public:
 	~jItemHandler();
 
 	jItem * item() const;
+
+	jItemHandler & setPatternFilter(int _from, int _to); // default is from ItemActionGroupBegin to ItemActionGroupEnd
+	int patternFilterFrom() const;
+	int patternFilterTo() const;
+
+	void emitContextMenuRequested(QPoint);
 public slots:
-	void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+signals:
+	void contextMenuRequested(QPoint);
 };
 
 class jMarker
@@ -755,19 +763,33 @@ public:
 	enum Action 
 	{
 		UnknownAction = -1,
-		MoveCursorLeft = 0,
-		MoveCursorRight = 1,
-		MoveCursorUp = 2,
-		MoveCursorDown = 3,
-		ZoomStart = 4,
-		ZoomMove = 5,
-		ZoomEnd = 6,
-		ZoomFullView = 7,
-		ZoomDelta = 8,
-		PanStart = 9,
-		PanMove = 10,
-		PanEnd = 11,
-		ContextMenuRequested = 12
+
+		WidgetActionGroupBegin = 0,
+			MoveCursorLeft =		WidgetActionGroupBegin + 0,
+			MoveCursorRight =		WidgetActionGroupBegin + 1,
+			MoveCursorUp =			WidgetActionGroupBegin + 2,
+			MoveCursorDown =		WidgetActionGroupBegin + 3,
+			ZoomStart =				WidgetActionGroupBegin + 4,
+			ZoomMove =				WidgetActionGroupBegin + 5,
+			ZoomEnd =				WidgetActionGroupBegin + 6,
+			ZoomFullView =			WidgetActionGroupBegin + 7,
+			ZoomDelta =				WidgetActionGroupBegin + 8,
+			PanStart =				WidgetActionGroupBegin + 9,
+			PanMove =				WidgetActionGroupBegin + 10,
+			PanEnd =				WidgetActionGroupBegin + 11,
+			ContextMenuRequested =	WidgetActionGroupBegin + 12,
+		WidgetActionGroupEnd =	WidgetActionGroupBegin + 999,
+
+		ItemActionGroupBegin =	WidgetActionGroupBegin + 1000,
+			MoveItemLeft =			ItemActionGroupBegin + 0,
+			MoveItemRight =			ItemActionGroupBegin + 1,
+			MoveItemUp =			ItemActionGroupBegin + 2,
+			MoveItemDown =			ItemActionGroupBegin + 3,
+			ItemPanStart =			ItemActionGroupBegin + 4,
+			ItemPanMove =			ItemActionGroupBegin + 5,
+			ItemPanEnd =			ItemActionGroupBegin + 6,
+			ItemMenuRequested =		ItemActionGroupBegin + 7,
+		ItemActionGroupEnd =	ItemActionGroupBegin + 999
 	};
 	enum Method
 	{
@@ -797,8 +819,11 @@ public:
 	int lastKeyboardKey() const;
 	int lastModifiers() const;
 	int lastDelta() const;
+
+	jInputPattern & setEnabled(bool _state);
+	bool isEnabled() const;
 signals:
-	void actionAccepted(int, int, int, int, QPointF);		// action, method, code, modifier, mouse position
+	void actionAccepted(int, int, int, int, QPointF, QWidget *);		// action, method, code, modifier, mouse position
 protected:
 	bool eventFilter(QObject * _object, QEvent * _event);
 };
@@ -868,9 +893,11 @@ public:
 
 	jView & setInputPattern(const jInputPattern & _pattern);
 	jInputPattern & inputPattern() const;
+
+	virtual bool userCommand(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 public slots:
 	void rebuild();
-	virtual void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 protected:
 	void mouseMoveEvent(QMouseEvent *);
 	void enterEvent(QEvent *);
@@ -913,9 +940,11 @@ public:
 	bool isXAxisVisible() const;
 	jPreview & setYAxisVisible(bool _state);
 	bool isYAxisVisible() const;
+	virtual bool userCommand(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+
 public slots:
 	void rebuild();
-	virtual void userCommand(int, int, int, int, QPointF); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 };
 
 //! Class jLazyRenderer is a 2-D rendering engine.
