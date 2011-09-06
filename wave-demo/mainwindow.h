@@ -22,6 +22,8 @@ private:
 	QVector<jItem *> wave_items;
 	jAxis x_axis, y_axis;
 	static QString range_convert(double _value, jAxis *);
+	static QString time_convert(double _value, jAxis *);
+	static int g_sample_rate;
 private slots:
 	void on_actionOpen_triggered();
 	void on_actionQuit_triggered();

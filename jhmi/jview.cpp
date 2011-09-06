@@ -76,11 +76,13 @@ struct jAxis::Data
 			_alignment *= 10.0;
 		}
 		const double _start_tick = alignTick(_lo, _alignment);
+
 		for (double _value = _start_tick; _value <= _hi; _value += _alignment)
 		{
 			_ticks << _value;
 		}
 		quint64 _mply = 1;
+
 		while (_ticks.count() > (int)count_hint)
 		{
 			_mply *= 2;
