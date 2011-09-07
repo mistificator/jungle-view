@@ -956,7 +956,7 @@ jFigureItem<T, TX>::~jFigureItem()
 template <class T, class TX>
 QPainter * jFigureItem<T, TX>::createPainter(const QRectF & _rectangle)
 {
-	SAFE_SET(symbol_img, QImage(_rectangle.size().toSize(), QImage::Format_ARGB32));
+	SAFE_SET(symbol_img, QImage(QSize(_rectangle.width() + 1, _rectangle.height() + 1), QImage::Format_ARGB32));
 	symbol_img.fill(0x000000ff);
 	QPainter * _painter = new QPainter(& symbol_img);
 	_painter->setPen(pen());

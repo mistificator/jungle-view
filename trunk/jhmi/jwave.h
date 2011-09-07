@@ -30,6 +30,8 @@ public:
 	jItem * createItem(int _channel = 0) const;
 	jStorageInterface * storage() const;
 	jStorageHandler * storageControl() const;
+
+	qint64 item(quint64 _item_index, int _channel = 0) const;
 };
 
 #endif

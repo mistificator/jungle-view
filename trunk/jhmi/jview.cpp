@@ -65,35 +65,59 @@ struct jAxis::Data
 		{
 			return QVector<double>();
 		}
-		if (_hi - _lo <= alignment)
+		if (_hi == _lo)
 		{
-			return QVector<double>() << alignTick(_hi - _lo, alignment);
+			return QVector<double>();
 		}
-		QVector<double> _ticks;
-		double _alignment = alignment;
-		while ((_hi - _lo) / _alignment > 100.0 * count_hint)
-		{
-			_alignment *= 10.0;
-		}
-		const double _start_tick = alignTick(_lo, _alignment);
 
-		for (double _value = _start_tick; _value <= _hi; _value += _alignment)
+		const double _diff = _hi - _lo;
+		const int _n_diff = ::log10(qMax<double>(qAbs<double>(_diff), 1.0));
+		const int _n = qMax<int>(_n_diff, 1);
+
+		double _step = ::pow(10.0f, _n - 1) * alignment;
+		const double _k[2] = {2, 5};
+
+		int _k_idx = 1;
+		while (_diff > _step * count_hint)
+		{
+			_step *= _k[_k_idx % 2];
+			_k_idx++;
+		}
+
+		_k_idx = 0;
+		while (_diff < _step * count_hint)
+		{
+			_step /= _k[_k_idx % 2];
+			_k_idx++;
+		}
+
+		QVector<double> _ticks;
+		const double _start_tick = alignTick(_lo, _step);
+		for (double _value = _start_tick; _value <= _hi; _value += _step)
 		{
 			_ticks << _value;
 		}
-		quint64 _mply = 1;
 
-		while (_ticks.count() > (int)count_hint)
+		if (::floor(_step) == _step)
 		{
-			_mply *= 2;
-			for (int _idx = 0; _idx < _ticks.count(); _idx++)
+			quint64 _mply = 1;
+			while ((_ticks.count() / 2) * 2 > (int)count_hint)
 			{
-				if (alignTick(_ticks[_idx], _alignment * _mply) != _ticks[_idx])
+				_mply *= 2;
+				for (int _idx = 0; _idx < _ticks.count(); )
 				{
-					_ticks.remove(_idx);
+					if (alignTick(_ticks[_idx], _step * _mply) != _ticks[_idx])
+					{
+						_ticks.remove(_idx);
+					}
+					else
+					{
+						_idx++;
+					}
 				}
 			}
 		}
+
 		return _ticks;
 	}
 };
@@ -163,6 +187,11 @@ unsigned int jAxis::countHint() const
 unsigned int jAxis::count() const
 {
 	return d->count;
+}
+
+double jAxis::alignment() const
+{
+	return d->alignment;
 }
 
 jAxis & jAxis::setTickLength(unsigned int _length)
