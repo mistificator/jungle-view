@@ -29,6 +29,7 @@ struct jWaveFile::Data
 		virtual ~HelperInterface() {}
 		virtual jItem * createItem(int _channel) const = 0;
 		virtual jStorageInterface * storage() const = 0;
+		virtual qint64 item(quint64 _item_index, int _channel) const = 0;
 	};
 
 	template <class T, class TX>
@@ -55,6 +56,10 @@ struct jWaveFile::Data
 		jStorageInterface * storage() const
 		{
 			return strg;
+		}
+		qint64 item(quint64 _item_index, int _channel) const
+		{
+			return dynamic_cast< jFileStorage<T, TX> * >(strg)->item(_item_index, _channel);
 		}
 	private:
 		jStorageInterface * strg;
@@ -162,4 +167,13 @@ jStorageHandler * jWaveFile::storageControl() const
 QString jWaveFile::fileName() const
 {
 	return d->file_name;
+}
+
+qint64 jWaveFile::item(quint64 _item_index, int _channel) const
+{
+	if (d->helper == 0)
+	{
+		return 0;
+	}
+	return d->helper->item(_item_index, _channel);
 }

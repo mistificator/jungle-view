@@ -90,6 +90,8 @@ public:
 	QVector< QMap< int, QVector<T> > > processedItems(quint64 _start_item = 0, quint64 _end_item = 0, QVector<TX> * _x = 0) const;
 	QVector< QMap< int, QByteArray> > processedArray(quint64 _start_item = 0, quint64 _end_item = 0, QByteArray * _x = 0) const;
 
+	T item(quint64 _item_index, int _channel) const;
+
 	jStorageInterface & setProcessedItemsHint(quint64 _count = 1024);
 	quint64 processedItemsHint() const;
 

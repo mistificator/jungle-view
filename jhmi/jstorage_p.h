@@ -40,6 +40,13 @@ QVector< QMap< int, QVector<T> > > jStorage<T, TX>::processedItems(quint64 _star
 }
 
 template <class T, class TX>
+T jStorage<T, TX>::item(quint64 _item_index, int _channel) const
+{
+	QVector<T> _items = processedItems(_item_index, _item_index + 1)[_channel][Maximums];
+	return _items.count() ? _items[0] : 0;
+}
+
+template <class T, class TX>
 QVector< QMap< int, QByteArray> > jStorage<T, TX>::processedArray(quint64 _start_item, quint64 _end_item, QByteArray * _x) const
 {
 	QVector<TX> _vx;
@@ -791,161 +798,6 @@ bool jStorage<T, TX>::jStorageThread::adjustLayers()
 	return finished;
 }
 
-/*
-template <class T, class TX>
-bool jStorage<T, TX>::jStorageThread::adjustLayers()
-{
-	THREAD_SAFE(Read)
-	if ((layers.count() == 0) || finished)
-	{
-		THREAD_UNSAFE
-		return true;
-	}
-	const int _layers_count = layers[0].count();
-	if (_layers_count == 0)
-	{
-		THREAD_UNSAFE
-		return true;
-	}
-	jStorage<T, TX>::less_func _less_func = storage->lessFunc();
-	jStorage<T, TX>::greater_func _greater_func = storage->greaterFunc();
-	const quint64 _seg_count = (layers[0][0].seg_count);
-	THREAD_UNSAFE
-	if (_seg_count < storage->processedItemsHint())
-	{
-		finished = true;
-		return true;
-	}
-	bool _layer0_finished = true;
-	quint64 _step = ::pow(2.0f, _layers_count);
-	const quint64 _seg_size0 = storage->segmentSize();
-	const int _channels = storage->channels();
-
-	THREAD_SAFE(Read)
-	QVector<bool> _processed_copy = layers[0][0].processed;
-	THREAD_UNSAFE
-
-	for (quint64 _seg_idx = 0; _seg_idx < _seg_count; )
-	{
-		if (_processed_copy[_seg_idx])
-		{
-			_seg_idx++;
-			continue;
-		}
-		bool _processed;
-		quint64 _lo, _hi;
-		THREAD_SAFE(Read)
-		segmentState(0, _seg_idx, _lo, _hi, _processed);
-		if (_hi < _lo)
-		{
-			_hi = _lo;
-		}
-		QVector< QVector<T> > _items = preprocessedReadItems(_lo, _hi);
-		THREAD_UNSAFE
-		for (int _channel = 0; _channel < _items.count(); _channel++)
-		{
-			QVector<T> & _items_data = _items[_channel];
-			const quint64 _items_count = _items[_channel].count();
-			if (_items_count)
-			{
-				T _min = _items_data[0];
-				T _max = _items_data[0];
-				for (quint64 _items_idx = 1; _items_idx < _items_count; _items_idx++)
-				{
-					if (_less_func(_items_data[_items_idx], _min))
-					{
-						_min = _items_data[_items_idx];
-					}
-					if (_greater_func(_items_data[_items_idx], _max))
-					{
-						_max = _items_data[_items_idx];
-					}
-				}
-				THREAD_SAFE(Write)
-				items_processed += _items_count;
-				const quint64 _seg_idx_sub_end = qMin<quint64>(_seg_count, _seg_idx + _step);
-				Layer & _layer0 = layers[_channel][0];
-				_layer0.min[_seg_idx] = _min;
-				_layer0.max[_seg_idx] = _max;
-				_layer0.x[_seg_idx] = (qreal)(_seg_size0 * _seg_idx) / _channels;
-				_layer0.processed[_seg_idx] = true;
-				if (first_run)
-				{
-					for (quint64 _seg_idx_sub = _seg_idx + 1; _seg_idx_sub < _seg_idx_sub_end; _seg_idx_sub++)
-					{
-						if (_layer0.processed[_seg_idx_sub] == false)
-						{
-							_layer0.min[_seg_idx_sub] = _min;
-							_layer0.max[_seg_idx_sub] = _max;
-							_layer0.x[_seg_idx_sub] = (qreal)(_seg_size0 * _seg_idx_sub) / _channels;
-						}
-					}
-				}
-				THREAD_UNSAFE
-			}
-		}
-		_seg_idx += _step;
-		_layer0_finished = false;
-	}
-
-	if (first_run)
-	{
-		first_run = false;
-	}
-
-	if (stop_thread)
-	{
-		return false;
-	}
-
-	for (int _channel = 0; _channel < storage->channels(); _channel++)
-	{
-		for (int _layer_idx = 1; _layer_idx < _layers_count; _layer_idx++)
-		{
-			quint64 _lo_segment, _hi_segment;
-			THREAD_SAFE(Write)
-			Layer & _layer = layers[_channel][_layer_idx];
-			const Layer & _prev_layer = layers[_channel][_layer_idx - 1];
-			const quint64 _seg_count = ::ceil(_layer.seg_count);
-			const qreal _seg_size = storage->storageSize() / _layer.seg_count;
-			for (quint64 _seg_idx = 0; _seg_idx < _seg_count; _seg_idx++)
-			{
-				prevLayerRange(_layer_idx, _seg_idx, _lo_segment, _hi_segment);
-				T _min = _prev_layer.min[_lo_segment];
-				T _max = _prev_layer.max[_lo_segment];
-				for (quint64 _prev_seg_idx = _lo_segment; _prev_seg_idx < _hi_segment; _prev_seg_idx++)
-				{
-					if (_prev_layer.processed[_prev_seg_idx] == false)
-					{
-						break;
-					}
-					if (_less_func(_prev_layer.min[_prev_seg_idx], _min))
-					{
-						_min = _prev_layer.min[_prev_seg_idx];
-					}
-					if (_greater_func(_prev_layer.max[_prev_seg_idx], _max))
-					{
-						_max = _prev_layer.max[_prev_seg_idx];
-					}
-				}
-				_layer.min[_seg_idx] = _min;
-				_layer.max[_seg_idx] = _max;
-				_layer.x[_seg_idx] = (qreal)(_seg_idx * _seg_size) / _channels;
-				_layer.processed[_seg_idx] = true;
-				if (stop_thread)
-				{
-					return false;
-				}
-			}
-			THREAD_UNSAFE
-		}
-
-	}
-
-	SAFE_SET(finished, _layer0_finished);
-	return finished;
-}
-*/
 template <class T, class TX>
 int jStorage<T, TX>::jStorageThread::selectLayer(quint64 _lo_item, quint64 _hi_item) const
 {
@@ -1020,7 +872,7 @@ QVector< QMap<int, QVector<T> > > jStorage<T, TX>::jStorageThread::items(quint64
 				TX * _x_data = _x->data();
 				const TX * _x_data_end = _x_data + _arr_sz;
 				qreal _value = _lo_seg_stable + _seg_size;
-
+				_x_data++;
 				for (; _x_data < _x_data_end; _x_data++, _value += _seg_size)
 				{
 					* _x_data = _value;
@@ -1045,6 +897,8 @@ QVector< QMap<int, QVector<T> > > jStorage<T, TX>::jStorageThread::items(quint64
 			quint64 _prev_index = _index_r;
 			T * _min_item = _min_data;
 			T * _max_item = _max_data;
+			* _min_item = * _items_data;
+			* _max_item = * _items_data;
 			for (; _items_data < _items_data_end; _items_data++, _index_r += 1.0/_seg_size)
 			{
 				if ((quint64)_index_r != _prev_index)
