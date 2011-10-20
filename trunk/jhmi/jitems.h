@@ -487,7 +487,8 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 	THREAD_UNSAFE
 
 	QTransform _transform;
-	if (::jQuadToQuad(QRectF(QPointF(_src_rect.left() - _offset_x, _src_rect.top() - _offset_y), _src_rect.size()), _dst_rect, _transform))
+	QRectF _adj_src_rect = QRectF(QPointF(_src_rect.left() - _offset_x, _src_rect.top() - _offset_y), _src_rect.size());
+	if (::jQuadToQuad(_adj_src_rect, _dst_rect, _transform))
 	{
 		_painter.setPen(pen());
 		_painter.setBrush(brush());

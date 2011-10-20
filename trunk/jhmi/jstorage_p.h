@@ -522,7 +522,7 @@ void jStorage<T, TX>::jStorageThread::run()
 		msleep(1);
 	}
 	quint64 _msecs = _time_stamp.msecsTo(QDateTime::currentDateTime());
-	JDEBUG("thread finished" << _msecs);
+//	JDEBUG("thread finished" << _msecs);
 
 	if (finished)
 	{
@@ -871,8 +871,7 @@ QVector< QMap<int, QVector<T> > > jStorage<T, TX>::jStorageThread::items(quint64
 				_x->resize(_arr_sz);
 				TX * _x_data = _x->data();
 				const TX * _x_data_end = _x_data + _arr_sz;
-				qreal _value = _lo_seg_stable + _seg_size;
-				_x_data++;
+				qreal _value = _lo_seg_stable;
 				for (; _x_data < _x_data_end; _x_data++, _value += _seg_size)
 				{
 					* _x_data = _value;

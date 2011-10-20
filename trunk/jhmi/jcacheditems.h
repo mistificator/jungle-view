@@ -92,7 +92,8 @@ void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 	QPointF _origin = origin();
 	THREAD_SAFE(Write)
 	quint64 _lo = qMax<qreal>(_rect.left() + _origin.x(), 0);
-	quint64 _hi = qMax<qreal>(_rect.right() + _origin.x(), 0);
+//	quint64 _hi = qMax<qreal>(_rect.right() + _origin.x(), 0);
+	quint64 _hi = qMax<qreal>(::ceil(_rect.right() + _origin.x() + 1.0), 0);
 	if ((_lo == _hi) || (_hi == 0))
 	{
 		items.clear();
