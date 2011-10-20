@@ -64,14 +64,10 @@ public:
 	virtual jItem1D<T, TX> & setData(Radial * _data, unsigned int _width, bool _deep_copy = false);
 
 	const TX * x() const;
-
-	jItem1D<T, TX> & setSymbol(const QImage & _img);
-	QImage symbol() const;	
 private:
 	int data_model, line_style;
 	qreal bar_width;
 	TX * x_data;
-	QImage symbol_img;
 protected:
 	virtual jItem1D<T, TX> & setDataModel(int _model);
 };
@@ -280,7 +276,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 	const qreal _offset_y = _src_rect.top() + _src_rect.bottom() - _origin.y();
 	const QSize _size = size();
 	const unsigned int _width = _size.width();
-	QImage _symbol_img = symbol_img;
+	QImage _symbol_img = symbol();
 	switch (data_model)
 	{
 	case FlatData:
@@ -927,19 +923,6 @@ jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Radial * _data
 	setDataModel(jItem1D<T, TX>::RadialData);
 	jItem::setData(_data, _width, 1, _deep_copy);
 	return * this;
-}
-
-template <class T, class TX>
-jItem1D<T, TX> & jItem1D<T, TX>::setSymbol(const QImage & _img)
-{
-	SAFE_SET(symbol_img, _img);
-	return * this;
-}
-
-template <class T, class TX>
-QImage jItem1D<T, TX>::symbol() const
-{
-	return SAFE_GET(symbol_img);
 }
 
 // ------------------------------------------------------------------------

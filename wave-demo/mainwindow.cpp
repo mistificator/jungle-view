@@ -150,6 +150,7 @@ void MainWindow::on_actionOpen_triggered()
 		delete wave_items[_idx];
 	}
 	g_wave_file.setFile(_file_name, false);
+	disconnect(this, SLOT(onLayersAdjusted()));
 	connect(g_wave_file.storageControl(), SIGNAL(layersAdjusted()), this, SLOT(onLayersAdjusted()));
 	connect(g_wave_file.storageControl(), SIGNAL(finished(quint64)), this, SLOT(onLayersAdjusted()));
 	connect(g_wave_file.storageControl(), SIGNAL(stopped()), this, SLOT(onLayersAdjusted()));
@@ -210,7 +211,26 @@ void MainWindow::onLayersAdjusted()
 
 void MainWindow::onViewportChanged(QRectF _rect)
 {
-	g_highlight->setVisible(_rect.width() <= 10 * g_wave_file.storage()->processedItemsHint());
-	g_highlight_line->setVisible(_rect.width() <= 10 * g_wave_file.storage()->processedItemsHint());
+	qint64 _count = g_wave_file.storage()->processedItemsHint();
+	bool _condition_visibility = (_rect.width() <= 10 * _count);
+	bool _condition_symbol = (_rect.width() <= _count);
+	g_highlight->setVisible(_condition_visibility);
+	g_highlight_line->setVisible(_condition_visibility);
+	for (int _idx = 0; _idx < wave_items.count(); _idx++)
+	{
+		QImage _symbol_img;
+		if (_condition_symbol)
+		{
+			jFigureItem<qreal> _fig_item;
+			_fig_item.
+				setZ(98).
+				setPen(QPen(wave_items[_idx]->pen().color())).
+				setBrush(Qt::NoBrush);
+			_symbol_img = _fig_item.
+							setEllipseSymbol(QRectF(0, 0, 5, 5)).symbol();
+
+		}
+		wave_items[_idx]->setSymbol(_symbol_img);
+	}
 }
 

@@ -1124,6 +1124,7 @@ struct jItem::Data
 	quint64 counter;
 	jInputPattern pattern;
 	jItemHandler * item_control;
+	QImage symbol_img;
 	Data() 
 	{
 		counter = 0;
@@ -1290,7 +1291,11 @@ void jItem::updateViewport(const QRectF &)
 
 void jItem::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
 {
+	QImage _saved_symbol_img = symbol();
+	setSymbol(QImage());
 	render(_painter, _dst_rect, _src_rect, _x_axis, _y_axis);
+	// return back symbol
+	setSymbol(_saved_symbol_img);
 }
 
 quint64 jItem::counter() const
@@ -1338,6 +1343,17 @@ jItemHandler * jItem::itemControl() const
 bool jItem::userCommand(int, int, int, int, QPointF, QWidget *) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 {
 	return false;
+}
+
+jItem & jItem::setSymbol(const QImage & _img)
+{
+	SAFE_SET(d->symbol_img, _img);
+	return * this;
+}
+
+QImage jItem::symbol() const
+{
+	return SAFE_GET(d->symbol_img);
 }
 
 // ------------------------------------------------------------------------
