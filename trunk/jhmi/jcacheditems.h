@@ -260,7 +260,7 @@ void jCachedItem1D<T, TX>::renderPreview(QPainter & _painter, const QRectF & _ds
 
 	local_mtx.lockForWrite();
 	jItem1D<T, TX>::setData(_pv_items.data(), _pv_x_data.data(), _pv_items.count());
-	jItem1D<T, TX>::render(_painter, _dst_rect, _src_rect, _x_axis, _y_axis); 
+	jItem1D<T, TX>::renderPreview(_painter, _dst_rect, _src_rect, _x_axis, _y_axis);
 	// return back data
 	jItem1D<T, TX>::setData(items.data(), x_data.data(), items.count());
 	local_mtx.unlock();

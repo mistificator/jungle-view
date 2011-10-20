@@ -645,8 +645,8 @@ public:
 	virtual void updateViewport(const QRectF & _rect);
 	//! Renders item preview onto jPreview widget or any acceptable QPaintDevice.
 	/*!
-	Default implementation of renderPreview() is equal to render(). It may be useful to reimplement this method when input data has a huge size
-	and it's impossible to render whole data at once.
+	Default implementation of renderPreview() is equal to render() but with disabled symbols rendering.
+	It may be useful to reimplement this method when input data has a huge size and it's impossible to render whole data at once.
 	\param _painter reference to QPainter object
 	\param _dst_rect physical rectangle on which QPainter will draw item (measured in pixels if user paints on a widget)
 	\param _src_rect rectangle measured in axes units (fragment of item that will be rendered)
@@ -675,6 +675,10 @@ public:
 	jInputPattern & inputPattern() const;
 	jItemHandler * itemControl() const;
 	virtual bool userCommand(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+
+	jItem & setSymbol(const QImage & _img);
+	QImage symbol() const;
+
 protected:
 	//! Directly sets pointer to input data with its measurements.
 	/*!
