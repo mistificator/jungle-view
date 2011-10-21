@@ -331,7 +331,7 @@ bool jMemoryStorage<T, TX>::isDeepCopy() const
 // ------------------------------------------------------------------------
 
 template <class T, class TX>
-jFileStorage<T, TX>::jFileStorage(): jStorage<T, TX>()
+jIODeviceStorage<T, TX>::jIODeviceStorage(): jStorage<T, TX>(), io_device(0)
 {
 	setOffset(0);
 	setCacheSize(0);
@@ -340,73 +340,85 @@ jFileStorage<T, TX>::jFileStorage(): jStorage<T, TX>()
 }
 
 template <class T, class TX>
-jFileStorage<T, TX>::jFileStorage(const QString & _file_name, quint64 _offset): jStorage<T, TX>()
+jIODeviceStorage<T, TX>::jIODeviceStorage(QIODevice * _io_device, quint64 _offset): jStorage<T, TX>(), io_device(0)
 {
 	setOffset(_offset);
 	setCacheSize(0);
 	cache_start = 0;
 	cache_end = 0;
-	setStorageFile(_file_name);
+	setStorageIODevice(_io_device);
 }
 
 template <class T, class TX>
-jFileStorage<T, TX>::~jFileStorage()
+jIODeviceStorage<T, TX>::~jIODeviceStorage()
 {
 	stopProcessing();
-	if (file.isOpen())
+	if (io_device && io_device->isOpen())
 	{
-		file.close();
+		io_device->close();
 	}
 }
 
 template <class T, class TX>
-jFileStorage<T, TX> & jFileStorage<T, TX>::setStorageFile(const QString & _file_name)
+jIODeviceStorage<T, TX> & jIODeviceStorage<T, TX>::setStorageIODevice(QIODevice * _io_device)
 {
 	stopProcessing();
 	THREAD_SAFE(Write);
-	if (file.isOpen())
+	if (io_device && io_device->isOpen())
 	{
-		file.close();
+		io_device->close();
 	}
-	file.setFileName(_file_name);
-	file.setPermissions(QFile::ReadOther);
-	file.open(QFile::ReadOnly);
+	io_device = _io_device;
+	if (io_device && (!io_device->isOpen()))
+	{
+		io_device->open(QIODevice::ReadOnly);
+	}
 	THREAD_UNSAFE
 	return * this;
 }
 
 template <class T, class TX>
-quint64 jFileStorage<T, TX>::storageSize() const
+quint64 jIODeviceStorage<T, TX>::storageSize() const
 {
 	THREAD_SAFE(Read)
-	quint64 _size = (file.size() - offs) / sizeof(T);
+	quint64 _size = io_device ? (io_device->size() - offs) / sizeof(T) : 0;
 	THREAD_UNSAFE
 	return _size;
 }
 
 template <class T, class TX>
-QVector<T> jFileStorage<T, TX>::readItems(quint64 _items_count)
+QVector<T> jIODeviceStorage<T, TX>::readItems(quint64 _items_count)
 {
+	if (!io_device)
+	{
+		return QVector<T>();
+	}
 	THREAD_SAFE(Write)
+	const qint64 _file_size = io_device->size();
+	const qint64 _bytes_to_read = _items_count * sizeof(T);
 	qint64 _pos_start = offs + (position() * sizeof(T) / channels()) * channels();
-	qint64 _bytes_to_read = _items_count * sizeof(T);
 	qint64 _pos_end = _pos_start + _bytes_to_read;
 	_pos_start = qMax<qint64>(offs, _pos_start);
-	_pos_end = qMin<qint64>(file.size(), _pos_start + _bytes_to_read);
+	_pos_end = qMin<qint64>(_file_size, _pos_start + _bytes_to_read);
 	if ((_pos_start < (qint64)cache_start) || (_pos_end > (qint64)cache_end))
 	{
 		if (_items_count > segmentSize())
 		{
-			cache_start = qMin<qint64>(qMax<qint64>(_pos_start - (cache_size / 2), offs), file.size());
-			cache_end = qMax<qint64>(qMin<qint64>(_pos_end + (cache_size / 2), file.size()), offs);
+			cache_start = qMin<qint64>(qMax<qint64>(_pos_start - (cache_size / 2), offs), _file_size);
+			cache_end = qMax<qint64>(qMin<qint64>(_pos_end + (cache_size / 2), _file_size), offs);
 		}
 		else
 		{
 			cache_start = _pos_start;
 			cache_end = _pos_end;
 		}
-		file.seek(cache_start);
-		items = file.read(cache_end - cache_start);
+		const qint64 _bytes_to_physical_read = cache_end - cache_start;
+		if (items.count() < _bytes_to_physical_read)
+		{
+			items.resize(_bytes_to_physical_read);
+		}
+		io_device->seek(cache_start);
+		io_device->read(items.data(), _bytes_to_physical_read);
 	}
 	
 	if (cache_start > cache_end)
@@ -425,7 +437,7 @@ QVector<T> jFileStorage<T, TX>::readItems(quint64 _items_count)
 }
 
 template <class T, class TX>
-jFileStorage<T, TX> & jFileStorage<T, TX>::setOffset(quint64 _offset)
+jIODeviceStorage<T, TX> & jIODeviceStorage<T, TX>::setOffset(quint64 _offset)
 {
 	stopProcessing();
 	SAFE_SET(offs, _offset);
@@ -433,24 +445,59 @@ jFileStorage<T, TX> & jFileStorage<T, TX>::setOffset(quint64 _offset)
 }
 
 template <class T, class TX>
-quint64 jFileStorage<T, TX>::offset() const
+quint64 jIODeviceStorage<T, TX>::offset() const
 {
 	return offs;
 }
 
 template <class T, class TX>
-jFileStorage<T, TX> &  jFileStorage<T, TX>::setCacheSize(quint64 _size)
+jIODeviceStorage<T, TX> &  jIODeviceStorage<T, TX>::setCacheSize(quint64 _size)
 {
 	SAFE_SET(cache_size, _size);
 	return * this;
 }
 
 template <class T, class TX>
-quint64  jFileStorage<T, TX>::cacheSize() const
+quint64  jIODeviceStorage<T, TX>::cacheSize() const
 {
 	return cache_size;
 }
 
+template <class T, class TX>
+QIODevice * jIODeviceStorage<T, TX>::IODevice() const
+{
+	return io_device;
+}
+
+// ------------------------------------------------------------------------
+
+template <class T, class TX>
+jFileStorage<T, TX>::jFileStorage(): jIODeviceStorage<T, TX>()
+{
+	setStorageIODevice(&file);
+}
+
+template <class T, class TX>
+jFileStorage<T, TX>::jFileStorage(const QString & _file_name, quint64 _offset): jIODeviceStorage<T, TX>()
+{
+	setOffset(_offset);
+	setStorageFile(_file_name);
+}
+
+template <class T, class TX>
+jFileStorage<T, TX> & jFileStorage<T, TX>::setStorageFile(const QString & _file_name)
+{
+	THREAD_SAFE(Write);
+	if (file.isOpen())
+	{
+		file.close();
+	}
+	file.setFileName(_file_name);
+	file.setPermissions(QFile::ReadOther);
+	THREAD_UNSAFE
+	setStorageIODevice(&file);
+	return * this;
+}
 
 // ------------------------------------------------------------------------
 

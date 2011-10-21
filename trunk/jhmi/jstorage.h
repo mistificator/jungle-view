@@ -25,6 +25,7 @@ class jStorageInterface
 {
 	DECL_MUTEX
 	COPY_FBD(jStorageInterface)
+	DECL_PROPERTIES(jStorageInterface)
 public:
 	jStorageInterface() {}
 	virtual ~jStorageInterface() {}
@@ -147,27 +148,44 @@ private:
 // ------------------------------------------------------------------------
 
 template <class T, class TX = T>
-class jFileStorage : public jStorage<T, TX>
+class jIODeviceStorage : public jStorage<T, TX>
+{
+	COPY_FBD(jIODeviceStorage)
+public:
+	jIODeviceStorage();
+	jIODeviceStorage(QIODevice * _io_device, quint64 _offset = 0);
+	~jIODeviceStorage();
+
+	virtual jIODeviceStorage & setStorageIODevice(QIODevice * _io_device);
+	quint64 storageSize() const;
+
+	virtual jIODeviceStorage & setOffset(quint64 _offset); // in bytes
+	virtual quint64 offset() const;
+
+	jIODeviceStorage & setCacheSize(quint64 _size = 0);
+	quint64 cacheSize() const;
+
+	QIODevice * IODevice() const;
+protected:
+	QVector<T> readItems(quint64 _items_count);
+	quint64 offs, cache_start, cache_end, cache_size;
+	QIODevice * io_device;
+	QByteArray items;
+};
+
+// ------------------------------------------------------------------------
+
+template <class T, class TX = T>
+class jFileStorage : public jIODeviceStorage<T, TX>
 {
 	COPY_FBD(jFileStorage)
 public:
 	jFileStorage();
 	jFileStorage(const QString & _file_name, quint64 _offset = 0);
-	~jFileStorage();
 
 	virtual jFileStorage & setStorageFile(const QString & _file_name);
-	quint64 storageSize() const;
-
-	virtual jFileStorage & setOffset(quint64 _offset); // in bytes
-	virtual quint64 offset() const;
-
-	jFileStorage & setCacheSize(quint64 _size = 0);
-	quint64 cacheSize() const;
 protected:
-	QVector<T> readItems(quint64 _items_count);
-	quint64 offs, cache_start, cache_end, cache_size;
 	QFile file;
-	QByteArray items;
 };
 
 // ------------------------------------------------------------------------
