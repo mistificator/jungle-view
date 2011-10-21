@@ -13,11 +13,73 @@ QString customRangeFunc(double _value, jAxis * _axis)
 	}
 	return QString::number(_value, '.', 0);
 }
+/*
+struct tst
+{
+	tst()
+	{
+		::qMemSet(data, 0, sizeof(data));
+	}
+	tst(const tst & _other)
+	{
+		::qMemCopy(data, _other.data, sizeof(data));
+	}
+	tst & operator = (const tst & _other)
+	{
+		if (&_other != this)
+		{
+			::qMemCopy(data, _other.data, sizeof(data));
+		}
+		return * this;
+	}
+	bool operator < (const tst & _other) const
+	{
+		return data[0] < _other.data[0];
+	}
+	bool operator > (const tst & _other) const
+	{
+		return data[0] > _other.data[0];
+	}
+	char data[10];
+};
 
+QDataStream& operator<<(QDataStream& s, const QVector<tst>& v)
+{
+    s << quint32(v.size());
+    for (QVector<tst>::const_iterator it = v.begin(); it != v.end(); ++it)
+        s << QByteArray((char *)it->data, sizeof(it->data));
+    return s;
+}
+
+QDataStream& operator>>(QDataStream& s, QVector<tst>& v)
+{
+    v.clear();
+    quint32 c;
+    s >> c;
+    v.resize(c);
+    for(quint32 i = 0; i < c; ++i) {
+        QByteArray t;
+        s >> t;
+		::qMemCopy(v[i].data, t.data(), t.count());
+    }
+    return s;
+}
+*/
+
+#include <windows.h>
 Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 	: QMainWindow(_parent, _flags)
 {
 	ui.setupUi(this);
+
+/*
+\\ test. this works!
+	jFileStorage<tst, quint64> test("c:/temp/111.wav");
+	test.startProcessing();
+	::Sleep(1000);
+	QVector< QMap< int, QVector<tst> > > _result = test.processedItems(20, 1000);
+	quint64 _size = test.storageSize();
+*/
 
 	QBoxLayout * _layout = new QVBoxLayout();
 	view = new jView();
@@ -233,7 +295,6 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 	prev_rendered_count = 0;
 	fast_timer = startTimer(ui.timer_interval->value());
 	slow_timer = startTimer(1000);
-
 }
 
 Mainwindow::~Mainwindow()
