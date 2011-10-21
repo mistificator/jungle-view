@@ -25,10 +25,11 @@ private:
 	static QString time_convert(double _value, jAxis *);
 	static QString coordinator_format(double _x, double _y, jAxis * _x_axis, jAxis * _y_axis, jCoordinator *);
 
-	static int g_sample_rate;
-	static jWaveFile g_wave_file;
-	static jFigureItem<qint64> * g_highlight;
-	static jItem1D<qreal> * g_highlight_line;
+	qint32 sample_rate;
+	QFile file;
+	jWaveFile wave_file;
+	jFigureItem<qint64> * highlight;
+	jItem1D<qreal> * highlight_line;
 private slots:
 	void on_actionOpen_triggered();
 	void on_actionQuit_triggered();

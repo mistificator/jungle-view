@@ -16,6 +16,10 @@
 #define COPY_FBD(CLASS_NAME) CTOR_FBD(CLASS_NAME); ASSIGN_FBD(CLASS_NAME);
 #define PDATA private: struct Data; Data * d;
 
+#define DECL_PROPERTIES(CLASS_NAME) private: QHash<QString, QVariant> properties; \
+	public: CLASS_NAME & setProperty(const char * _name, const QVariant & _value) { properties[_name] = _value; return * this; }  \
+	QVariant property(const char * _name) const { return properties[_name]; } 
+
 #ifdef _DEBUG
 	#define JDEBUG(str) qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << QFileInfo(__FILE__).fileName() << "\t" << __LINE__ << "\t" << __FUNCTION__ << "\t" << str;
 	#define JTIME_START		int _line_start = __LINE__; int _line_prev = _line_start; QTime _time_start = QTime::currentTime();  QTime _time_prev = _time_start;

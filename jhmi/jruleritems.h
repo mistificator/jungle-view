@@ -32,7 +32,7 @@ public:
 	bool intersects(const QRectF & _rect, const jAxis * _x_axis, const jAxis * _y_axis) const;
 protected:
 	jItem1D<qreal> & setData(jItem1D<qreal>::Flat *, unsigned int, bool)			{ return * this; }
-	jItem1D<qreal> & setData(jItem1D<qreal>::Flat *, qreal *, unsigned int, bool)		{ return * this; }
+	jItem1D<qreal> & setData(jItem1D<qreal>::Flat *, qreal *, unsigned int, bool)	{ return * this; }
 	jItem1D<qreal> & setData(jItem1D<qreal>::Point * , unsigned int, bool)			{ return * this; }
 	jItem1D<qreal> & setData(jItem1D<qreal>::Radial *, unsigned int, bool)			{ return * this; }
 };

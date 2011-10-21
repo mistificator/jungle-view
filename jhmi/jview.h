@@ -16,6 +16,7 @@ class jAxis
 	PDATA
 	COPY_FBD(jAxis)
 	DECL_MUTEX
+	DECL_PROPERTIES(jAxis)
 public:
 	//!
 	/*!
@@ -270,6 +271,7 @@ class jSelector
 	PDATA
 	COPY_FBD(jSelector)
 	DECL_MUTEX
+	DECL_PROPERTIES(jSelector)
 public:
 	jSelector();
 	~jSelector();
@@ -337,6 +339,7 @@ class jLabel
 	PDATA
 	COPY_FBD(jLabel)
 	DECL_MUTEX
+	DECL_PROPERTIES(jLabel)
 public:
 	jLabel(const QString & _text = QString());
 	virtual ~jLabel();
@@ -380,6 +383,7 @@ class jCoordinator
 	PDATA
 	COPY_FBD(jCoordinator)
 	DECL_MUTEX
+	DECL_PROPERTIES(jCoordinator)
 public:
 	//!
 	/*!
@@ -490,6 +494,7 @@ class jItem
 	PDATA
 	COPY_FBD(jItem)
 	DECL_MUTEX
+	DECL_PROPERTIES(jItem)
 public:
 	//! 
 	/*!
@@ -733,6 +738,7 @@ class jMarker
 	PDATA
 	COPY_FBD(jMarker)
 	DECL_MUTEX
+	DECL_PROPERTIES(jMarker)
 public:
 	jMarker();
 	~jMarker();
