@@ -888,7 +888,7 @@ jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Flat * _data, 
 	if (_deep_copy)
 	{
 		x_data = new TX[_width];
-		::memcpy(x_data, _x, _width * sizeof(TX));
+		::qMemCopy(x_data, _x, _width * sizeof(TX));
 	}
 	else
 	{

@@ -57,7 +57,7 @@ QVector< QMap< int, QByteArray> > jStorage<T, TX>::processedArray(quint64 _start
 	{
 		foreach(int _type, _items[_idx].keys())
 		{
-			_array[_idx][_type] = QByteArray::fromRawData(reinterpret_cast<char *>(_items[_idx][_type].data()), _items[_idx][_type].count() * sizeof(T));
+			_array[_idx][_type] = QByteArray::fromRawData(reinterpret_cast<char *>(_items[_idx][_type].data()), _items[_idx][_type].count() * itemSize());
 		}
 	}
 	if (_x)
@@ -287,7 +287,7 @@ QVector<T> jMemoryStorage<T, TX>::readItems(quint64 _items_count)
 	}
 	QVector<T> _result;
 	_result.resize(_items_count);
-	::memcpy(_result.data(), _items, _items_count * sizeof(T));
+	::qMemCopy(_result.data(), _items, _items_count * itemSize());
 	THREAD_UNSAFE
 	return _result;
 }
@@ -312,7 +312,7 @@ jMemoryStorage<T, TX> & jMemoryStorage<T, TX>::setStorageBuffer(T * _items, quin
 	if (deep_copy)
 	{
 		items = new T[items_count];
-		::memcpy(items, _items, items_count * sizeof(T));
+		::qMemCopy(items, _items, items_count * itemSize());
 	}
 	else
 	{
@@ -381,7 +381,7 @@ template <class T, class TX>
 quint64 jIODeviceStorage<T, TX>::storageSize() const
 {
 	THREAD_SAFE(Read)
-	quint64 _size = io_device ? (io_device->size() - offs) / sizeof(T) : 0;
+	quint64 _size = io_device ? (io_device->size() - offs) / itemSize() : 0;
 	THREAD_UNSAFE
 	return _size;
 }
@@ -395,8 +395,8 @@ QVector<T> jIODeviceStorage<T, TX>::readItems(quint64 _items_count)
 	}
 	THREAD_SAFE(Write)
 	const qint64 _file_size = io_device->size();
-	const qint64 _bytes_to_read = _items_count * sizeof(T);
-	qint64 _pos_start = offs + (position() * sizeof(T) / channels()) * channels();
+	const qint64 _bytes_to_read = _items_count * itemSize();
+	qint64 _pos_start = offs + (position() * itemSize() / channels()) * channels();
 	qint64 _pos_end = _pos_start + _bytes_to_read;
 	_pos_start = qMax<qint64>(offs, _pos_start);
 	_pos_end = qMin<qint64>(_file_size, _pos_start + _bytes_to_read);
@@ -430,8 +430,8 @@ QVector<T> jIODeviceStorage<T, TX>::readItems(quint64 _items_count)
 		_pos_start = _pos_end;
 	}
 	QVector<T> _result;
-	_result.resize((_pos_end - _pos_start) / sizeof(T));
-	::memcpy(_result.data(), items.constData() + (_pos_start - cache_start), _pos_end - _pos_start);
+	_result.resize((_pos_end - _pos_start) / itemSize());
+	::qMemCopy(_result.data(), items.constData() + (_pos_start - cache_start), _pos_end - _pos_start);
 	THREAD_UNSAFE
 	return _result;
 }
