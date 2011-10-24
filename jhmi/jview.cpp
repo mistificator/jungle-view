@@ -1188,7 +1188,7 @@ jItem & jItem::setData(void * _data, unsigned int _width, unsigned int _height, 
 	{
 		unsigned int _data_size = _width * _height * d->bytes_per_item;
 		d->data = new char [_data_size];
-		::memcpy(d->data, _data, _data_size);
+		::qMemCopy(d->data, _data, _data_size);
 	}
 	THREAD_UNSAFE
 	return * this;
