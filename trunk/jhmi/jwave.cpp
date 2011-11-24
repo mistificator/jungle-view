@@ -210,6 +210,8 @@ struct jFdFile::Data
 	qreal sample_rate;
 	Data()
 	{
+		bits_per_sample = 0;
+		sample_rate = 0;
 		helper = 0;
 		io_device = 0;
 		set_format = jFdFile::Auto_Format;
@@ -276,14 +278,13 @@ struct jFdFile::Data
 	HelperInterface * helper;
 };
 
-jFdFile::jFdFile(Format _fmt) : jDataFileInterface(), d(new Data())
+jFdFile::jFdFile() : jDataFileInterface(), d(new Data())
 {
-	d->set_format = _fmt;
 }
 
 jFdFile::jFdFile(QIODevice * _io_device, Format _fmt, bool _start_loading) : jDataFileInterface(), d(new Data())
 {
-	d->set_format = _fmt;
+	setIODevice(_io_device, _fmt, _start_loading);
 }
 
 jFdFile::~jFdFile()

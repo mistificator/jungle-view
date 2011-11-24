@@ -136,9 +136,21 @@ typename jStorage<T, TX>::segment_func jStorage<T, TX>::segmentFunc() const
 }
 
 template <class T, class TX>
-bool jStorage<T, TX>::defaultLess(const T & _op1, const T & _op2)
+bool jStorage<T, TX>::defaultLess(const T & _op1, const T & _op2, quint32 _count)
 {
-	return _op1 < _op2;
+	if (_count <= 1)
+	{
+		return _op1 < _op2;
+	}
+	quint32 _stsfy = 0;
+	for (quint32 _idx = 0; _idx < _count; _idx++)
+	{
+		if (*(&_op1 + _idx) < *(&_op2 + _idx))
+		{
+			_stsfy++;
+		}
+	}
+	return _stsfy > (_count / 2);
 }
 
 template <class T, class TX>
@@ -155,9 +167,21 @@ typename jStorage<T, TX>::less_func jStorage<T, TX>::lessFunc() const
 }
 
 template <class T, class TX>
-bool jStorage<T, TX>::defaultGreater(const T & _op1, const T & _op2)
+bool jStorage<T, TX>::defaultGreater(const T & _op1, const T & _op2, quint32 _count)
 {
-	return _op1 > _op2;
+	if (_count <= 1)
+	{
+		return _op1 > _op2;
+	}
+	quint32 _stsfy = 0;
+	for (quint32 _idx = 0; _idx < _count; _idx++)
+	{
+		if (*(&_op1 + _idx) > *(&_op2 + _idx))
+		{
+			_stsfy++;
+		}
+	}
+	return _stsfy > (_count / 2);
 }
 
 template <class T, class TX>
@@ -738,13 +762,13 @@ bool jStorage<T, TX>::jStorageThread::adjustLayers()
 			_items_data++;
 			for (; _items_data < _items_data_end; _items_data++)
 			{
-				if (_less_func(* _items_data, _min))
+				if (_less_func(* _items_data, _min, 1))
 				{
 					_min = * _items_data;
 				}
 				else
 				{
-					if (_greater_func(* _items_data, _max))
+					if (_greater_func(* _items_data, _max, 1))
 					{
 						_max = * _items_data;
 					}
@@ -812,13 +836,13 @@ bool jStorage<T, TX>::jStorageThread::adjustLayers()
 					{
 						break;
 					}
-					if (_less_func(* _pl_min, _min))
+					if (_less_func(* _pl_min, _min, 1))
 					{
 						_min = * _pl_min;
 					}
 					else
 					{
-						if (_greater_func(* _pl_max, _max))
+						if (_greater_func(* _pl_max, _max, 1))
 						{
 							_max = * _pl_max;
 						}
@@ -953,13 +977,13 @@ QVector< QMap<int, QVector<T> > > jStorage<T, TX>::jStorageThread::items(quint64
 					_min_item++;
 					_max_item++;
 				}
-				if (_less_func(* _items_data, * _min_item))
+				if (_less_func(* _items_data, * _min_item, 1))
 				{
 					* _min_item = * _items_data;
 				}
 				else
 				{
-					if (_greater_func(* _items_data, * _max_item))
+					if (_greater_func(* _items_data, * _max_item, 1))
 					{
 						* _max_item = * _items_data;
 					}

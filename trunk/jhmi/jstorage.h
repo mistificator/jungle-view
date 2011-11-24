@@ -4,21 +4,6 @@
 #include "jdefs.h"
 #include "jstoragehandler.h"
 
-/*
-
-Memory storage.
-Features:
- - insert data;
- - remove data;
- - seekable.
-
-File storage.
-Features:
- - append data;
- - seekable.
-
-*/
-
 // ------------------------------------------------------------------------
 
 class jStorageInterface
@@ -66,10 +51,10 @@ public:
 
 	typedef QVector< QVector<T> > (*segment_func)(const QVector<T> &, jStorage<T, TX> *);
 	static QVector< QVector<T> > defaultSegmentProcessing(const QVector<T> &, jStorage<T, TX> *);
-	typedef bool (*less_func)(const T &, const T &);
-	inline static bool defaultLess(const T &, const T &);
-	typedef bool (*greater_func)(const T &, const T &);
-	inline static bool defaultGreater(const T &, const T &);
+	typedef bool (*less_func)(const T &, const T &, quint32);
+	inline static bool defaultLess(const T &, const T &, quint32 _count);
+	typedef bool (*greater_func)(const T &, const T &, quint32);
+	inline static bool defaultGreater(const T &, const T &, quint32 _count);
 
 	jStorage();
 	~jStorage();
