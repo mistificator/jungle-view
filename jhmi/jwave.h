@@ -72,7 +72,7 @@ class jFdFile: public jDataFileInterface
 public:
 	enum Format {No_Format = -1, Auto_Format = 0, Fd_Format = 1, Sd_Format = 2, S_Format = 3};
 
-	jFdFile(Format _fmt = Auto_Format);
+	jFdFile();
 	jFdFile(QIODevice * _io_device, Format _fmt = Auto_Format, bool _start_loading = true);
 	~jFdFile();
 
