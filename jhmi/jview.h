@@ -684,6 +684,8 @@ public:
 	jItem & setSymbol(const QImage & _img);
 	QImage symbol() const;
 
+	jItem & setPreviewEnabled(bool _state);
+	bool previewEnabled() const;
 protected:
 	//! Directly sets pointer to input data with its measurements.
 	/*!
@@ -952,6 +954,8 @@ public:
 	bool isYAxisVisible() const;
 	virtual bool userCommand(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 
+	jPreview & setPanCursor(const QCursor & _pan_cursor);
+	QCursor panCursor() const;
 public slots:
 	void rebuild();
 	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position

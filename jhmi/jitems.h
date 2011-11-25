@@ -1087,41 +1087,28 @@ void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
         _image = _result;
         _h = _log_h;
     }
-    if (scaler)
+
+	QRectF _src_img_rect = QRectF(
+		_src_rect.left() - _origin.x(),
+		_h - (_src_rect.bottom() - _origin.y()),
+		_src_rect.width(),
+		_src_rect.height()
+		);
+	if (scaler)
     {
-        QRectF _src_img_rect = QRectF(
-                    _origin.x(),
-                    _src_rect.top() + _src_rect.bottom() - _h - _origin.y(),
-                    _src_rect.width(),
-                    _src_rect.height()
-                    );
-        _painter.drawImage(QPointF(), scaler(_image, _src_img_rect, _dst_rect.size(), this));
+		_painter.drawImage(QPointF(), scaler(_image, _src_img_rect, _dst_rect.size(), this));
     }
     else
     {
-        QTransform _transform;
-        if (::jQuadToQuad(_src_rect, _dst_rect, _transform))
-        {
-            QRectF _src_img_rect = QRectF(
-                        _origin.x(),
-                        _src_rect.top() + _src_rect.bottom() - _h - _origin.y(),
-                        _w,
-                        _h
-                        );
-            QRectF _dst_img_rect = _transform.mapRect(_src_img_rect);
-            _painter.drawImage(
-                        _dst_img_rect,
-                        _image,
-                        QRectF(QPointF(), _image.size()),
-                        (Qt::ImageConversionFlags)conversion_flags);
-        }
+        _painter.drawImage(_dst_rect, _image, _src_img_rect, (Qt::ImageConversionFlags)conversion_flags);
     }
-    if (_need_to_delete)
+
+	if (_need_to_delete)
     {
         delete [] _buf_i32;
     }
     THREAD_UNSAFE
-            addCounter(_w * _h);
+	addCounter(_w * _h);
 }
 
 template <class T>
