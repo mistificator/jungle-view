@@ -1125,8 +1125,10 @@ struct jItem::Data
 	jInputPattern pattern;
 	jItemHandler * item_control;
 	QImage symbol_img;
+	bool preview_enabled;
 	Data() 
 	{
+		preview_enabled = true;
 		counter = 0;
 		data = 0;
 		width = 0;
@@ -1291,6 +1293,10 @@ void jItem::updateViewport(const QRectF &)
 
 void jItem::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
 {
+	if (d->preview_enabled == false)
+	{
+		return;
+	}
 	QImage _saved_symbol_img = symbol();
 	setSymbol(QImage());
 	render(_painter, _dst_rect, _src_rect, _x_axis, _y_axis);
@@ -1354,6 +1360,17 @@ jItem & jItem::setSymbol(const QImage & _img)
 QImage jItem::symbol() const
 {
 	return SAFE_GET(d->symbol_img);
+}
+
+jItem & jItem::setPreviewEnabled(bool _state)
+{
+	SAFE_SET(d->preview_enabled, _state);
+	return * this;
+}
+
+bool jItem::previewEnabled() const
+{
+	return d->preview_enabled;
 }
 
 // ------------------------------------------------------------------------
@@ -2778,8 +2795,11 @@ struct jPreview::Data
 	jLazyRenderer * renderer;
 	jInputPattern pattern;
 	bool x_axis_visible, y_axis_visible;
+	QCursor saved_cursor, pan_cursor;
 	Data()
 	{
+		saved_cursor = Qt::OpenHandCursor;
+		pan_cursor = Qt::ClosedHandCursor;
 		pattern.setDefaultPattern();
 		view = 0;
 		orientation = Qt::Vertical | Qt::Horizontal;
@@ -2947,6 +2967,7 @@ jPreview::jPreview(QWidget * _parent)
 	installEventFilter(d->renderer);
 	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF, QWidget *)), this, SLOT(actionAccepted(int, int, int, int, QPointF, QWidget *)), Qt::DirectConnection);
 	installEventFilter(&d->pattern);
+	setCursor(d->saved_cursor);
 }
 
 jPreview::jPreview(jView * _view, QWidget * _parent)
@@ -2962,6 +2983,7 @@ jPreview::jPreview(jView * _view, QWidget * _parent)
 	installEventFilter(&d->pattern);
 
 	setView(_view);
+	setCursor(d->saved_cursor);
 }
 
 jPreview::~jPreview()
@@ -3102,6 +3124,8 @@ bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifie
 	case jInputPattern::PanStart:
 		d->prev_point = _mpos.toPoint();
 		d->press_point = _mpos.toPoint();
+		d->saved_cursor = cursor();
+		setCursor(d->pan_cursor);
 		break;
 	case jInputPattern::ZoomEnd:
 	case jInputPattern::PanEnd:
@@ -3109,6 +3133,7 @@ bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifie
 		{
 			d->setToPosition(rect(), _me);
 		}
+		setCursor(d->saved_cursor);
 		break;
 	case jInputPattern::ZoomMove:
 	case jInputPattern::PanMove:
@@ -3154,6 +3179,18 @@ bool jPreview::isYAxisVisible() const
 {
 	return d->y_axis_visible;
 }
+
+jPreview & jPreview::setPanCursor(const QCursor & _pan_cursor)
+{
+	SAFE_SET(d->pan_cursor, _pan_cursor);
+	return * this;
+}
+
+QCursor jPreview::panCursor() const
+{
+	return SAFE_GET(d->pan_cursor);
+}
+
 
 // ------------------------------------------------------------------------
 
