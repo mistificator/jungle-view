@@ -129,9 +129,10 @@ public:
 	\param _orientation orientation of axis (could be Qt::Vertical or Qt::Horizontal)
 	\param _lo low boundary of area to be rendered (_lo >= lo())
 	\param _hi high boundary of area to be rendered (_hi <= hi())
+        \param _draw_grid grid visibility flag
 	\sa lo(), hi()
 	*/
-	virtual void render(QPainter & _painter, const QRectF & _dst_rect, int _orientation, double _lo, double _hi);
+        virtual void render(QPainter & _painter, const QRectF & _dst_rect, int _orientation, double _lo, double _hi, bool _draw_grid);
 
 	//! Sets axis pen.
 	/*!
@@ -163,7 +164,6 @@ public:
 
 	//! Sets axis grid pen.
 	/*!
-	Grid is invisible by default (set to Qt::NoPen).
 	\param _pen QPen object
 	\return reference
 	\sa gridPen()
@@ -801,7 +801,10 @@ public:
 			ItemPanMove =			ItemActionGroupBegin + 5,
 			ItemPanEnd =			ItemActionGroupBegin + 6,
 			ItemMenuRequested =		ItemActionGroupBegin + 7,
-		ItemActionGroupEnd =	ItemActionGroupBegin + 999
+            ItemSelected =          ItemActionGroupBegin + 8,
+        ItemActionGroupEnd =	ItemActionGroupBegin + 999,
+
+        UserAction = 100000
 	};
 	enum Method
 	{
@@ -857,6 +860,9 @@ public:
 
 	jView & setYAxis(jAxis * _axis);
 	jAxis * yAxis() const;
+
+    jView & setGridEnabled(bool _draw_grid);
+    bool gridEnabled() const;
 
 	jViewport & viewport() const;
 	jCoordinator & coordinator() const;

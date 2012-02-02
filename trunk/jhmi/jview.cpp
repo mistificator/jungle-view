@@ -48,7 +48,7 @@ struct jAxis::Data
 		alignment = 1.0;
 		tick_length = 5;
 		visible = true;
-		grid_pen = Qt::NoPen;
+                grid_pen = QColor(Qt::black);
 		id = 0;
 	}
 	~Data()
@@ -57,7 +57,7 @@ struct jAxis::Data
 	}
 	double alignTick(double _value, double _alignment) const
 	{
-		return static_cast<qint64>(_value / _alignment) * _alignment;
+                return static_cast<qint64>(_value / _alignment) * _alignment;
 	}
 	QVector<double> calcTicks(double _lo, double _hi) const
 	{
@@ -93,7 +93,8 @@ struct jAxis::Data
 
 		QVector<double> _ticks;
 		const double _start_tick = alignTick(_lo, _step);
-		for (double _value = _start_tick; _value <= _hi; _value += _step)
+                qint64 _tick_number = 0;
+                for (double _value = _start_tick; _value <= _hi; _value = _start_tick + (++_tick_number) * _step)
 		{
 			_ticks << _value;
 		}
@@ -106,7 +107,7 @@ struct jAxis::Data
 				_mply *= 2;
 				for (int _idx = 0; _idx < _ticks.count(); )
 				{
-					if (alignTick(_ticks[_idx], _step * _mply) != _ticks[_idx])
+                                        if (alignTick(_ticks[_idx], _step * _mply) != _ticks[_idx])
 					{
 						_ticks.remove(_idx);
 					}
@@ -205,7 +206,7 @@ unsigned int jAxis::tickLength() const
 	return d->tick_length;
 }
 
-void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientation, double _lo, double _hi)
+void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientation, double _lo, double _hi, bool _draw_grid)
 {
 	THREAD_SAFE(Read)
 	if (d->visible == false)
@@ -248,7 +249,7 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 	{
 		while (_ticks.count() > (int)d->count)
 		{
-			for (int _idx = 0; _idx < _ticks.count(); _idx++)
+                        for (int _idx = 0; _idx < _ticks.count(); _idx++)
 			{
 				_ticks.remove(_idx);
 			}
@@ -283,10 +284,13 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 					_painter.fillRect(QRectF(QPointF(_x, _y - _h + 2), _rect.size()), _background);
 					_painter.drawText(_x, _y, _str);
 				}
-				_painter.save();
-				_painter.setPen(_grid_pen);
-				_painter.drawLine(_x + _w, _y - _h / 2, _dst_rect.width(), _y - _h / 2);				
-				_painter.restore();
+                                if (_draw_grid)
+                                {
+                                    _painter.save();
+                                    _painter.setPen(_grid_pen);
+                                    _painter.drawLine(_x + _w, _y - _h / 2, _dst_rect.width(), _y - _h / 2);
+                                    _painter.restore();
+                                }
 			}
 			break;
 		}
@@ -313,10 +317,13 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 					_painter.fillRect(QRectF(QPointF(_x, _y - _h + 2), _rect.size()), _background);
 					_painter.drawText(_x, _y, _str);
 				}
-				_painter.save();
-				_painter.setPen(_grid_pen);
-				_painter.drawLine(_x + _w / 2, 0, _x + _w / 2, _y - _h + 2);				
-				_painter.restore();
+                                if (_draw_grid)
+                                {
+                                    _painter.save();
+                                    _painter.setPen(_grid_pen);
+                                    _painter.drawLine(_x + _w / 2, 0, _x + _w / 2, _y - _h + 2);
+                                    _painter.restore();
+                                }
 			}
 			break;
 		}
@@ -994,6 +1001,7 @@ struct jCoordinator::Data
 	QPointF offset;
 	Data()
 	{
+        pos = QPointF(-1e38, -1e38);
 		offset = QPointF(8, 8);
 		range_func = &jAxis::default_range_convert;
 		format_func = &jCoordinator::default_format;	
@@ -1618,7 +1626,8 @@ struct jInputPattern::Data
 			addAction(jInputPattern::ItemPanStart, jInputPattern::MousePress, Qt::RightButton).
 			addAction(jInputPattern::ItemPanEnd, jInputPattern::MouseRelease, Qt::RightButton).
 			addAction(jInputPattern::ItemPanMove, jInputPattern::MouseMove, Qt::RightButton).
-			addAction(jInputPattern::ItemMenuRequested, jInputPattern::MousePress, Qt::RightButton);
+            addAction(jInputPattern::ItemMenuRequested, jInputPattern::MousePress, Qt::RightButton).
+            addAction(jInputPattern::ItemSelected, jInputPattern::MousePress, Qt::LeftButton);
 	}
 	void addEntry(int _action, int _method, int _code, int _modifier)
 	{
@@ -1942,7 +1951,7 @@ struct jView::Data
 	QVector<jSelector *> selectors;
 	QBrush background;
 	QPointF press_point, release_point, move_point;
-	bool in_zoom;
+        bool in_zoom, draw_grid;
 	QCursor before_pan_cursor;
 	jLazyRenderer * renderer;
 	jInputPattern pattern;
@@ -1952,6 +1961,7 @@ struct jView::Data
 		x_axis = 0;
 		y_axis = 0;
 		in_zoom = false;
+                draw_grid = false;
 		coordinator.label().
 			setVisible(true);
 		hmarker.
@@ -2124,6 +2134,17 @@ jAxis * jView::yAxis() const
 	return d->y_axis;
 }
 
+jView & jView::setGridEnabled(bool _draw_grid)
+{
+        SAFE_SET(d->draw_grid, _draw_grid);
+        return * this;
+}
+
+bool jView::gridEnabled() const
+{
+    return SAFE_GET(d->draw_grid);
+}
+
 jViewport & jView::viewport() const
 {
 	return d->viewport;
@@ -2258,7 +2279,8 @@ void jView::render(QPainter & _painter) const
 			_rect, 
 			Qt::Horizontal,
 			_viewport_rect.left(),
-			_viewport_rect.right()
+                        _viewport_rect.right(),
+                        d->draw_grid
 			);
 	}
 	if (_y_axis)
@@ -2268,8 +2290,9 @@ void jView::render(QPainter & _painter) const
 			_rect, 
 			Qt::Vertical,
 			_viewport_rect.top(),
-			_viewport_rect.bottom()
-			);
+                        _viewport_rect.bottom(),
+                        d->draw_grid
+                        );
 	}
 	foreach (jMarker * _marker, _markers)
 	{
@@ -2557,6 +2580,7 @@ jCoordinator & jView::coordinator() const
 
 void jView::enterEvent(QEvent *)
 {
+    setFocus(Qt::MouseFocusReason);
 	d->coordinator.label().setVisible(d->coordinator_visibility.pop(d->coordinator.label().isVisible()));
 	d->hmarker.setVisible(d->hmarker_visibility.pop(d->hmarker.isVisible()));
 	d->vmarker.setVisible(d->vmarker_visibility.pop(d->vmarker.isVisible()));
@@ -3053,11 +3077,11 @@ void jPreview::render(QPainter & _painter) const
 	}
 	if (d->x_axis_visible && _x_axis && ((d->orientation & Qt::Horizontal) == Qt::Horizontal))
 	{
-		_x_axis->render(_painter, _rect, Qt::Horizontal, _zoom_rect.left(), _zoom_rect.right());
+                _x_axis->render(_painter, _rect, Qt::Horizontal, _zoom_rect.left(), _zoom_rect.right(), false);
 	}
 	if (d->y_axis_visible && _y_axis && ((d->orientation & Qt::Vertical) == Qt::Vertical))
 	{
-		_y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top());
+                _y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top(), false);
 	}
 	d->updateSelector();
 	d->selector.render(_painter, _rect, _zoom_rect);
