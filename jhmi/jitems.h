@@ -1111,6 +1111,8 @@ void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
 	addCounter(_w * _h);
 }
 
+#include <typeinfo>
+
 template <class T>
 qint32 * jItem2D<T>::convertToI32(void * _data_ptr, const QSize & _size)
 {
