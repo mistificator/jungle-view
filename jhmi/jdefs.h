@@ -17,8 +17,8 @@
 #define PDATA private: struct Data; Data * d;
 
 #define DECL_PROPERTIES(CLASS_NAME) private: QHash<QString, QVariant> properties; \
-	public: CLASS_NAME & setProperty(const char * _name, const QVariant & _value) { properties[_name] = _value; return * this; }  \
-	QVariant property(const char * _name) const { return properties[_name]; } 
+    public: CLASS_NAME & setProperty(const char * _name, const QVariant & _value) { SAFE_SET(properties[_name], _value); return * this; }  \
+    QVariant property(const char * _name) const { return SAFE_GET(properties[_name]); }
 
 #ifdef _DEBUG
 	#define JDEBUG(str) qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << QFileInfo(__FILE__).fileName() << "\t" << __LINE__ << "\t" << __FUNCTION__ << "\t" << str;
