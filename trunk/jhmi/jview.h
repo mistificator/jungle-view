@@ -920,6 +920,7 @@ protected:
 	void mouseMoveEvent(QMouseEvent *);
 	void enterEvent(QEvent *);
 	void leaveEvent(QEvent *);
+    void resizeEvent(QResizeEvent *);
 signals:
 	void contextMenuRequested(QPoint);
 	void viewportChanged(QRectF);
@@ -965,6 +966,8 @@ public:
 public slots:
 	void rebuild();
 	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+protected:
+    void resizeEvent(QResizeEvent *);
 };
 
 //! Class jLazyRenderer is a 2-D rendering engine.
@@ -1057,8 +1060,9 @@ signals:
 public slots:
 	//! Waits until any of rendering threads finishes the job.
 	/*!
+    \param _process_events flag of events processing during the wait
 	*/
-	void flush();
+    void flush(bool _process_events = true);
 	//! Initiates rendering and QWidget::update().
 	/*!
 	*/

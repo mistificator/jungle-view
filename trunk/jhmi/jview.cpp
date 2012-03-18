@@ -48,7 +48,7 @@ struct jAxis::Data
 		alignment = 1.0;
 		tick_length = 5;
 		visible = true;
-                grid_pen = QColor(Qt::black);
+        grid_pen = QColor(Qt::black);
 		id = 0;
 	}
 	~Data()
@@ -93,13 +93,13 @@ struct jAxis::Data
 
 		QVector<double> _ticks;
 		const double _start_tick = alignTick(_lo, _step);
-                qint64 _tick_number = 0;
-                for (double _value = _start_tick; _value <= _hi; _value = _start_tick + (++_tick_number) * _step)
+        qint64 _tick_number = 0;
+        for (double _value = _start_tick; _value <= _hi; _value = _start_tick + (++_tick_number) * _step)
 		{
 			_ticks << _value;
 		}
 
-		if (::floor(_step) == _step)
+        if (qFloor(_step) == _step)
 		{
 			quint64 _mply = 1;
 			while ((_ticks.count() / 2) * 2 > (int)count_hint)
@@ -107,9 +107,9 @@ struct jAxis::Data
 				_mply *= 2;
 				for (int _idx = 0; _idx < _ticks.count(); )
 				{
-                                        if (alignTick(_ticks[_idx], _step * _mply) != _ticks[_idx])
-					{
-						_ticks.remove(_idx);
+                    if (alignTick(_ticks[_idx], _step * _mply) != _ticks[_idx])
+                    {
+                        _ticks.remove(_idx);
 					}
 					else
 					{
@@ -249,7 +249,7 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 	{
 		while (_ticks.count() > (int)d->count)
 		{
-                        for (int _idx = 0; _idx < _ticks.count(); _idx++)
+            for (int _idx = 0; _idx < _ticks.count(); _idx++)
 			{
 				_ticks.remove(_idx);
 			}
@@ -284,13 +284,13 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 					_painter.fillRect(QRectF(QPointF(_x, _y - _h + 2), _rect.size()), _background);
 					_painter.drawText(_x, _y, _str);
 				}
-                                if (_draw_grid)
-                                {
-                                    _painter.save();
-                                    _painter.setPen(_grid_pen);
-                                    _painter.drawLine(_x + _w, _y - _h / 2, _dst_rect.width(), _y - _h / 2);
-                                    _painter.restore();
-                                }
+                if (_draw_grid)
+                {
+                    _painter.save();
+                    _painter.setPen(_grid_pen);
+                    _painter.drawLine(_x + _w, _y - _h / 2, _dst_rect.width(), _y - _h / 2);
+                    _painter.restore();
+                }
 			}
 			break;
 		}
@@ -317,13 +317,13 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 					_painter.fillRect(QRectF(QPointF(_x, _y - _h + 2), _rect.size()), _background);
 					_painter.drawText(_x, _y, _str);
 				}
-                                if (_draw_grid)
-                                {
-                                    _painter.save();
-                                    _painter.setPen(_grid_pen);
-                                    _painter.drawLine(_x + _w / 2, 0, _x + _w / 2, _y - _h + 2);
-                                    _painter.restore();
-                                }
+                if (_draw_grid)
+                {
+                    _painter.save();
+                    _painter.setPen(_grid_pen);
+                    _painter.drawLine(_x + _w / 2, 0, _x + _w / 2, _y - _h + 2);
+                    _painter.restore();
+                }
 			}
 			break;
 		}
@@ -1951,10 +1951,11 @@ struct jView::Data
 	QVector<jSelector *> selectors;
 	QBrush background;
 	QPointF press_point, release_point, move_point;
-        bool in_zoom, draw_grid;
+    bool in_zoom, draw_grid;
 	QCursor before_pan_cursor;
 	jLazyRenderer * renderer;
 	jInputPattern pattern;
+    QRect widget_rect;
 	Data()
 	{
 		pattern.setDefaultPattern();
@@ -2252,7 +2253,7 @@ void jView::render(QPainter & _painter) const
 {
 	THREAD_SAFE(Read)
 	QVector<jItem *> _items = d->items;
-	QRectF _rect = rect();
+    QRectF _rect = d->widget_rect;
 	QRectF _viewport_rect = d->viewport.rect();
 	jAxis * _x_axis = d->x_axis;
 	jAxis * _y_axis = d->y_axis;
@@ -2265,7 +2266,7 @@ void jView::render(QPainter & _painter) const
 	}
 	::qSort(_items.begin(), _items.end(), &Data::itemZSort);
 	foreach (jItem * _item, _items)
-	{
+    {
 		_item->render(_painter, _rect, _viewport_rect, _x_axis, _y_axis);
 	}
 	foreach (jSelector * _selector, _selectors)
@@ -2325,7 +2326,7 @@ void jView::actionAccepted(int _action, int _method, int _code, int _modifier, Q
 	d->pattern.setProperty("accepted", (int)userCommand(_action, _method, _code, _modifier, _mpos, _w));
 }
 
-bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, QPointF _mpos, QWidget * _w)
+bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, QPointF _mpos, QWidget * /*_w*/)
 {
 	switch (_action)
 	{
@@ -2598,6 +2599,15 @@ void jView::leaveEvent(QEvent *)
 	d->renderer->rebuild();
 }
 
+void jView::resizeEvent(QResizeEvent *)
+{
+    if (d->widget_rect.isValid())
+    {
+        d->renderer->flush(false);
+    }
+    d->widget_rect = rect();
+}
+
 jView & jView::setMarkers(const QVector<jMarker *> & _markers)
 {
 	SAFE_SET(d->markers, _markers);
@@ -2820,6 +2830,7 @@ struct jPreview::Data
 	jInputPattern pattern;
 	bool x_axis_visible, y_axis_visible;
 	QCursor saved_cursor, pan_cursor;
+    QRect widget_rect;
 	Data()
 	{
 		saved_cursor = Qt::OpenHandCursor;
@@ -3061,7 +3072,7 @@ void jPreview::render(QPainter & _painter) const
 	{
 		return;
 	}
-	QRectF _rect = rect();
+    QRectF _rect = d->widget_rect;
 	if (d->background.style() != Qt::NoBrush)
 	{
 		_painter.fillRect(_rect, d->background);
@@ -3085,6 +3096,15 @@ void jPreview::render(QPainter & _painter) const
 	}
 	d->updateSelector();
 	d->selector.render(_painter, _rect, _zoom_rect);
+}
+
+void jPreview::resizeEvent(QResizeEvent *)
+{
+    if (d->widget_rect.isValid())
+    {
+        d->renderer->flush(false);
+    }
+    d->widget_rect = rect();
 }
 
 QSize jPreview::minimumSizeHint() const
@@ -3260,7 +3280,8 @@ private:
 struct jLazyRenderer::Data
 {
 	QWidget * widget;
-        quint64 counter, threads_started;
+    QSize widget_size;
+    quint64 counter, threads_started;
 	bool enabled;
 	QThreadPool * thread_pool;
 	QImage cached_viewport;
@@ -3295,12 +3316,13 @@ struct jLazyRenderer::Data
 	{
 		if (!force_update)
 		{
-			thread_pool->tryStart(_instance);
+            widget_size = widget->rect().size();
+            thread_pool->tryStart(_instance);
 		}
 	}
 	void start(QRunnable * _instance)
 	{
-		QPainter _painter(widget);
+        QPainter _painter(widget);
 		_painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing, false);
 		if (enabled)
 		{
@@ -3315,7 +3337,7 @@ struct jLazyRenderer::Data
 			render_func(widget, _painter);
 		}
 	}
-	void flush()
+    void flush(bool _process_events)
 	{
 		rw_lock->lockForWrite();
 		bool _state = enabled;
@@ -3323,7 +3345,10 @@ struct jLazyRenderer::Data
 		rw_lock->unlock();
 		do 
 		{
-			QApplication::processEvents();
+            if (_process_events)
+            {
+                QApplication::processEvents(QEventLoop::AllEvents);
+            }
 		} 
 		while (threads_started > counter);
 		rw_lock->lockForWrite();
@@ -3371,8 +3396,8 @@ void jLazyRenderer::run()
 	if (d->enabled)
 	{
 		QTime _time = d->time_sync.registerInstance();
-		QImage _image(d->widget->rect().size(), QImage::Format_RGB32);
-		d->render(_image);
+        QImage _image(d->widget_size, QImage::Format_RGB32);
+        d->render(_image);
 		if (d->time_sync.checkpoint(_time))
 		{
 			emit accepted(_image);
@@ -3393,7 +3418,7 @@ jLazyRenderer & jLazyRenderer::setEnabled(bool _state)
 	if (_state == false)
 	{
 		SAFE_SET(d->enabled, false);
-		d->flush();
+        d->flush(true);
 	}
 	else
 	{
@@ -3427,9 +3452,9 @@ unsigned int jLazyRenderer::maxThreads() const
 	return SAFE_GET(d->thread_pool->maxThreadCount());
 }
 
-void jLazyRenderer::flush()
+void jLazyRenderer::flush(bool _process_events)
 {
-	d->flush();
+    d->flush(_process_events);
 }
 
 void jLazyRenderer::onAccepted(const QImage & _image)
