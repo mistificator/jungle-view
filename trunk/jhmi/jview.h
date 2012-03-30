@@ -264,6 +264,23 @@ public:
 	\sa toLog10(), setLog10Multiplier(), setLog10ScaleEnabled()
 	*/
 	qreal fromLog10(qreal _value) const;
+
+	//! Maps value from this axis to another
+	/*!
+	\param _value value from this axis range
+	\param _dst destination axis
+	\return value mapped to destination axis range
+	\sa mapFromAxis()
+	*/
+	double mapToAxis(double _value, const jAxis & _dst) const;
+	//! Maps value to this axis from another
+	/*!
+	\param _value value from source axis range
+	\param _src source axis
+	\return value mapped from source axis range
+	\sa mapToAxis()
+	*/
+	double mapFromAxis(double _value, const jAxis & _src) const;
 };
 
 class jSelector

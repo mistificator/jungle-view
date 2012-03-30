@@ -428,6 +428,17 @@ qreal jAxis::fromLog10(qreal _value) const
 	return (d->log10_mpy != 0.0) ? ::powf(10.0, _value / d->log10_mpy) : 0.0;
 }
 
+double jAxis::mapToAxis(double _value, const jAxis & _dst) const
+{
+	return (d->hi != d->lo) ? _dst.d->lo + ((_value - d->lo) * (_dst.d->hi - _dst.d->lo) / (d->hi - d->lo)) : 0.0;
+}
+
+double jAxis::mapFromAxis(double _value, const jAxis & _src) const
+{
+	return (_src.d->hi != _src.d->lo) ? d->lo + ((_value - _src.d->lo) * (d->hi - d->lo) / (_src.d->hi - _src.d->lo)) : 0.0;
+}
+
+
 // ------------------------------------------------------------------------
 
 struct jSelector::Data
@@ -3556,26 +3567,26 @@ struct jSync::Data
 		{
 			if (_dst->xAxis()->id() == _src->xAxis()->id())
 			{
-				_zoom_rect.setLeft(_src_rect.left());
-				_zoom_rect.setRight(_src_rect.right());
+				_zoom_rect.setLeft(_dst->xAxis()->mapFromAxis(_src_rect.left(), * _src->xAxis()));
+				_zoom_rect.setRight(_dst->xAxis()->mapFromAxis(_src_rect.right(), * _src->xAxis()));
 			}
 			if (_dst->yAxis()->id() == _src->xAxis()->id())
 			{
-				_zoom_rect.setTop(_src_rect.left());
-				_zoom_rect.setBottom(_src_rect.right());
+				_zoom_rect.setTop(_dst->yAxis()->mapFromAxis(_src_rect.left(), * _src->xAxis()));
+				_zoom_rect.setBottom(_dst->yAxis()->mapFromAxis(_src_rect.right(), * _src->xAxis()));
 			}
 		}
 		if (_src->yAxis()->id())
 		{
 			if (_dst->yAxis()->id() == _src->yAxis()->id())
 			{
-				_zoom_rect.setTop(_src_rect.top());
-				_zoom_rect.setBottom(_src_rect.bottom());
+				_zoom_rect.setTop(_dst->yAxis()->mapFromAxis(_src_rect.top(), * _src->yAxis()));
+				_zoom_rect.setBottom(_dst->yAxis()->mapFromAxis(_src_rect.bottom(), * _src->yAxis()));
 			}
 			if (_dst->xAxis()->id() == _src->yAxis()->id())
 			{
-				_zoom_rect.setLeft(_src_rect.top());
-				_zoom_rect.setRight(_src_rect.bottom());
+				_zoom_rect.setLeft(_dst->xAxis()->mapFromAxis(_src_rect.top(), * _src->yAxis()));
+				_zoom_rect.setRight(_dst->xAxis()->mapFromAxis(_src_rect.bottom(), * _src->yAxis()));
 			}
 		}
 		return _zoom_rect;
