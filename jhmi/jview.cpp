@@ -6,18 +6,7 @@
 
 bool jQuadToQuad(const QRectF & _from, const QRectF & _to, QTransform & _transform)
 {
-	QPolygonF _src_p = _from;
-	QPolygonF _dst_p = _to;
-	if (_src_p.count() > 4)
-	{
-		_src_p.remove(4, _src_p.count() - 4);
-	}
-	if (_dst_p.count() > 4)
-	{
-		_dst_p.remove(4, _dst_p.count() - 4);
-	}
-
-	return QTransform::quadToQuad(_src_p, _dst_p, _transform);
+	return QTransform::quadToQuad(QPolygonF(_from).mid(0, 4), QPolygonF(_to).mid(0, 4), _transform);
 }
 
 // ------------------------------------------------------------------------
