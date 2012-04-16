@@ -1423,7 +1423,7 @@ void jItemHandler::actionAccepted(int _action, int _method, int _buttons, int _m
 	jView * _view = dynamic_cast<jView *>(_w);
 	if (_view)
 	{
-		QRectF _rect = _view->screenToAxis(QRectF(_mpos.x() - 1, (_view->height() - _mpos.y()) - 1, 3, 3));
+		QRectF _rect = _view->screenToAxis(QRectF(_mpos.x() - 1, _mpos.y() - 1, 3, 3));
 		if (d->item->intersects(_rect, _view->xAxis(), _view->yAxis()) == false)
 		{
 			return;
@@ -1980,7 +1980,13 @@ struct jView::Data
 		QTransform _transform;
 		if (x_axis && y_axis)
 		{
-			::jQuadToQuad(_screen_rect, viewport.rect(), _transform);
+			const QRectF & _viewport_rect = viewport.rect();
+			QPolygonF _viewport_poly;
+			_viewport_poly << QPointF(_viewport_rect.left(), _viewport_rect.bottom());
+			_viewport_poly << QPointF(_viewport_rect.right(), _viewport_rect.bottom());
+			_viewport_poly << QPointF(_viewport_rect.right(), _viewport_rect.top());
+			_viewport_poly << QPointF(_viewport_rect.left(), _viewport_rect.top());
+			QTransform::quadToQuad(QPolygonF(_screen_rect).mid(0, 4), _viewport_poly, _transform);
 		}
 		return _transform;
 	}
@@ -1997,7 +2003,12 @@ struct jView::Data
 		QTransform _transform;
 		if (x_axis && y_axis)
 		{
-			::jQuadToQuad(viewport.rect(), _screen_rect, _transform);
+			QPolygonF _screen_poly;
+			_screen_poly << QPointF(_screen_rect.left(), _screen_rect.bottom());
+			_screen_poly << QPointF(_screen_rect.right(), _screen_rect.bottom());
+			_screen_poly << QPointF(_screen_rect.right(), _screen_rect.top());
+			_screen_poly << QPointF(_screen_rect.left(), _screen_rect.top());
+			QTransform::quadToQuad(QPolygonF(viewport.rect()).mid(0, 4), _screen_poly, _transform);
 		}
 		return _transform;
 	}
@@ -2332,7 +2343,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 	{
 	case jInputPattern::MoveCursorLeft:
 		{
-			QPoint _pt_current = QCursor::pos();
+			const QPoint & _pt_current = QCursor::pos();
 			QPoint _pt_new = _pt_current;
 
 			_pt_new.setX(_pt_current.x() - 1);
@@ -2348,7 +2359,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 				d->viewport.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
 				d->updateViewports(d->viewport.rect());
 				QPoint _local_pt = mapFromGlobal(_pt_current);
-				_local_pt.setY(rect().height() - _local_pt.y());
 				d->adjustCoordinator(rect(), _local_pt);
 				d->renderer->rebuild();
 			}
@@ -2356,7 +2366,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		break;
 	case jInputPattern::MoveCursorRight:
 		{
-			QPoint _pt_current = QCursor::pos();
+			const QPoint & _pt_current = QCursor::pos();
 			QPoint _pt_new = _pt_current;
 
 			_pt_new.setX(_pt_current.x() + 1);
@@ -2372,7 +2382,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 				d->viewport.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
 				d->updateViewports(d->viewport.rect());
 				QPoint _local_pt = mapFromGlobal(_pt_current);
-				_local_pt.setY(rect().height() - _local_pt.y());
 				d->adjustCoordinator(rect(), _local_pt);
 				d->renderer->rebuild();
 			}
@@ -2380,7 +2389,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		break;
 	case jInputPattern::MoveCursorUp:
 		{
-			QPoint _pt_current = QCursor::pos();
+			const QPoint & _pt_current = QCursor::pos();
 			QPoint _pt_new = _pt_current;
 
 			_pt_new.setY(_pt_current.y() - 1);
@@ -2396,7 +2405,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 				d->viewport.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
 				d->updateViewports(d->viewport.rect());
 				QPoint _local_pt = mapFromGlobal(_pt_current);
-				_local_pt.setY(rect().height() - _local_pt.y());
 				d->adjustCoordinator(rect(), _local_pt);
 				d->renderer->rebuild();
 			}
@@ -2404,7 +2412,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		break;
 	case jInputPattern::MoveCursorDown:
 		{
-			QPoint _pt_current = QCursor::pos();
+			const QPoint & _pt_current = QCursor::pos();
 			QPoint _pt_new = _pt_current;
 
 			_pt_new.setY(_pt_current.y() + 1);
@@ -2420,7 +2428,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 				d->viewport.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
 				d->updateViewports(d->viewport.rect());
 				QPoint _local_pt = mapFromGlobal(_pt_current);
-				_local_pt.setY(rect().height() - _local_pt.y());
 				d->adjustCoordinator(rect(), _local_pt);
 				d->renderer->rebuild();
 			}
@@ -2428,15 +2435,13 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		break;
 	case jInputPattern::ZoomDelta:
 		{
-			QPointF _wheel_point = _mpos;
-			_wheel_point.setY(rect().height() - _wheel_point.y());
-			QPointF _axis_point = d->screenToAxis(rect(), QPointF(_mpos.x(), 0));
+			const double _axis_point_x = d->screenToAxis(rect(), QPointF(_mpos.x(), 0)).x();
 			QRectF _rect;
-			QRectF _zoom_rect = d->viewport.rect();
-			double _k = (_axis_point.x() - _zoom_rect.left()) / _zoom_rect.width();
+			const QRectF & _zoom_rect = d->viewport.rect();
+			double _k = (_axis_point_x - _zoom_rect.left()) / _zoom_rect.width();
 			if (_modifier > 0)
 			{
-				_rect = QRectF(QPointF(_axis_point.x() - (_zoom_rect.width() * _k) / 2.0, _axis_point.y()) , 
+				_rect = QRectF(QPointF(_axis_point_x - (_zoom_rect.width() * _k) / 2.0, _zoom_rect.top()) , 
 					QSizeF(_zoom_rect.width() / 2.0, _zoom_rect.height()));
 			}
 			if (_modifier < 0)
@@ -2445,14 +2450,14 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 				{
 					return false;
 				}
-				_rect =	QRectF(QPointF(_axis_point.x() - (_zoom_rect.width() * _k) * 2.0, _axis_point.y()) , 
+				_rect =	QRectF(QPointF(_axis_point_x - (_zoom_rect.width() * _k) * 2.0, _zoom_rect.top()) , 
 					QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
 			}
 			if (_rect.isValid())
 			{
 				d->viewport.zoomIn(_rect);
 				d->updateViewports(d->viewport.rect());
-				d->adjustCoordinator(rect(), _wheel_point);
+				d->adjustCoordinator(rect(), _mpos);
 				d->renderer->rebuild();
 			}
 		}
@@ -2460,7 +2465,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 	case jInputPattern::ZoomMove:
 		{
 			QPointF _move_point = _mpos;
-			_move_point.setY(rect().height() - _move_point.y());
 			if (d->in_zoom)
 			{
 				d->viewport.selector().setRect(d->viewport.adjustRect(d->screenToAxis(rect(), QRectF(d->press_point, _move_point))));
@@ -2471,7 +2475,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		break;
 	case jInputPattern::ZoomStart:
 		d->press_point = _mpos;
-		d->press_point.setY(rect().height() - d->press_point.y());
 		d->move_point = d->press_point;
 
 		d->in_zoom = true;
@@ -2480,7 +2483,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		break;
 	case jInputPattern::ZoomEnd:	
 		d->release_point = _mpos;
-		d->release_point.setY(rect().height() - d->release_point.y());
 
 		d->in_zoom = false;
 		d->viewport.selector().setVisible(false);
@@ -2507,20 +2509,17 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		break;
 	case jInputPattern::PanMove:
 		{
-			QPointF _move_point = _mpos;
-			_move_point.setY(rect().height() - _move_point.y());
 			QPointF _p1 = d->screenToAxis(rect(), d->move_point);
-			QPointF _p2 = d->screenToAxis(rect(), _move_point);
+			QPointF _p2 = d->screenToAxis(rect(), _mpos);
 			d->viewport.pan(_p1.x() - _p2.x(), _p1.y() - _p2.y());
 			d->updateViewports(d->viewport.rect());
 			setCursor(Qt::ClosedHandCursor);
 			d->renderer->rebuild();
-			d->move_point = _move_point;
+			d->move_point = _mpos;
 		}
 		break;
 	case jInputPattern::PanStart:
 		d->press_point = _mpos;
-		d->press_point.setY(rect().height() - d->press_point.y());
 		d->move_point = d->press_point;
 
 		d->before_pan_cursor = cursor();
@@ -2528,7 +2527,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		break;
 	case jInputPattern::PanEnd:
 		d->release_point = _mpos;
-		d->release_point.setY(rect().height() - d->release_point.y());
 
 		setCursor(d->before_pan_cursor);
 		d->adjustCoordinator(rect(), d->release_point);
@@ -2547,7 +2545,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 void jView::mouseMoveEvent(QMouseEvent * _me)
 {
 	QPointF _move_point = _me->posF();
-	_move_point.setY(rect().height() - _move_point.y());
 	d->adjustCoordinator(rect(), _move_point);
 	d->renderer->rebuild();
 }
@@ -2675,7 +2672,7 @@ QVector<jItem *> jView::itemsAt(const QPointF & _point, bool _exclude_invisible)
 		{
 			continue;
 		}
-		if (_item->intersects(d->screenToAxis(rect(), QRectF(QPointF(_point.x() - 2, rect().height() - _point.y() - 2), QSizeF(4, 4))), d->x_axis, d->y_axis))
+		if (_item->intersects(d->screenToAxis(rect(), QRectF(QPointF(_point.x() - 2, _point.y() - 2), QSizeF(4, 4))), d->x_axis, d->y_axis))
 		{
 			_items << _item;
 		}
@@ -2878,7 +2875,7 @@ struct jPreview::Data
 		{
 			return QPointF();
 		}
-		return view->axisToScreen(_transform.map(QPointF(_point.x(), _rect.height() - _point.y())));
+		return view->axisToScreen(_transform.map(_point));
 	}
 	void setToPosition(const QRect & _rect, const QMouseEvent * _me)
 	{
