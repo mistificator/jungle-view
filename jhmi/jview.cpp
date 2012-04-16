@@ -2898,15 +2898,24 @@ struct jPreview::Data
 			selector.setRect(_rect);
 		}
 	}
-	QPointF previewToView(const QRectF & _rect, const QPointF & _point) const
+    QPointF previewToViewScreen(const QRectF & _rect, const QPointF & _point) const // screen to screen
 	{
 		QTransform _transform;
 		if ((view == 0) || (::jQuadToQuad(_rect, view->viewport().rectBase(), _transform) == false))
 		{
 			return QPointF();
 		}
-		return view->axisToScreen(_transform.map(_point));
+        return view->axisToScreen(_transform.map(_point));
 	}
+    QPointF viewToPreviewScreen(const QRectF & _rect, const QPointF & _point) const // screen to screen
+    {
+        QTransform _transform;
+        if ((view == 0) || (::jQuadToQuad(view->viewport().rectBase(), _rect, _transform) == false))
+        {
+            return QPointF();
+        }
+        return _transform.map(view->screenToAxis(_point));
+    }    
 	void setToPosition(const QRect & _rect, const QMouseEvent * _me)
 	{
 		if (view == 0)
@@ -2949,7 +2958,7 @@ struct jPreview::Data
 		view->viewport().pan(_delta_x, _delta_y);
 		view->rebuild();
 	}
-	void pan(const QRect & _rect, const QMouseEvent * _me)
+    void pan(const QRect & _rect, const QMouseEvent * _me)
 	{
 		if (view == 0)
 		{
@@ -3004,17 +3013,15 @@ struct jPreview::Data
 		{
 			return;
 		}
-		if (_we->orientation() != orientation)
-		{
-			QWheelEvent * _wheel = new QWheelEvent(
-				previewToView(_rect, _we->pos()).toPoint(), 
-				_we->delta(),
-				_we->buttons(),
-				_we->modifiers(),
-				_we->orientation()
-				);
-			QCoreApplication::postEvent(view, _wheel);
-		}
+        QWheelEvent * _wheel = new QWheelEvent(
+            previewToViewScreen(_rect, _we->pos()).toPoint(),
+            _we->delta(),
+            _we->buttons(),
+            _we->modifiers(),
+            _we->orientation()
+            );
+        QCoreApplication::postEvent(view, _wheel);
+        QCoreApplication::sendPostedEvents(view, QEvent::Wheel);
 	}
 	static void render_func(QWidget * _widget, QPainter & _painter)
 	{
@@ -3190,12 +3197,12 @@ bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifie
 	{
 		return false;
 	}
-	QMouseEvent * _me = new QMouseEvent(QEvent::MouseButtonRelease, _mpos.toPoint(), (Qt::MouseButton)_code, (Qt::MouseButtons)_code, (Qt::KeyboardModifiers)_modifier);
-	QWheelEvent * _we = new QWheelEvent(_mpos.toPoint(), _modifier, (Qt::MouseButtons)_code, Qt::NoModifier);
+    QMouseEvent _me(QEvent::MouseButtonRelease, _mpos.toPoint(), (Qt::MouseButton)_code, (Qt::MouseButtons)_code, (Qt::KeyboardModifiers)_modifier);
+    QWheelEvent _we(_modifier < 0 ? d->viewToPreviewScreen(rect(), d->view->rect().center()).toPoint() : _mpos.toPoint(), _modifier, (Qt::MouseButtons)_code, Qt::NoModifier);
 	switch (_action)
 	{
 	case jInputPattern::ZoomStart:
-	case jInputPattern::PanStart:
+    case jInputPattern::PanStart:
 		d->prev_point = _mpos.toPoint();
 		d->press_point = _mpos.toPoint();
 		d->saved_cursor = cursor();
@@ -3205,25 +3212,31 @@ bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifie
 	case jInputPattern::PanEnd:
 		if (d->press_point == _mpos.toPoint())
 		{
-			d->setToPosition(rect(), _me);
+            d->setToPosition(rect(), &_me);
 		}
 		setCursor(d->saved_cursor);
 		break;
 	case jInputPattern::ZoomMove:
 	case jInputPattern::PanMove:
-		d->pan(rect(), _me);
+        d->pan(rect(), &_me);
 		d->prev_point = _mpos.toPoint();
 		break;
 	case jInputPattern::ZoomFullView:
-		d->zoomFullView(rect(), _me);
+        d->zoomFullView(rect(), &_me);
 		break;
 	case jInputPattern::ZoomDeltaVertical:
 	case jInputPattern::ZoomDeltaHorizontal:
-		d->wheelScale(rect(), _we);
+        if (_we.orientation() != d->orientation)
+        {
+            d->wheelScale(rect(), &_we);
+        }
+        else
+        {
+            d->view->viewport().pan(_we.orientation() == Qt::Vertical ? 1 : 0, _we.orientation() == Qt::Horizontal ? 1 : 0);
+            d->view->rebuild();
+        }
 		break;
 	}
-	delete _we;
-	delete _me;
 	return true;
 }
 

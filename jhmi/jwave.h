@@ -15,7 +15,8 @@ class jStorageHandler;
 class jDataFileInterface
 {
 	COPY_FBD(jDataFileInterface)
-	DECL_PROPERTIES(jDataFileInterface)
+    DECL_MUTEX
+    DECL_PROPERTIES(jDataFileInterface)
 public:
 	jDataFileInterface() {}
 	virtual ~jDataFileInterface() {}
@@ -41,7 +42,6 @@ class jWaveFile: public jDataFileInterface
 {
 	PDATA
 	COPY_FBD(jWaveFile)
-	DECL_MUTEX
 public:
 	jWaveFile();
 	jWaveFile(QIODevice * _io_device, bool _start_loading = true);
@@ -68,7 +68,6 @@ class jFdFile: public jDataFileInterface
 {
 	PDATA
 	COPY_FBD(jFdFile)
-	DECL_MUTEX
 public:
 	enum Format {No_Format = -1, Auto_Format = 0, Fd_Format = 1, Sd_Format = 2, S_Format = 3};
 
