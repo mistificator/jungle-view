@@ -1614,7 +1614,8 @@ struct jInputPattern::Data
 			addAction(jInputPattern::ZoomStart, jInputPattern::MousePress, Qt::LeftButton).
 			addAction(jInputPattern::ZoomEnd, jInputPattern::MouseRelease, Qt::LeftButton).
 			addAction(jInputPattern::ZoomMove, jInputPattern::MouseMove, Qt::LeftButton).
-			addAction(jInputPattern::ZoomDelta, jInputPattern::Wheel).
+			addAction(jInputPattern::ZoomDeltaVertical, jInputPattern::WheelVertical).
+			addAction(jInputPattern::ZoomDeltaHorizontal, jInputPattern::WheelHorizontal).
 			addAction(jInputPattern::ZoomFullView, jInputPattern::MouseDoubleClick, Qt::LeftButton).
 			addAction(jInputPattern::PanStart, jInputPattern::MousePress, Qt::RightButton).
 			addAction(jInputPattern::PanEnd, jInputPattern::MouseRelease, Qt::RightButton).
@@ -1900,7 +1901,7 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 		break;
 	case QEvent::Wheel:
 		_we = dynamic_cast<QWheelEvent *>(_event);
-		_method = Wheel;
+		_method = (_we->orientation() == Qt::Vertical) ? WheelVertical : WheelHorizontal;
 		_code = _we->buttons();
 		_modifier = _we->delta();
 		_mpos = _we->pos();
@@ -2433,7 +2434,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			}
 		}
 		break;
-	case jInputPattern::ZoomDelta:
+	case jInputPattern::ZoomDeltaVertical:
 		{
 			const double _axis_point_x = d->screenToAxis(rect(), QPointF(_mpos.x(), 0)).x();
 			QRectF _rect;
@@ -2452,6 +2453,35 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 				}
 				_rect =	QRectF(QPointF(_axis_point_x - (_zoom_rect.width() * _k) * 2.0, _zoom_rect.top()) , 
 					QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
+			}
+			if (_rect.isValid())
+			{
+				d->viewport.zoomIn(_rect);
+				d->updateViewports(d->viewport.rect());
+				d->adjustCoordinator(rect(), _mpos);
+				d->renderer->rebuild();
+			}
+		}
+		break;
+	case jInputPattern::ZoomDeltaHorizontal:
+		{
+			const double _axis_point_y = d->screenToAxis(rect(), QPointF(0, _mpos.y())).y();
+			QRectF _rect;
+			const QRectF & _zoom_rect = d->viewport.rect();
+			double _k = (_axis_point_y - _zoom_rect.top()) / _zoom_rect.height();
+			if (_modifier > 0)
+			{
+				_rect = QRectF(QPointF(_zoom_rect.left(), _axis_point_y - (_zoom_rect.height() * _k) / 2.0) , 
+					QSizeF(_zoom_rect.width(), _zoom_rect.height() / 2.0));
+			}
+			if (_modifier < 0)
+			{
+				if (_zoom_rect.height() * 2.0 > d->viewport.maximumSize().height())
+				{
+					return false;
+				}
+				_rect = QRectF(QPointF(_zoom_rect.left(), _axis_point_y - (_zoom_rect.height() * _k) / 2.0) , 
+					QSizeF(_zoom_rect.width(), _zoom_rect.height() * 2.0));
 			}
 			if (_rect.isValid())
 			{
@@ -2974,14 +3004,17 @@ struct jPreview::Data
 		{
 			return;
 		}
-		QWheelEvent * _wheel = new QWheelEvent(
-			previewToView(_rect, _we->pos()).toPoint(), 
-			_we->delta(),
-			_we->buttons(),
-			_we->modifiers(),
-			_we->orientation()
-			);
-		QCoreApplication::postEvent(view, _wheel);
+		if (_we->orientation() != orientation)
+		{
+			QWheelEvent * _wheel = new QWheelEvent(
+				previewToView(_rect, _we->pos()).toPoint(), 
+				_we->delta(),
+				_we->buttons(),
+				_we->modifiers(),
+				_we->orientation()
+				);
+			QCoreApplication::postEvent(view, _wheel);
+		}
 	}
 	static void render_func(QWidget * _widget, QPainter & _painter)
 	{
@@ -3184,7 +3217,8 @@ bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifie
 	case jInputPattern::ZoomFullView:
 		d->zoomFullView(rect(), _me);
 		break;
-	case jInputPattern::ZoomDelta:
+	case jInputPattern::ZoomDeltaVertical:
+	case jInputPattern::ZoomDeltaHorizontal:
 		d->wheelScale(rect(), _we);
 		break;
 	}

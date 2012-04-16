@@ -802,11 +802,12 @@ public:
 			ZoomMove =				WidgetActionGroupBegin + 5,
 			ZoomEnd =				WidgetActionGroupBegin + 6,
 			ZoomFullView =			WidgetActionGroupBegin + 7,
-			ZoomDelta =				WidgetActionGroupBegin + 8,
-			PanStart =				WidgetActionGroupBegin + 9,
-			PanMove =				WidgetActionGroupBegin + 10,
-			PanEnd =				WidgetActionGroupBegin + 11,
-			ContextMenuRequested =	WidgetActionGroupBegin + 12,
+			ZoomDeltaVertical =		WidgetActionGroupBegin + 8,
+			ZoomDeltaHorizontal =	WidgetActionGroupBegin + 9,
+			PanStart =				WidgetActionGroupBegin + 10,
+			PanMove =				WidgetActionGroupBegin + 11,
+			PanEnd =				WidgetActionGroupBegin + 12,
+			ContextMenuRequested =	WidgetActionGroupBegin + 13,
 		WidgetActionGroupEnd =	WidgetActionGroupBegin + 999,
 
 		ItemActionGroupBegin =	WidgetActionGroupBegin + 1000,
@@ -831,7 +832,8 @@ public:
 		MousePress = QEvent::MouseButtonPress,
 		MouseRelease = QEvent::MouseButtonRelease,
 		MouseDoubleClick = QEvent::MouseButtonDblClick,
-		Wheel = QEvent::Wheel,
+		WheelVertical = QEvent::Wheel,
+		WheelHorizontal = -QEvent::Wheel,
 		MouseMove = QEvent::MouseMove
 	};
 
