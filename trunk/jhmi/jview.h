@@ -804,6 +804,7 @@ public:
 			ZoomFullView =			WidgetActionGroupBegin + 7,
 			ZoomDeltaVertical =		WidgetActionGroupBegin + 8,
 			ZoomDeltaHorizontal =	WidgetActionGroupBegin + 9,
+            ZoomDelta =             ZoomDeltaVertical,
 			PanStart =				WidgetActionGroupBegin + 10,
 			PanMove =				WidgetActionGroupBegin + 11,
 			PanEnd =				WidgetActionGroupBegin + 12,
@@ -826,15 +827,16 @@ public:
 	};
 	enum Method
 	{
-		UnknownMethod = -1,
-		KeyPress = QEvent::KeyPress,
-		KeyRelease = QEvent::KeyRelease,
-		MousePress = QEvent::MouseButtonPress,
-		MouseRelease = QEvent::MouseButtonRelease,
-		MouseDoubleClick = QEvent::MouseButtonDblClick,
-		WheelVertical = QEvent::Wheel,
-		WheelHorizontal = -QEvent::Wheel,
-		MouseMove = QEvent::MouseMove
+        UnknownMethod =         -1,
+        KeyPress =              QEvent::KeyPress,
+        KeyRelease =            QEvent::KeyRelease,
+        MousePress =            QEvent::MouseButtonPress,
+        MouseRelease =          QEvent::MouseButtonRelease,
+        MouseDoubleClick =      QEvent::MouseButtonDblClick,
+        WheelVertical =         QEvent::Wheel,
+        WheelHorizontal =       -QEvent::Wheel,
+        Wheel =                 WheelVertical,
+        MouseMove =             QEvent::MouseMove
 	};
 
 	jInputPattern & addAction(int _action, int _method, int _code = 0, int _modifier = 0);
