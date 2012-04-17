@@ -14,7 +14,6 @@ bool jQuadToQuad(const QRectF & _from, const QRectF & _to, QTransform & _transfo
 class jAxis
 {
 	PDATA
-	COPY_FBD(jAxis)
 	DECL_MUTEX
 	DECL_PROPERTIES(jAxis)
 public:
@@ -28,6 +27,9 @@ public:
 	Virtual destructor.
 	*/
 	virtual ~jAxis();
+
+	jAxis(const jAxis & _other);
+	jAxis & operator = (const jAxis & _other);
 
 	//! Prototype for axis value-to-label converter function (range function).
 	/*!
@@ -242,13 +244,13 @@ public:
 	\return reference
 	\sa log10Multiplier(), setLog10ScaleEnabled()
 	*/
-	jAxis & setLog10Multiplier(qreal _mpy);
+	jAxis & setLog10Multiplier(double _mpy);
 	//! Returns multiplier for log10 scale.
 	/*!
 	\return multiplier value
-	\sa setLog10Multiplier()
+	\sa setLog10Multiplier(), setLog10ScaleEnabled()
 	*/
-	qreal log10Multiplier() const;
+	double log10Multiplier() const;
 	//! Helper method to convert from linear to log10 scale.
 	/*!
 	\param _value value to be converted
@@ -256,14 +258,14 @@ public:
 	\return converted value
 	\sa fromLog10(), setLog10Multiplier(), setLog10ScaleEnabled()
 	*/
-	qreal toLog10(qreal _value, qreal _minimum = 0.0) const;
+	double toLog10(double _value, double _minimum = 0.0) const;
 	//! Helper method to convert from log10 to linear scale.
 	/*!
 	\param _value value to be converted
 	\return converted value
 	\sa toLog10(), setLog10Multiplier(), setLog10ScaleEnabled()
 	*/
-	qreal fromLog10(qreal _value) const;
+	double fromLog10(double _value) const;
 
 	//! Maps value from this axis to another
 	/*!
@@ -281,6 +283,21 @@ public:
 	\sa mapToAxis()
 	*/
 	double mapFromAxis(double _value, const jAxis & _src) const;
+	//! Converts value from linear scale to log scale if it enabled, or does nothing if scale is linear already
+	/*!
+	\param _value value to be converted
+	\param _minimum value to replace negative input values
+	\return value normalized by toLog10
+	\sa toLog10(), isLog10ScaleEnabled()
+	*/
+	double normalizeToScale(double _value, double _minimum = 0.0) const;
+	//! Converts value from log scale to linear scale if it enabled, or does nothing if scale is linear already
+	/*!
+	\param _value value to be converted
+	\return value normalized by fromLog10
+	\sa fromLog10(), isLog10ScaleEnabled()
+	*/
+	double normalizeFromScale(double _value) const;
 };
 
 class jSelector
@@ -765,8 +782,8 @@ public:
 	jMarker & setPen(const QPen & _pen);
 	QPen pen() const;
 
-	jMarker & setValue(qreal _value);
-	qreal value() const;
+	jMarker & setValue(double _value);
+	double value() const;
 
 	jMarker & setVisible(bool _state);
 	bool isVisible() const;
@@ -926,9 +943,9 @@ public:
 	QVector<jItem *> showToolTip(const QPointF & _point);
 
 	QRectF itemsBoundingRect(bool _exclude_invisible = true) const;
-	void autoScaleX(qreal _margin_x = 0.05); // 5%
-	void autoScaleY(qreal _margin_y = 0.05); // 5%
-	void autoScale(qreal _margin_x = 0.05, qreal _margin_y = 0.05);  // 5%
+	void autoScaleX(double _margin_x = 0.05); // 5%
+	void autoScaleY(double _margin_y = 0.05); // 5%
+	void autoScale(double _margin_x = 0.05, double _margin_y = 0.05);  // 5%
 
 	jView & setInputPattern(const jInputPattern & _pattern);
 	jInputPattern & inputPattern() const;
