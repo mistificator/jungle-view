@@ -42,7 +42,7 @@ class jItem1D: public jItem
     };
     typedef T Flat;
 
-    jItem1D(int _line_style = Lines, qreal _bar_width = 1.0);
+    jItem1D(int _line_style = Lines, double _bar_width = 1.0);
     ~jItem1D();
 
     void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
@@ -52,8 +52,8 @@ class jItem1D: public jItem
     jItem1D<T, TX> & setLineStyle(int _style);
     int lineStyle() const;
 
-    jItem1D<T, TX> & setBarWidth(qreal _width);
-    qreal barWidth() const;
+    jItem1D<T, TX> & setBarWidth(double _width);
+    double barWidth() const;
 
     bool intersects(const QRectF & _rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
     QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
@@ -66,7 +66,7 @@ class jItem1D: public jItem
     const TX * x() const;
 private:
     int data_model, line_style;
-    qreal bar_width;
+    double bar_width;
     TX * x_data;
 protected:
     virtual jItem1D<T, TX> & setDataModel(int _model);
@@ -85,7 +85,7 @@ class jFigureItem : public jItem1D<T, TX>
     jFigureItem & setEllipseSymbol(const QRectF & _rectangle);
     jFigureItem & setPieSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
     jFigureItem & setRectSymbol(const QRectF & _rectangle);
-    jFigureItem & setRoundedRectSymbol(const QRectF & _rectangle, qreal _xRadius, qreal _yRadius, Qt::SizeMode _mode = Qt::AbsoluteSize);
+    jFigureItem & setRoundedRectSymbol(const QRectF & _rectangle, double _xRadius, double _yRadius, Qt::SizeMode _mode = Qt::AbsoluteSize);
 private:
     QImage symbol_img;
     QPainter * createPainter(const QRectF & _rectangle);
@@ -174,7 +174,7 @@ T jStack<T>::top(const T & _default)
 // ------------------------------------------------------------------------
 
 template <class T, class TX>
-jItem1D<T, TX>::jItem1D(int _line_style, qreal _bar_width): jItem()
+jItem1D<T, TX>::jItem1D(int _line_style, double _bar_width): jItem()
 {
     x_data = 0;
     this->
@@ -206,14 +206,14 @@ int jItem1D<T, TX>::lineStyle() const
 }
 
 template <class T, class TX>
-jItem1D<T, TX> & jItem1D<T, TX>::setBarWidth(qreal _width)
+jItem1D<T, TX> & jItem1D<T, TX>::setBarWidth(double _width)
 {
     SAFE_SET(bar_width, _width);
     return * this;
 }
 
 template <class T, class TX>
-qreal jItem1D<T, TX>::barWidth() const
+double jItem1D<T, TX>::barWidth() const
 {
     return bar_width;
 }
@@ -264,214 +264,212 @@ template <class T, class TX>
 void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
 {
     THREAD_SAFE(Read)
-            if (isVisible() == false)
+    if (isVisible() == false)
     {
-        THREAD_UNSAFE
-                return;
+		THREAD_UNSAFE
+        return;
     }
     if (data() == 0)
     {
         THREAD_UNSAFE
-                return;
+        return;
     }
     QPolygonF _points;
     QVector<QRectF> _rects;
     const QPointF _origin = origin();
-    const qreal _offset_x = _origin.x();
-    const qreal _offset_y = _src_rect.top() + _src_rect.bottom() - _origin.y();
+    const double _offset_x = _origin.x();
+    const double _offset_y = _src_rect.top() + _src_rect.bottom() - _origin.y();
     const QSize _size = size();
     const unsigned int _width = _size.width();
     QImage _symbol_img = symbol();
     switch (data_model)
     {
-    case FlatData:
-    {
-        const Flat * const _y_data = (const Flat * const)data();
-        if (x_data == 0)
-        {
-            qreal _fleft =
-                    (_x_axis && _x_axis->isLog10ScaleEnabled()) ?
-                        _x_axis->fromLog10(_src_rect.left() - _origin.x()) :
-                        _src_rect.left() - _origin.x();
-            qreal _fright =
-                    (_x_axis && _x_axis->isLog10ScaleEnabled()) ?
-                        _x_axis->fromLog10(_src_rect.right() - _origin.x()) :
-                        _src_rect.right() - _origin.x();
+		case FlatData:
+		{
+			const Flat * const _y_data = (const Flat * const)data();
+			if (x_data == 0)
+			{
+				double _fleft = _src_rect.left() - _origin.x();
+				double _fright = _src_rect.right() - _origin.x();
+				double _bar_width = bar_width;
+				if (_x_axis)
+				{
+					_fleft = _x_axis->normalizeFromScale(_fleft);
+					_fright = _x_axis->normalizeFromScale(_fright);
+					_bar_width = _x_axis->normalizeFromScale(_bar_width);
+				}
+				if (_fright > _width)
+				{
+					_fright = _width;
+				}
+				const qint32 _left = ((qint32)_fleft) < 0 ? 0 : _fleft;
+				const qint32 _right = ((qint32)_fright) < 0 ? 0 : _fright;
+				switch (line_style)
+				{
+				case Dots:
+				case Lines:
+				{
+					_points.reserve(_right - _left);
+					for (int _x = _left; _x < _right; _x++)
+					{
+						_points << QPointF(_x, -_y_data[_x]);
+					}
+					break;
+				}
+				case Ticks:
+				{
+					_points.reserve((_right - _left) * 2);
+					for (int _x = _left; _x < _right; _x++)
+					{
+						_points << QPointF(_x, -_y_data[_x]);
+						_points << QPointF( _x, 0);
+					}
+					break;
+				}
+				case Bars:
+				{
+					_rects.reserve(_right - _left);
+					for (int _x = _left; _x < _right; _x++)
+					{
+						_rects << QRectF(QPointF(_x - (_bar_width / 2.0), - _y_data[_x]), QSizeF(_bar_width, _y_data[_x]));
+					}
+				}
+				}
+			}
+			else
+			{
+				double _bar_width = bar_width;
+				if (_x_axis)
+				{
+					_bar_width = _x_axis->normalizeFromScale(_bar_width);
+				}
+				switch (line_style)
+				{
+				case Dots:
+				case Lines:
+				{
+					_points.reserve(_width);
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						_points << QPointF(x_data[_idx], -_y_data[_idx]);
+					}
+					break;
+				}
+				case Ticks:
+				{
+					_points.reserve(_width * 2);
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						_points << QPointF(x_data[_idx], -_y_data[_idx]);
+						_points << QPointF(x_data[_idx], 0);
+					}
+					break;
+				}
+				case Bars:
+				{
+					_rects.reserve(_width);
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						_rects << QRectF(QPointF(x_data[_idx] - (_bar_width / 2.0), -_y_data[_idx]), QSizeF(_bar_width, _y_data[_idx]));
+					}
+					break;
+				}
+				}
 
-            if (_fright > _width)
-            {
-                _fright = _width;
-            }
-            const qint32 _left = ((qint32)_fleft) < 0 ? 0 : _fleft;
-            const qint32 _right = ((qint32)_fright) < 0 ? 0 : _fright;
-            const qreal _bar_width =
-                    (_x_axis && _x_axis->isLog10ScaleEnabled()) ?
-                        _x_axis->fromLog10(bar_width) :
-                        bar_width;
-            switch (line_style)
-            {
-            case Dots:
-            case Lines:
-            {
-                _points.reserve(_right - _left);
-                for (int _x = _left; _x < _right; _x++)
-                {
-                    _points << QPointF(_x, -_y_data[_x]);
-                }
-                break;
-            }
-            case Ticks:
-            {
-                _points.reserve((_right - _left) * 2);
-                for (int _x = _left; _x < _right; _x++)
-                {
-                    _points << QPointF(_x, -_y_data[_x]);
-                    _points << QPointF( _x, 0);
-                }
-                break;
-            }
-            case Bars:
-            {
-                _rects.reserve(_right - _left);
-                for (int _x = _left; _x < _right; _x++)
-                {
-                    _rects << QRectF(QPointF(_x - (_bar_width / 2.0), - _y_data[_x]), QSizeF(_bar_width, _y_data[_x]));
-                }
-            }
-            }
-        }
-        else
-        {
-            const qreal _bar_width =
-                    (_x_axis && _x_axis->isLog10ScaleEnabled()) ?
-                        _x_axis->fromLog10(bar_width) :
-                        bar_width;
-            switch (line_style)
-            {
-            case Dots:
-            case Lines:
-            {
-                _points.reserve(_width);
-                for (unsigned int _idx = 0; _idx < _width; _idx++)
-                {
-                    _points << QPointF(x_data[_idx], -_y_data[_idx]);
-                }
-                break;
-            }
-            case Ticks:
-            {
-                _points.reserve(_width * 2);
-                for (unsigned int _idx = 0; _idx < _width; _idx++)
-                {
-                    _points << QPointF(x_data[_idx], -_y_data[_idx]);
-                    _points << QPointF(x_data[_idx], 0);
-                }
-                break;
-            }
-            case Bars:
-            {
-                _rects.reserve(_width);
-                for (unsigned int _idx = 0; _idx < _width; _idx++)
-                {
-                    _rects << QRectF(QPointF(x_data[_idx] - (_bar_width / 2.0), -_y_data[_idx]), QSizeF(_bar_width, _y_data[_idx]));
-                }
-                break;
-            }
-            }
-
-        }
-        break;
-    }
-    case PointData:
-    {
-        const Point * const _data = (const Point * const)data();
-        const qreal _bar_width =
-                (_x_axis && _x_axis->isLog10ScaleEnabled()) ?
-                    _x_axis->fromLog10(bar_width) :
-                    bar_width;
-        switch (line_style)
-        {
-        case Dots:
-        case Lines:
-        {
-            _points.reserve(_width);
-            for (unsigned int _idx = 0; _idx < _width; _idx++)
-            {
-                _points << QPointF(_data[_idx].x, -_data[_idx].y);
-            }
-            break;
-        }
-        case Ticks:
-        {
-            _points.reserve(_width * 2);
-            for (unsigned int _idx = 0; _idx < _width; _idx++)
-            {
-                _points << QPointF(_data[_idx].x, -_data[_idx].y);
-                _points << QPointF(_data[_idx].x, 0);
-            }
-            break;
-        }
-        case Bars:
-        {
-            _rects.reserve(_width);
-            for (unsigned int _idx = 0; _idx < _width; _idx++)
-            {
-                _rects << QRectF(QPointF(_data[_idx].x - (_bar_width / 2.0), -_data[_idx].y), QSizeF(_bar_width, _data[_idx].y));
-            }
-            break;
-        }
-        }
-        break;
-    }
-    case RadialData:
-    {
-        const Radial * const _data = (const Radial * const)data();
-        switch (line_style)
-        {
-        case Dots:
-        {
-            _points.reserve(_width);
-            for (unsigned int _idx = 0; _idx < _width; _idx++)
-            {
-                _points << QPointF(_data[_idx].v * ::cosf(_data[_idx].t), -_data[_idx].v * ::sinf(_data[_idx].t));
-            }
-            break;
-        }
-        case Lines:
-        {
-            _points.reserve(_width + 1);
-            for (unsigned int _idx = 0; _idx < _width; _idx++)
-            {
-                _points << QPointF(_data[_idx].v, _data[_idx].t);
-            }
-            ::qSort(_points.begin(), _points.end(), &radialSort);
-            _points << _points[0];
-            for (unsigned int _idx = 0; _idx < _width + 1; _idx++)
-            {
-                const qreal & _v = _points[_idx].x();
-                const qreal & _t = _points[_idx].y();
-                _points[_idx] = QPointF(_v * ::cosf(_t), -_v * ::sinf(_t));
-            }
-            break;
-        }
-        case Ticks:
-        {
-            _points.reserve(_width * 2);
-            for (unsigned int _idx = 0; _idx < _width; _idx++)
-            {
-                _points << QPointF(_data[_idx].v * ::cosf(_data[_idx].t), -_data[_idx].v * ::sinf(_data[_idx].t));
-                _points << QPointF(0, 0);
-            }
-            break;
-        }
-        }
-        break;
-    }
+			}
+			break;
+		}
+		case PointData:
+		{
+			const Point * const _data = (const Point * const)data();
+			double _bar_width = bar_width;
+			if (_x_axis)
+			{
+				_bar_width = _x_axis->normalizeFromScale(_bar_width);
+			}
+			switch (line_style)
+			{
+			case Dots:
+			case Lines:
+			{
+				_points.reserve(_width);
+				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				{
+					_points << QPointF(_data[_idx].x, -_data[_idx].y);
+				}
+				break;
+			}
+			case Ticks:
+			{
+				_points.reserve(_width * 2);
+				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				{
+					_points << QPointF(_data[_idx].x, -_data[_idx].y);
+					_points << QPointF(_data[_idx].x, 0);
+				}
+				break;
+			}
+			case Bars:
+			{
+				_rects.reserve(_width);
+				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				{
+					_rects << QRectF(QPointF(_data[_idx].x - (_bar_width / 2.0), -_data[_idx].y), QSizeF(_bar_width, _data[_idx].y));
+				}
+				break;
+			}
+			}
+			break;
+		}
+		case RadialData:
+		{
+			const Radial * const _data = (const Radial * const)data();
+			switch (line_style)
+			{
+			case Dots:
+			{
+				_points.reserve(_width);
+				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				{
+					_points << QPointF(_data[_idx].v * ::cosf(_data[_idx].t), -_data[_idx].v * ::sinf(_data[_idx].t));
+				}
+				break;
+			}
+			case Lines:
+			{
+				_points.reserve(_width + 1);
+				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				{
+					_points << QPointF(_data[_idx].v, _data[_idx].t);
+				}
+				::qSort(_points.begin(), _points.end(), &radialSort);
+				_points << _points[0];
+				for (unsigned int _idx = 0; _idx < _width + 1; _idx++)
+				{
+					const double & _v = _points[_idx].x();
+					const double & _t = _points[_idx].y();
+					_points[_idx] = QPointF(_v * ::cosf(_t), -_v * ::sinf(_t));
+				}
+				break;
+			}
+			case Ticks:
+			{
+				_points.reserve(_width * 2);
+				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				{
+					_points << QPointF(_data[_idx].v * ::cosf(_data[_idx].t), -_data[_idx].v * ::sinf(_data[_idx].t));
+					_points << QPointF(0, 0);
+				}
+				break;
+			}
+			}
+			break;
+		}
     }
 
     if (_x_axis && _x_axis->isLog10ScaleEnabled())
     {
-        const qreal _minimum = _src_rect.left();
+        const double _minimum = _src_rect.left();
         for (int _idx = 0; _idx < _points.count(); _idx++)
         {
             _points[_idx].setX(_x_axis->toLog10(_points[_idx].x(), _minimum));
@@ -479,7 +477,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
     }
     if (_y_axis && _y_axis->isLog10ScaleEnabled())
     {
-        const qreal _minimum = -_src_rect.bottom();
+        const double _minimum = -_src_rect.bottom();
         for (int _idx = 0; _idx < _points.count(); _idx++)
         {
             _points[_idx].setY(-_y_axis->toLog10(-_points[_idx].y(), _minimum));
@@ -487,7 +485,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
     }
     THREAD_UNSAFE
 
-            QTransform _transform;
+    QTransform _transform;
     QRectF _adj_src_rect = QRectF(QPointF(_src_rect.left() - _offset_x, _src_rect.top() - _offset_y), _src_rect.size());
     if (::jQuadToQuad(_adj_src_rect, _dst_rect, _transform))
     {
@@ -521,8 +519,8 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
         }
         if ((_symbol_img.width() > 0) && (_symbol_img.height() > 0))
         {
-            const qreal _img_offs_x = _symbol_img.width() / 2.0;
-            const qreal _img_offs_y = _symbol_img.height() / 2.0;
+            const double _img_offs_x = _symbol_img.width() / 2.0;
+            const double _img_offs_y = _symbol_img.height() / 2.0;
             foreach (const QPointF & _pt, _transform.map(_points))
             {
                 _painter.drawImage(QPointF(_pt.x() - _img_offs_x, _pt.y() - _img_offs_y), _symbol_img);
@@ -536,9 +534,9 @@ template <class T, class TX>
 bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, const jAxis * _y_axis) const
 {
     THREAD_SAFE(Read)
-            const unsigned int _width = size().width();
-    const qreal _offset_x = origin().x();
-    const qreal _offset_y = origin().y();
+    const unsigned int _width = size().width();
+    const double _offset_x = origin().x();
+    const double _offset_y = origin().y();
     QRectF _adj_rect = QRectF(_rect.left() - _offset_x, _rect.top() - _offset_y, _rect.width(), _rect.height());
     if (_x_axis && _x_axis->isLog10ScaleEnabled())
     {
@@ -552,165 +550,165 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
     }
     switch (data_model)
     {
-    case FlatData:
-    {
-        const Flat * const _y_data = (const Flat * const)data();
-        if (x_data == 0)
-        {
-            switch (line_style)
-            {
-            case Dots:
-            case Lines:
-            {
-                for (unsigned int _x = 0; _x < _width; _x++)
-                {
-                    if (_adj_rect.contains(QPointF(_x, _y_data[_x])))
-                    {
-                        THREAD_UNSAFE
-                                return true;
-                    }
-                }
-                break;
-            }
-            case Ticks:
-            case Bars:
-            {
-                for (unsigned int _x = 0; _x < _width; _x++)
-                {
-                    if (_adj_rect.intersects(QRectF(QPointF((int)_x - 1, _y_data[_x]), QPointF(_x + 1, 0))))
-                    {
-                        THREAD_UNSAFE
-                                return true;
-                    }
-                }
-                break;
-            }
-            }
-        }
-        else
-        {
-            switch (line_style)
-            {
-            case Dots:
-            case Lines:
-            {
-                for (unsigned int _idx = 0; _idx < _width; _idx++)
-                {
-                    if (_adj_rect.contains(QPointF(x_data[_idx], _y_data[_idx])))
-                    {
-                        THREAD_UNSAFE
-                                return true;
-                    }
-                }
-                break;
-            }
-            case Ticks:
-            case Bars:
-            {
-                for (unsigned int _idx = 0; _idx < _width; _idx++)
-                {
-                    if (_adj_rect.intersects(QRectF(QPointF((qreal)x_data[_idx] - 1, _y_data[_idx]), QPointF(x_data[_idx] + 1, 0))))
-                    {
-                        THREAD_UNSAFE
-                                return true;
-                    }
-                }
-                break;
-            }
-            }
-        }
-        break;
-    }
-    case PointData:
-    {
-        const Point * const _data = (const Point * const)data();
-        switch (line_style)
-        {
-        case Dots:
-        case Lines:
-        {
-            for (unsigned int _idx = 0; _idx < _width; _idx++)
-            {
-                if (_adj_rect.contains(QPointF(_data[_idx].x, _data[_idx].y)))
-                {
-                    THREAD_UNSAFE
-                            return true;
-                }
-            }
-            break;
-        }
-        case Ticks:
-        case Bars:
-        {
-            for (unsigned int _idx = 0; _idx < _width; _idx++)
-            {
-                if (_adj_rect.intersects(QRectF(QPointF((qreal)_data[_idx].x - 1, _data[_idx].y), QPointF(_data[_idx].x + 1, 0))))
-                {
-                    THREAD_UNSAFE
-                            return true;
-                }
-            }
-            break;
-        }
-        }
-        break;
-    }
-    case RadialData:
-    {
-        const Radial * const _data = (const Radial * const)data();
-        switch (line_style)
-        {
-        case Dots:
-        case Lines:
-        {
-            for (unsigned int _idx = 0; _idx < _width; _idx++)
-            {
-                if (_adj_rect.contains(QPointF(_data[_idx].v * ::cosf(_data[_idx].t), _data[_idx].v * ::sinf(_data[_idx].t))))
-                {
-                    THREAD_UNSAFE
-                            return true;
-                }
-            }
-            break;
-        }
-        case Ticks:
-        case Bars:
-        {
-            const qreal _mid_x = _adj_rect.x() + _adj_rect.width() / 2;
-            const qreal _mid_y = _adj_rect.y() + _adj_rect.height() / 2;
-            const qreal _mid_x_2 = _mid_x * _mid_x;
-            const qreal _mid_y_2 = _mid_y * _mid_y;
-            const qreal _v = ::qSqrt(_mid_x_2 + _mid_y_2 + 0.0001);
-            for (unsigned int _idx = 0; _idx < _width; _idx++)
-            {
-                if (_v < _data[_idx].v)
-                {
-                    THREAD_UNSAFE
-                            return true;
-                }
-            }
-            break;
-        }
-        }
-        break;
-    }
+		case FlatData:
+		{
+			const Flat * const _y_data = (const Flat * const)data();
+			if (x_data == 0)
+			{
+				switch (line_style)
+				{
+					case Dots:
+					case Lines:
+					{
+						for (unsigned int _x = 0; _x < _width; _x++)
+						{
+							if (_adj_rect.contains(QPointF(_x, _y_data[_x])))
+							{
+								THREAD_UNSAFE
+								return true;
+							}
+						}
+						break;
+					}
+					case Ticks:
+					case Bars:
+					{
+						for (unsigned int _x = 0; _x < _width; _x++)
+						{
+							if (_adj_rect.intersects(QRectF(QPointF((int)_x - 1, _y_data[_x]), QPointF(_x + 1, 0))))
+							{
+								THREAD_UNSAFE
+								return true;
+							}
+						}
+						break;
+					}
+				}
+			}
+			else
+			{
+				switch (line_style)
+				{
+					case Dots:
+					case Lines:
+					{
+						for (unsigned int _idx = 0; _idx < _width; _idx++)
+						{
+							if (_adj_rect.contains(QPointF(x_data[_idx], _y_data[_idx])))
+							{
+								THREAD_UNSAFE
+										return true;
+							}
+						}
+						break;
+					}
+					case Ticks:
+					case Bars:
+					{
+						for (unsigned int _idx = 0; _idx < _width; _idx++)
+						{
+							if (_adj_rect.intersects(QRectF(QPointF((double)x_data[_idx] - 1, _y_data[_idx]), QPointF(x_data[_idx] + 1, 0))))
+							{
+								THREAD_UNSAFE
+										return true;
+							}
+						}
+						break;
+					}
+				}
+			}
+			break;
+		}
+		case PointData:
+		{
+			const Point * const _data = (const Point * const)data();
+			switch (line_style)
+			{
+				case Dots:
+				case Lines:
+				{
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						if (_adj_rect.contains(QPointF(_data[_idx].x, _data[_idx].y)))
+						{
+							THREAD_UNSAFE
+									return true;
+						}
+					}
+					break;
+				}
+				case Ticks:
+				case Bars:
+				{
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						if (_adj_rect.intersects(QRectF(QPointF((double)_data[_idx].x - 1, _data[_idx].y), QPointF(_data[_idx].x + 1, 0))))
+						{
+							THREAD_UNSAFE
+									return true;
+						}
+					}
+					break;
+				}
+			}
+			break;
+		}
+		case RadialData:
+		{
+			const Radial * const _data = (const Radial * const)data();
+			switch (line_style)
+			{
+				case Dots:
+				case Lines:
+				{
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						if (_adj_rect.contains(QPointF(_data[_idx].v * ::cosf(_data[_idx].t), _data[_idx].v * ::sinf(_data[_idx].t))))
+						{
+							THREAD_UNSAFE
+									return true;
+						}
+					}
+					break;
+				}
+				case Ticks:
+				case Bars:
+				{
+					const double _mid_x = _adj_rect.x() + _adj_rect.width() / 2;
+					const double _mid_y = _adj_rect.y() + _adj_rect.height() / 2;
+					const double _mid_x_2 = _mid_x * _mid_x;
+					const double _mid_y_2 = _mid_y * _mid_y;
+					const double _v = ::qSqrt(_mid_x_2 + _mid_y_2 + 0.0001);
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						if (_v < _data[_idx].v)
+						{
+							THREAD_UNSAFE
+									return true;
+						}
+					}
+					break;
+				}
+			}
+			break;
+		}
     }
     THREAD_UNSAFE
-            return false;
+    return false;
 }
 
 template <class T, class TX>
 QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 {
     THREAD_SAFE(Read)
-            const unsigned int _width = size().width();
+    const unsigned int _width = size().width();
     if (_width == 0)
     {
         THREAD_UNSAFE
-                return QRectF();
+        return QRectF();
     }
-    const qreal _offset_x = origin().x();
-    const qreal _offset_y = origin().y();
+    const double _offset_x = origin().x();
+    const double _offset_y = origin().y();
     TX _left, _right;
     T _top, _bottom;
     switch (data_model)
@@ -741,8 +739,8 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
             _right = x_data[0];
             for (unsigned int _idx = 0; _idx < _width; _idx++)
             {
-                const qreal & _x = x_data[_idx];
-                const qreal & _y = _y_data[_idx];
+                const double & _x = x_data[_idx];
+                const double & _y = _y_data[_idx];
                 if (_x < _left)
                 {
                     _left = _x;
@@ -772,8 +770,8 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
         _bottom = _data[0].y;
         for (unsigned int _idx = 0; _idx < _width; _idx++)
         {
-            const qreal & _x = _data[_idx].x;
-            const qreal & _y = _data[_idx].y;
+            const double & _x = _data[_idx].x;
+            const double & _y = _data[_idx].y;
             if (_x < _left)
             {
                 _left = _x;
@@ -802,8 +800,8 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
         _bottom = _data[0].v * ::sinf(_data[0].t);
         for (unsigned int _idx = 0; _idx < _width; _idx++)
         {
-            const qreal & _x = _data[_idx].v * ::cosf(_data[_idx].t);
-            const qreal & _y = _data[_idx].v * ::sinf(_data[_idx].t);
+            const double & _x = _data[_idx].v * ::cosf(_data[_idx].t);
+            const double & _y = _data[_idx].v * ::sinf(_data[_idx].t);
             if (_x < _left)
             {
                 _left = _x;
@@ -840,14 +838,14 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
     _bottom += _offset_y;
     if (_x_axis && _x_axis->isLog10ScaleEnabled())
     {
-        if (_left - _offset_x == 0)
+        if (_left - _offset_x <= 0)
         {
             _left = _x_axis->lo();
         }
     }
     if (_y_axis && _y_axis->isLog10ScaleEnabled())
     {
-        if (_bottom - _offset_y == 0)
+        if (_bottom - _offset_y <= 0)
         {
             _bottom = _y_axis->lo();
         }
@@ -861,7 +859,7 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
         ::qSwap(_top, _bottom);
     }
     THREAD_UNSAFE
-            return (_top == _bottom) ? QRectF(QPointF(_left, _top > 0 ? _offset_y : _top), QPointF(_right, _top > 0 ? _top : _offset_y)) : QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
+    return (_top == _bottom) ? QRectF(QPointF(_left, _top > 0 ? _offset_y : _top), QPointF(_right, _top > 0 ? _top : _offset_y)) : QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
 }
 
 template <class T, class TX>
@@ -1007,7 +1005,7 @@ jFigureItem<T, TX> & jFigureItem<T, TX>::setRectSymbol(const QRectF & _rectangle
 }
 
 template <class T, class TX>
-jFigureItem<T, TX> & jFigureItem<T, TX>::setRoundedRectSymbol( const QRectF & _rectangle, qreal _xRadius, qreal _yRadius, Qt::SizeMode _mode)
+jFigureItem<T, TX> & jFigureItem<T, TX>::setRoundedRectSymbol( const QRectF & _rectangle, double _xRadius, double _yRadius, Qt::SizeMode _mode)
 {
     QPainter * _painter = createPainter(_rectangle);
     _painter->drawRoundedRect(_rectangle, _xRadius, _yRadius, _mode);
@@ -1038,15 +1036,15 @@ template <class T>
 void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
 {
     THREAD_SAFE(Read)
-            if (isVisible() == false)
+    if (isVisible() == false)
     {
         THREAD_UNSAFE
-                return;
+        return;
     }
     if (data() == 0)
     {
         THREAD_UNSAFE
-                return;
+        return;
     }
     const QSize _size = size();
     unsigned int _w = _size.width();

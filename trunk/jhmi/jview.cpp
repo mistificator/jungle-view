@@ -23,7 +23,7 @@ struct jAxis::Data
 	bool visible;
 	QBrush background;
 	int id;
-	qreal log10_mpy;
+	double log10_mpy;
 	bool log10_enabled;
 	Data()
 	{
@@ -120,6 +120,20 @@ jAxis::jAxis(): d(new Data())
 jAxis::~jAxis()
 {
 	delete d;
+}
+
+jAxis::jAxis(const jAxis & _other): d(new Data())
+{
+	* d = * _other.d;
+}
+
+jAxis & jAxis::operator = (const jAxis & _other)
+{
+	if (& _other != this)
+	{
+		* d = * _other.d;
+	}
+	return * this;
 }
 
 QString jAxis::default_range_convert(double _value, jAxis *)
@@ -396,23 +410,23 @@ bool jAxis::isLog10ScaleEnabled() const
 	return d->log10_enabled;
 }
 
-jAxis & jAxis::setLog10Multiplier(qreal _mpy)
+jAxis & jAxis::setLog10Multiplier(double _mpy)
 {
 	d->log10_mpy = _mpy;
 	return * this;
 }
 
-qreal jAxis::log10Multiplier() const
+double jAxis::log10Multiplier() const
 {
 	return d->log10_mpy;
 }
 
-qreal jAxis::toLog10(qreal _value, qreal _minimum) const
+double jAxis::toLog10(double _value, double _minimum) const
 {
 	return (_value > 0.0) ? d->log10_mpy * ::log10f(_value) : _minimum;
 }
 
-qreal jAxis::fromLog10(qreal _value) const
+double jAxis::fromLog10(double _value) const
 {
 	return (d->log10_mpy != 0.0) ? ::powf(10.0, _value / d->log10_mpy) : 0.0;
 }
@@ -427,6 +441,15 @@ double jAxis::mapFromAxis(double _value, const jAxis & _src) const
 	return (_src.d->hi != _src.d->lo) ? d->lo + ((_value - _src.d->lo) * (d->hi - d->lo) / (_src.d->hi - _src.d->lo)) : 0.0;
 }
 
+double jAxis::normalizeToScale(double _value, double _minimum) const
+{
+	return (d->log10_enabled ? toLog10(_value, _minimum) : _value);
+}
+
+double jAxis::normalizeFromScale(double _value) const
+{
+	return (d->log10_enabled ? fromLog10(_value) : _value);
+}
 
 // ------------------------------------------------------------------------
 
@@ -435,8 +458,8 @@ struct jSelector::Data
 	QRectF rect;
 	bool visible;
 	QBrush background;
-	jItem1D<qreal> item;
-	jItem1D<qreal>::Point points[5];
+	jItem1D<double> item;
+	jItem1D<double>::Point points[5];
 	Data() 
 	{
 		points[0].x = 0; points[0].y = 0;
@@ -1090,7 +1113,7 @@ void jCoordinator::render(QPainter & _painter, const QRectF & _dst_rect, const Q
 		QRectF _rect = QRectF(_transform.map(_pos), _size);
 		_rect.moveTo(QPointF(_dst_rect.left() + _offset.x() + _rect.left(), _dst_rect.top() - _offset.y() + _rect.top() - _rect.height()));
 		
-		qreal _x = 0, _y = 0;
+		double _x = 0, _y = 0;
 		if (_dst_rect.contains(_rect) == false)
 		{
 			if (_dst_rect.right() < _rect.right())
@@ -1325,8 +1348,8 @@ void jItem::addCounter(quint64 _count)
 QRectF jItem::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 {
 	QSizeF _size = size();
-	qreal _w = _size.width();
-	qreal _h = _size.height();
+	double _w = _size.width();
+	double _h = _size.height();
 	if (_x_axis && _x_axis->isLog10ScaleEnabled())
 	{
 		_w = _x_axis->toLog10(_w);
@@ -1468,9 +1491,9 @@ void jItemHandler::emitContextMenuRequested(QPoint _pt)
 struct jMarker::Data
 {
 	int orientation;
-	qreal value;
-	jItem1D<qreal> item;
-	jItem1D<qreal>::Point points[2];
+	double value;
+	jItem1D<double> item;
+	jItem1D<double>::Point points[2];
 	Data()
 	{
 		points[0].x = 0; points[0].y = 0;
@@ -1508,13 +1531,13 @@ QPen jMarker::pen() const
 	return SAFE_GET(d->item.pen());
 }
 
-jMarker & jMarker::setValue(qreal _value)
+jMarker & jMarker::setValue(double _value)
 {
 	SAFE_SET(d->value, _value);
 	return * this;
 }
 
-qreal jMarker::value() const
+double jMarker::value() const
 {
 	return d->value;
 }
@@ -2777,14 +2800,14 @@ QRectF jView::itemsBoundingRect(bool _exclude_invisible) const
 	return _united;
 }
 
-void jView::autoScaleX(qreal _margin_x)
+void jView::autoScaleX(double _margin_x)
 {
 	if (d->x_axis && d->y_axis)
 	{
 		QRectF _bounding_rect = itemsBoundingRect();
 
-		const qreal _width = _bounding_rect.width();
-		const qreal _offset_x = _width * _margin_x;
+		const double _width = _bounding_rect.width();
+		const double _offset_x = _width * _margin_x;
 		_bounding_rect.setLeft(_bounding_rect.left() - _offset_x);
 		_bounding_rect.setRight(_bounding_rect.right() + 2 * _offset_x);
 
@@ -2794,14 +2817,14 @@ void jView::autoScaleX(qreal _margin_x)
 	}
 }
 
-void jView::autoScaleY(qreal _margin_y)
+void jView::autoScaleY(double _margin_y)
 {
 	if (d->x_axis && d->y_axis)
 	{
 		QRectF _bounding_rect = itemsBoundingRect();
 
-		const qreal _height = _bounding_rect.height();
-		const qreal _offset_y = _height * _margin_y;
+		const double _height = _bounding_rect.height();
+		const double _offset_y = _height * _margin_y;
 		_bounding_rect.setTop(_bounding_rect.top() - _offset_y);
 		_bounding_rect.setBottom(_bounding_rect.bottom() + 2 * _offset_y);
 
@@ -2811,18 +2834,18 @@ void jView::autoScaleY(qreal _margin_y)
 	}
 }
 
-void jView::autoScale(qreal _margin_x, qreal _margin_y)
+void jView::autoScale(double _margin_x, double _margin_y)
 {
 	if (d->x_axis && d->y_axis)
 	{
 		QRectF _bounding_rect = itemsBoundingRect();
 
-		const qreal _width = _bounding_rect.width();
-		const qreal _offset_x = _width * _margin_x;
+		const double _width = _bounding_rect.width();
+		const double _offset_x = _width * _margin_x;
 		_bounding_rect.setLeft(_bounding_rect.left() - _offset_x);
 		_bounding_rect.setRight(_bounding_rect.right() + _offset_x);
-		const qreal _height = _bounding_rect.height();
-		const qreal _offset_y = _height * _margin_y;
+		const double _height = _bounding_rect.height();
+		const double _offset_y = _height * _margin_y;
 		_bounding_rect.setTop(_bounding_rect.top() - _offset_y);
 		_bounding_rect.setBottom(_bounding_rect.bottom() + _offset_y);
 
@@ -2945,8 +2968,8 @@ struct jPreview::Data
 		{
 			return;
 		}
-		qreal _delta_x = _axis_pt.x() - (_viewport_rect.x() + _viewport_rect.width() / 2);
-		qreal _delta_y = _axis_pt.y() - (_viewport_rect.y() + _viewport_rect.height() / 2);
+		double _delta_x = _axis_pt.x() - (_viewport_rect.x() + _viewport_rect.width() / 2);
+		double _delta_y = _axis_pt.y() - (_viewport_rect.y() + _viewport_rect.height() / 2);
 		if ((orientation & Qt::Vertical) == 0)
 		{
 			_delta_y = 0; 
@@ -2985,8 +3008,8 @@ struct jPreview::Data
 		_axis_pt.setY(_viewport_rect_base.top() + _viewport_rect_base.bottom() - _axis_pt.y());
 		QPointF _axis_prev_pt = _transform.map(prev_point);
 		_axis_prev_pt.setY(_viewport_rect_base.top() + _viewport_rect_base.bottom() - _axis_prev_pt.y());
-		qreal _delta_x = _axis_pt.x() - _axis_prev_pt.x();
-		qreal _delta_y = _axis_pt.y() - _axis_prev_pt.y();
+		double _delta_x = _axis_pt.x() - _axis_prev_pt.x();
+		double _delta_y = _axis_pt.y() - _axis_prev_pt.y();
 		if ((orientation & Qt::Vertical) == 0)
 		{
 			_delta_y = 0; 
@@ -3232,7 +3255,12 @@ bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifie
         }
         else
         {
-            d->view->viewport().pan(_we.orientation() == Qt::Vertical ? 1 : 0, _we.orientation() == Qt::Horizontal ? 1 : 0);
+			const QPointF & _pt_00 = d->view->screenToAxis(QPointF(0, 0));
+			const QPointF & _pt_11 = d->view->screenToAxis(QPointF(1, 1));
+			QSizeF _step;
+			_step.setWidth(_we.orientation() == Qt::Horizontal ? _pt_11.x() - _pt_00.x() : 0);
+			_step.setHeight(_we.orientation() == Qt::Vertical ? _pt_11.y() - _pt_00.y() : 0);
+            d->view->viewport().pan(-_we.delta() * _step.width(), -_we.delta() * _step.height());
             d->view->rebuild();
         }
 		break;
@@ -3985,7 +4013,7 @@ void jLegend::onZOrderChanged(int _action)
 	}
 	if (_item1 && _item2)
 	{
-		qreal _z = _item1->z();
+		double _z = _item1->z();
 		_item1->setZ(_item2->z());
 		_item2->setZ(_z);
 
