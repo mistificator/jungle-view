@@ -77,9 +77,10 @@ class jFigureItem : public jItem1D<T, TX>
 {
     COPY_FBD(jFigureItem)
     public:
-        jFigureItem();
+    jFigureItem();
     ~jFigureItem();
 
+	jFigureItem & setData(const QPointF & _point);
     jFigureItem & setArcSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
     jFigureItem & setChordSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
     jFigureItem & setEllipseSymbol(const QRectF & _rectangle);
@@ -289,15 +290,9 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 			const Flat * const _y_data = (const Flat * const)data();
 			if (x_data == 0)
 			{
-				double _fleft = _src_rect.left() - _origin.x();
-				double _fright = _src_rect.right() - _origin.x();
-				double _bar_width = bar_width;
-				if (_x_axis)
-				{
-					_fleft = _x_axis->normalizeFromScale(_fleft);
-					_fright = _x_axis->normalizeFromScale(_fright);
-					_bar_width = _x_axis->normalizeFromScale(_bar_width);
-				}
+				double _fleft = jAxis::normalizeFromScale(_x_axis, _src_rect.left() - _origin.x());
+				double _fright = jAxis::normalizeFromScale(_x_axis, _src_rect.right() - _origin.x());
+				const double _bar_width = jAxis::normalizeFromScale(_x_axis, bar_width);
 				if (_fright > _width)
 				{
 					_fright = _width;
@@ -338,11 +333,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 			}
 			else
 			{
-				double _bar_width = bar_width;
-				if (_x_axis)
-				{
-					_bar_width = _x_axis->normalizeFromScale(_bar_width);
-				}
+				const double _bar_width = jAxis::normalizeFromScale(_x_axis, bar_width);
 				switch (line_style)
 				{
 				case Dots:
@@ -382,11 +373,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 		case PointData:
 		{
 			const Point * const _data = (const Point * const)data();
-			double _bar_width = bar_width;
-			if (_x_axis)
-			{
-				_bar_width = _x_axis->normalizeFromScale(_bar_width);
-			}
+			const double _bar_width = jAxis::normalizeFromScale(_x_axis, bar_width);
 			switch (line_style)
 			{
 			case Dots:
@@ -538,16 +525,12 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
     const double _offset_x = origin().x();
     const double _offset_y = origin().y();
     QRectF _adj_rect = QRectF(_rect.left() - _offset_x, _rect.top() - _offset_y, _rect.width(), _rect.height());
-    if (_x_axis && _x_axis->isLog10ScaleEnabled())
-    {
-        _adj_rect.setLeft(_x_axis->fromLog10(_adj_rect.left()));
-        _adj_rect.setRight(_x_axis->fromLog10(_adj_rect.right()));
-    }
-    if (_y_axis && _y_axis->isLog10ScaleEnabled())
-    {
-        _adj_rect.setTop(_y_axis->fromLog10(_adj_rect.top()));
-        _adj_rect.setBottom(_y_axis->fromLog10(_adj_rect.bottom()));
-    }
+
+	_adj_rect.setLeft(jAxis::normalizeFromScale(_x_axis, _adj_rect.left()));
+    _adj_rect.setRight(jAxis::normalizeFromScale(_x_axis, _adj_rect.right()));
+    _adj_rect.setTop(jAxis::normalizeFromScale(_y_axis, _adj_rect.top()));
+    _adj_rect.setBottom(jAxis::normalizeFromScale(_y_axis, _adj_rect.bottom()));
+
     switch (data_model)
     {
 		case FlatData:
@@ -822,16 +805,10 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
         break;
     }
     }
-    if (_x_axis && _x_axis->isLog10ScaleEnabled())
-    {
-        _left = _x_axis->toLog10(_left);
-        _right = _x_axis->toLog10(_right);
-    }
-    if (_y_axis && _y_axis->isLog10ScaleEnabled())
-    {
-        _top = _y_axis->toLog10(_top);
-        _bottom = _y_axis->toLog10(_bottom);
-    }
+	_left = jAxis::normalizeToScale(_x_axis, _left);
+	_right = jAxis::normalizeToScale(_x_axis, _right);
+	_top = jAxis::normalizeToScale(_y_axis, _top);
+	_bottom = jAxis::normalizeToScale(_y_axis, _bottom);
     _left += _offset_x;
     _right += _offset_x;
     _top += _offset_y;
@@ -938,6 +915,15 @@ jFigureItem<T, TX>::jFigureItem() : jItem1D<T, TX>(jItem1D<T, TX>::Dots)
 template <class T, class TX>
 jFigureItem<T, TX>::~jFigureItem()
 {
+}
+
+template <class T, class TX>
+jFigureItem<T, TX> & jFigureItem<T, TX>::setData(const QPointF & _point)
+{
+	jFigureItem<T, TX>::Point _pt;
+	_pt.x = _point.x(); _pt.y = _point.y();
+	jItem1D<T, TX>::setData(& _pt, 1, true);
+	return (* this);
 }
 
 template <class T, class TX>

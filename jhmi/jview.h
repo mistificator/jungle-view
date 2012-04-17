@@ -298,6 +298,9 @@ public:
 	\sa fromLog10(), isLog10ScaleEnabled()
 	*/
 	double normalizeFromScale(double _value) const;
+
+	static double normalizeToScale(const jAxis * _axis, double _value, double _minimum = 0.0);
+	static double normalizeFromScale(const jAxis * _axis, double _value);
 };
 
 class jSelector
@@ -891,6 +894,7 @@ class jView : public JUNGLE_WIDGET_CLASS
 public:
 	jView(QWidget * _parent = 0);
 	jView(jAxis * _x_axis, jAxis * _y_axis, QWidget * _parent = 0);
+	jView(const jAxis & _x_axis, const jAxis & _y_axis, QWidget * _parent = 0);
 	~jView();
 
 	jView & setXAxis(jAxis * _axis);
@@ -951,6 +955,8 @@ public:
 	jInputPattern & inputPattern() const;
 
 	virtual bool userCommand(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+
+	QPointF cursorPos() const;
 public slots:
 	void rebuild();
 	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position

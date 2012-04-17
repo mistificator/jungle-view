@@ -451,6 +451,16 @@ double jAxis::normalizeFromScale(double _value) const
 	return (d->log10_enabled ? fromLog10(_value) : _value);
 }
 
+double jAxis::normalizeToScale(const jAxis * _axis, double _value, double _minimum)
+{
+	return (_axis ? _axis->normalizeToScale(_value, _minimum) : _value);
+}
+
+double jAxis::normalizeFromScale(const jAxis * _axis, double _value)
+{
+	return (_axis ? _axis->normalizeFromScale(_value) : _value);
+}
+
 // ------------------------------------------------------------------------
 
 struct jSelector::Data
@@ -1347,18 +1357,8 @@ void jItem::addCounter(quint64 _count)
 
 QRectF jItem::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 {
-	QSizeF _size = size();
-	double _w = _size.width();
-	double _h = _size.height();
-	if (_x_axis && _x_axis->isLog10ScaleEnabled())
-	{
-		_w = _x_axis->toLog10(_w);
-	}
-	if (_y_axis && _y_axis->isLog10ScaleEnabled())
-	{
-		_h = _y_axis->toLog10(_h);
-	}
-	return QRectF(d->origin, QSizeF(_w, _h));
+	const QSizeF _size = size();
+	return QRectF(d->origin, QSizeF(jAxis::normalizeToScale(_x_axis, _size.width()), jAxis::normalizeToScale(_y_axis, _size.height())));
 }
 
 jItem & jItem::setInputPattern(const jInputPattern & _pattern)
@@ -1965,6 +1965,7 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 struct jView::Data
 {
 	jAxis * x_axis, * y_axis;
+	bool internal_x_axis, internal_y_axis;
 	jViewport viewport;
 	jCoordinator coordinator;
 	jMarker hmarker, vmarker;
@@ -1983,10 +1984,12 @@ struct jView::Data
 	Data()
 	{
 		pattern.setDefaultPattern();
-		x_axis = 0;
-		y_axis = 0;
+		x_axis = new jAxis();
+		y_axis = new jAxis();
+		internal_x_axis = true;
+		internal_y_axis = true;
 		in_zoom = false;
-                draw_grid = false;
+        draw_grid = false;
 		coordinator.label().
 			setVisible(true);
 		hmarker.
@@ -1998,20 +2001,25 @@ struct jView::Data
 	}
 	~Data()
 	{
+		if (internal_x_axis)
+		{
+			delete x_axis;
+		}
+		if (internal_y_axis)
+		{
+			delete y_axis;
+		}
 	}
 	QTransform screenToAxisTransform(const QRectF & _screen_rect) const
 	{
 		QTransform _transform;
-		if (x_axis && y_axis)
-		{
-			const QRectF & _viewport_rect = viewport.rect();
-			QPolygonF _viewport_poly;
-			_viewport_poly << QPointF(_viewport_rect.left(), _viewport_rect.bottom());
-			_viewport_poly << QPointF(_viewport_rect.right(), _viewport_rect.bottom());
-			_viewport_poly << QPointF(_viewport_rect.right(), _viewport_rect.top());
-			_viewport_poly << QPointF(_viewport_rect.left(), _viewport_rect.top());
-			QTransform::quadToQuad(QPolygonF(_screen_rect).mid(0, 4), _viewport_poly, _transform);
-		}
+		const QRectF & _viewport_rect = viewport.rect();
+		QPolygonF _viewport_poly;
+		_viewport_poly << QPointF(_viewport_rect.left(), _viewport_rect.bottom());
+		_viewport_poly << QPointF(_viewport_rect.right(), _viewport_rect.bottom());
+		_viewport_poly << QPointF(_viewport_rect.right(), _viewport_rect.top());
+		_viewport_poly << QPointF(_viewport_rect.left(), _viewport_rect.top());
+		QTransform::quadToQuad(QPolygonF(_screen_rect).mid(0, 4), _viewport_poly, _transform);
 		return _transform;
 	}
 	QRectF screenToAxis(const QRectF & _screen_rect, const QRectF & _src_rect) const
@@ -2025,15 +2033,12 @@ struct jView::Data
 	QTransform axisToScreenTransform(const QRectF & _screen_rect) const
 	{
 		QTransform _transform;
-		if (x_axis && y_axis)
-		{
-			QPolygonF _screen_poly;
-			_screen_poly << QPointF(_screen_rect.left(), _screen_rect.bottom());
-			_screen_poly << QPointF(_screen_rect.right(), _screen_rect.bottom());
-			_screen_poly << QPointF(_screen_rect.right(), _screen_rect.top());
-			_screen_poly << QPointF(_screen_rect.left(), _screen_rect.top());
-			QTransform::quadToQuad(QPolygonF(viewport.rect()).mid(0, 4), _screen_poly, _transform);
-		}
+		QPolygonF _screen_poly;
+		_screen_poly << QPointF(_screen_rect.left(), _screen_rect.bottom());
+		_screen_poly << QPointF(_screen_rect.right(), _screen_rect.bottom());
+		_screen_poly << QPointF(_screen_rect.right(), _screen_rect.top());
+		_screen_poly << QPointF(_screen_rect.left(), _screen_rect.top());
+		QTransform::quadToQuad(QPolygonF(viewport.rect()).mid(0, 4), _screen_poly, _transform);
 		return _transform;
 	}
 	QRectF axisToScreen(const QRectF & _src_rect, const QRectF & _screen_rect) const
@@ -2046,10 +2051,7 @@ struct jView::Data
 	}
 	void setZoomFullView()
 	{
-		if (x_axis && y_axis)
-		{
-			viewport.setZoomFullView(* x_axis, * y_axis);
-		}
+		viewport.setZoomFullView(* x_axis, * y_axis);
 	}
 	static bool itemZSort(const jItem * _item1, const jItem * _item2)
 	{
@@ -2122,9 +2124,24 @@ jView::jView(jAxis * _x_axis, jAxis * _y_axis, QWidget * _parent)
 	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF, QWidget *)), this, SLOT(actionAccepted(int, int, int, int, QPointF, QWidget *)), Qt::DirectConnection);
 	d->init(this);
 
+	d->internal_x_axis = false;
+	d->internal_y_axis = false;
 	this->
 		setXAxis(_x_axis).
 		setYAxis(_y_axis);
+}
+
+jView::jView(const jAxis & _x_axis, const jAxis & _y_axis, QWidget * _parent)
+	: JUNGLE_WIDGET_CLASS(_parent), d(new Data())
+{
+	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF, QWidget *)), this, SLOT(actionAccepted(int, int, int, int, QPointF, QWidget *)), Qt::DirectConnection);
+	d->init(this);
+	delete d->x_axis;
+	delete d->y_axis;
+
+	this->
+		setXAxis(new jAxis(_x_axis)).
+		setYAxis(new jAxis(_y_axis));
 }
 
 jView::~jView()
@@ -2141,7 +2158,20 @@ jView & jView::setXAxis(jAxis * _axis)
 	THREAD_SAFE(Write)
 	if (d->x_axis != _axis)
 	{
-		d->x_axis = _axis;
+		if (d->internal_x_axis)
+		{
+			delete d->x_axis;
+		}
+		if (_axis)
+		{
+			d->internal_x_axis = false;
+			d->x_axis = _axis;
+		}
+		else
+		{
+			d->internal_x_axis = true;
+			d->x_axis = new jAxis();
+		}
 		d->setZoomFullView();
 	}
 	THREAD_UNSAFE
@@ -2158,7 +2188,20 @@ jView & jView::setYAxis(jAxis * _axis)
 	THREAD_SAFE(Write)
 	if (d->y_axis != _axis)
 	{
-		d->y_axis = _axis;
+		if (d->internal_y_axis)
+		{
+			delete d->y_axis;
+		}
+		if (_axis)
+		{
+			d->internal_y_axis = false;
+			d->y_axis = _axis;
+		}
+		else
+		{
+			d->internal_y_axis = true;
+			d->y_axis = new jAxis();
+		}
 		d->setZoomFullView();
 	}
 	THREAD_UNSAFE
@@ -2308,28 +2351,22 @@ void jView::render(QPainter & _painter) const
 	{
 		_selector->render(_painter, _rect, _viewport_rect);
 	}
-	if (_x_axis)
-	{
-		_x_axis->render(
-			_painter, 
-			_rect, 
-			Qt::Horizontal,
-			_viewport_rect.left(),
-                        _viewport_rect.right(),
-                        d->draw_grid
+	_x_axis->render(
+		_painter, 
+		_rect, 
+		Qt::Horizontal,
+		_viewport_rect.left(),
+                       _viewport_rect.right(),
+                       d->draw_grid
 			);
-	}
-	if (_y_axis)
-	{
-		_y_axis->render(
-			_painter, 
-			_rect, 
-			Qt::Vertical,
-			_viewport_rect.top(),
-                        _viewport_rect.bottom(),
-                        d->draw_grid
-                        );
-	}
+	_y_axis->render(
+		_painter, 
+		_rect, 
+		Qt::Vertical,
+		_viewport_rect.top(),
+                       _viewport_rect.bottom(),
+                       d->draw_grid
+                       );
 	foreach (jMarker * _marker, _markers)
 	{
 		_marker->render(_painter, _rect, _viewport_rect);
@@ -2802,58 +2839,49 @@ QRectF jView::itemsBoundingRect(bool _exclude_invisible) const
 
 void jView::autoScaleX(double _margin_x)
 {
-	if (d->x_axis && d->y_axis)
-	{
-		QRectF _bounding_rect = itemsBoundingRect();
+	QRectF _bounding_rect = itemsBoundingRect();
 
-		const double _width = _bounding_rect.width();
-		const double _offset_x = _width * _margin_x;
-		_bounding_rect.setLeft(_bounding_rect.left() - _offset_x);
-		_bounding_rect.setRight(_bounding_rect.right() + 2 * _offset_x);
+	const double _width = _bounding_rect.width();
+	const double _offset_x = _width * _margin_x;
+	_bounding_rect.setLeft(_bounding_rect.left() - _offset_x);
+	_bounding_rect.setRight(_bounding_rect.right() + 2 * _offset_x);
 
-		d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
-		d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
-		d->updateViewports(d->viewport.rect());
-	}
+	d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
+	d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
+	d->updateViewports(d->viewport.rect());
 }
 
 void jView::autoScaleY(double _margin_y)
 {
-	if (d->x_axis && d->y_axis)
-	{
-		QRectF _bounding_rect = itemsBoundingRect();
+	QRectF _bounding_rect = itemsBoundingRect();
 
-		const double _height = _bounding_rect.height();
-		const double _offset_y = _height * _margin_y;
-		_bounding_rect.setTop(_bounding_rect.top() - _offset_y);
-		_bounding_rect.setBottom(_bounding_rect.bottom() + 2 * _offset_y);
+	const double _height = _bounding_rect.height();
+	const double _offset_y = _height * _margin_y;
+	_bounding_rect.setTop(_bounding_rect.top() - _offset_y);
+	_bounding_rect.setBottom(_bounding_rect.bottom() + 2 * _offset_y);
 
-		d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
-		d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
-		d->updateViewports(d->viewport.rect());
-	}
+	d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
+	d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
+	d->updateViewports(d->viewport.rect());
 }
 
 void jView::autoScale(double _margin_x, double _margin_y)
 {
-	if (d->x_axis && d->y_axis)
-	{
-		QRectF _bounding_rect = itemsBoundingRect();
+	QRectF _bounding_rect = itemsBoundingRect();
 
-		const double _width = _bounding_rect.width();
-		const double _offset_x = _width * _margin_x;
-		_bounding_rect.setLeft(_bounding_rect.left() - _offset_x);
-		_bounding_rect.setRight(_bounding_rect.right() + _offset_x);
-		const double _height = _bounding_rect.height();
-		const double _offset_y = _height * _margin_y;
-		_bounding_rect.setTop(_bounding_rect.top() - _offset_y);
-		_bounding_rect.setBottom(_bounding_rect.bottom() + _offset_y);
+	const double _width = _bounding_rect.width();
+	const double _offset_x = _width * _margin_x;
+	_bounding_rect.setLeft(_bounding_rect.left() - _offset_x);
+	_bounding_rect.setRight(_bounding_rect.right() + _offset_x);
+	const double _height = _bounding_rect.height();
+	const double _offset_y = _height * _margin_y;
+	_bounding_rect.setTop(_bounding_rect.top() - _offset_y);
+	_bounding_rect.setBottom(_bounding_rect.bottom() + _offset_y);
 
-		d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
-		d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
-		d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
-		d->updateViewports(d->viewport.rect());
-	}
+	d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
+	d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
+	d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
+	d->updateViewports(d->viewport.rect());
 }
 
 jView & jView::setInputPattern(const jInputPattern & _pattern)
@@ -2865,6 +2893,11 @@ jView & jView::setInputPattern(const jInputPattern & _pattern)
 jInputPattern & jView::inputPattern() const
 {
 	return d->pattern;
+}
+
+QPointF jView::cursorPos() const
+{
+	return screenToAxis(mapFromGlobal(QCursor::pos()));
 }
 
 // ------------------------------------------------------------------------
