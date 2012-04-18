@@ -48,7 +48,7 @@ QString MainWindow::coordinator_format(double _x, double _y, jAxis * _x_axis, jA
 
 	jFigureItem<qint64>::Point _point;
 	_point.x = _x; _point.y = _y_val;
-	_highlight->setData(&_point, 1, true);
+    _highlight->jItem1D<qint64>::setData(&_point, 1, true);
 
 	jItem1D<qreal>::Point _point_line[3];
 	_point_line[0].x = _x; _point_line[0].y = _y;

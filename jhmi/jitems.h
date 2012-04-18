@@ -27,8 +27,8 @@ template <class T, class TX = T>
 class jItem1D: public jItem
 {
     COPY_FBD(jItem1D)
-    public:
-        enum {Lines = 1, Ticks = 2, Bars = 3, Dots = 4};
+public:
+    enum {Lines = 1, Ticks = 2, Bars = 3, Dots = 4};
     enum {FlatData = 1, PointData = 2, RadialData = 3};
     struct Point
     {
@@ -62,6 +62,7 @@ class jItem1D: public jItem
     virtual jItem1D<T, TX> & setData(Flat * _data, TX * _x, unsigned int _width, bool _deep_copy = false);
     virtual jItem1D<T, TX> & setData(Point * _data, unsigned int _width, bool _deep_copy = false);
     virtual jItem1D<T, TX> & setData(Radial * _data, unsigned int _width, bool _deep_copy = false);
+    virtual jItem1D<T, TX> & setData(const QPointF & _point);
 
     const TX * xData() const;
     TX x(int _idx = 0) const;
@@ -78,17 +79,16 @@ template <class T, class TX = T>
 class jFigureItem : public jItem1D<T, TX>
 {
     COPY_FBD(jFigureItem)
-    public:
+public:
     jFigureItem();
     ~jFigureItem();
 
-	jFigureItem & setData(const QPointF & _point);
-    jFigureItem & setArcSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
-    jFigureItem & setChordSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
-    jFigureItem & setEllipseSymbol(const QRectF & _rectangle);
-    jFigureItem & setPieSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
-    jFigureItem & setRectSymbol(const QRectF & _rectangle);
-    jFigureItem & setRoundedRectSymbol(const QRectF & _rectangle, double _xRadius, double _yRadius, Qt::SizeMode _mode = Qt::AbsoluteSize);
+    jFigureItem<T, TX> & setArcSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
+    jFigureItem<T, TX> & setChordSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
+    jFigureItem<T, TX> & setEllipseSymbol(const QRectF & _rectangle);
+    jFigureItem<T, TX> & setPieSymbol(const QRectF & _rectangle, int _startAngle, int _spanAngle);
+    jFigureItem<T, TX> & setRectSymbol(const QRectF & _rectangle);
+    jFigureItem<T, TX> & setRoundedRectSymbol(const QRectF & _rectangle, double _xRadius, double _yRadius, Qt::SizeMode _mode = Qt::AbsoluteSize);
 private:
     QImage symbol_img;
     QPainter * createPainter(const QRectF & _rectangle);
@@ -960,6 +960,15 @@ jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Radial * _data
     return * this;
 }
 
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setData(const QPointF & _point)
+{
+    jFigureItem<T, TX>::Point _pt;
+    _pt.x = _point.x(); _pt.y = _point.y();
+    jItem1D<T, TX>::setData(& _pt, 1, true);
+    return (* this);
+}
+
 // ------------------------------------------------------------------------
 
 template <class T, class TX>
@@ -970,15 +979,6 @@ jFigureItem<T, TX>::jFigureItem() : jItem1D<T, TX>(jItem1D<T, TX>::Dots)
 template <class T, class TX>
 jFigureItem<T, TX>::~jFigureItem()
 {
-}
-
-template <class T, class TX>
-jFigureItem<T, TX> & jFigureItem<T, TX>::setData(const QPointF & _point)
-{
-	jFigureItem<T, TX>::Point _pt;
-	_pt.x = _point.x(); _pt.y = _point.y();
-	jItem1D<T, TX>::setData(& _pt, 1, true);
-	return (* this);
 }
 
 template <class T, class TX>

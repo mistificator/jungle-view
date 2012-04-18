@@ -1408,10 +1408,9 @@ bool jItem::userCommand(int _action, int _method, int, int, QPointF _mpos, QWidg
 			if ((d->press_point == d->release_point) || (_method == jInputPattern::KeyPress) || (_method == jInputPattern::KeyRelease))
 			{
 				d->item_control->emitContextMenuRequested(_w->mapToGlobal(_mpos.toPoint()));
-				return (true);
 			}
 		}
-	}
+	}   
 	return (true);
 }
 
@@ -2005,15 +2004,15 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 	d->last_key = _code;
 	if (_actions.count())
 	{
-		bool _accepted = false;
+        bool _accepted = false;
 		qSort(_actions.begin(), _actions.end(), & Data::actionsForwardSort);
 		foreach (Data::ActionEntry _entry, _actions)
 		{
 			setProperty("accepted", false);
 			emit actionAccepted(_entry.action, _method, _code, _modifier, _mpos, dynamic_cast<QWidget *>(_object));
-			_accepted = _accepted || property("accepted").toBool();
+            _accepted = _accepted || property("accepted").toBool();
 		}
-		if (_accepted)
+        if (_accepted) // first processed are items, cause they installed as events last, so we can exit
 		{
 			return true;
 		}
@@ -2694,8 +2693,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			emit contextMenuRequested(mapToGlobal(_mpos.toPoint()));
 		}
 		break;
-	default:
-		return false;
 	}
 	return true;
 }
