@@ -717,7 +717,7 @@ public:
 	jInputPattern & inputPattern() const;
 	jItemHandler * itemControl() const;
 
-	// kind of bug there - always returning true solves the problem
+    // it must return "true" if you don't need to break the event filtering chain
 	virtual bool userCommand(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 
 	jItem & setSymbol(const QImage & _img);
