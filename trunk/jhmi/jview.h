@@ -716,6 +716,8 @@ public:
 	jItem & setInputPattern(const jInputPattern & _pattern);
 	jInputPattern & inputPattern() const;
 	jItemHandler * itemControl() const;
+
+	// kind of bug there - always returning true solves the problem
 	virtual bool userCommand(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 
 	jItem & setSymbol(const QImage & _img);
@@ -764,6 +766,9 @@ public:
 	jItemHandler & setPatternFilter(int _from, int _to); // default is from ItemActionGroupBegin to ItemActionGroupEnd
 	int patternFilterFrom() const;
 	int patternFilterTo() const;
+
+	jItemHandler & setSensitiveArea(const QSize & _size);
+	QSize sensitiveArea() const;
 
 	void emitContextMenuRequested(QPoint);
 public slots:

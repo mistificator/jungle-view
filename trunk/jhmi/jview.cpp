@@ -1164,6 +1164,7 @@ struct jItem::Data
 	QString tooltip;
 	quint64 counter;
 	jInputPattern pattern;
+	QPointF press_point, release_point;
 	jItemHandler * item_control;
 	QImage symbol_img;
 	bool preview_enabled;
@@ -1312,9 +1313,9 @@ double jItem::z() const
 	return d->z;
 }
 
-bool jItem::intersects(const QRectF &, const jAxis *, const jAxis *) const
+bool jItem::intersects(const QRectF & _rect, const jAxis * _x_axis, const jAxis * _y_axis) const
 {
-	return false;
+	return _rect.intersects(boundingRect(_x_axis, _y_axis));
 }
 
 jItem & jItem::setToolTip(const QString & _text)
@@ -1339,7 +1340,18 @@ void jItem::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const Q
 		return;
 	}
 	QImage _saved_symbol_img = symbol();
-	setSymbol(QImage());
+	if (_saved_symbol_img.isNull())
+	{
+		setSymbol(QImage());
+	}
+	else if (_dst_rect.width() < _dst_rect.height())
+	{
+		setSymbol(_saved_symbol_img.scaledToWidth(_dst_rect.width()));
+	}
+	else
+	{
+		setSymbol(_saved_symbol_img.scaledToHeight(_dst_rect.height()));
+	}
 	render(_painter, _dst_rect, _src_rect, _x_axis, _y_axis);
 	// return back symbol
 	setSymbol(_saved_symbol_img);
@@ -1377,9 +1389,30 @@ jItemHandler * jItem::itemControl() const
 	return d->item_control;
 }
 
-bool jItem::userCommand(int, int, int, int, QPointF, QWidget *) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
+bool jItem::userCommand(int _action, int _method, int, int, QPointF _mpos, QWidget * _w) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 {
-	return false;
+	if (_method == jInputPattern::MousePress)
+	{
+		d->press_point = _mpos;
+	}
+	else
+	if (_method == jInputPattern::MouseRelease)
+	{
+		d->release_point = _mpos;
+	}
+
+	switch (_action)
+	{
+		case jInputPattern::ItemMenuRequested:
+		{
+			if ((d->press_point == d->release_point) || (_method == jInputPattern::KeyPress) || (_method == jInputPattern::KeyRelease))
+			{
+				d->item_control->emitContextMenuRequested(_w->mapToGlobal(_mpos.toPoint()));
+				return (true);
+			}
+		}
+	}
+	return (true);
 }
 
 jItem & jItem::setSymbol(const QImage & _img)
@@ -1411,10 +1444,12 @@ struct jItemHandler::Data
 	jItem * item;
 	bool enabled;
 	int from, to;
+	QSize sens_area;
 	Data()
 	{
 		from = jInputPattern::ItemActionGroupBegin;
 		to = jInputPattern::ItemActionGroupEnd;
+		sens_area = QSize(3, 3);
 	}
 	~Data()
 	{
@@ -1432,8 +1467,23 @@ jItemHandler::~jItemHandler()
 	delete d;
 }
 
+jItemHandler & jItemHandler::setSensitiveArea(const QSize & _size)
+{
+	d->sens_area = _size;
+	return (* this);
+}
+
+QSize jItemHandler::sensitiveArea() const
+{
+	return d->sens_area;
+}
+
 void jItemHandler::actionAccepted(int _action, int _method, int _buttons, int _modifier, QPointF _mpos, QWidget * _w) // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 {
+	if (!_w)
+	{
+		return;
+	}
 	jInputPattern * _pattern = dynamic_cast<jInputPattern *>(sender());
 	if (_pattern == 0)
 	{
@@ -1446,13 +1496,15 @@ void jItemHandler::actionAccepted(int _action, int _method, int _buttons, int _m
 	jView * _view = dynamic_cast<jView *>(_w);
 	if (_view)
 	{
-		QRectF _rect = _view->screenToAxis(QRectF(_mpos.x() - 1, _mpos.y() - 1, 3, 3));
+		QRect _screen_rect(QPoint(), d->sens_area);
+		_screen_rect.moveCenter(_mpos.toPoint());
+		QRectF _rect = _view->screenToAxis(_screen_rect);
 		if (d->item->intersects(_rect, _view->xAxis(), _view->yAxis()) == false)
 		{
 			return;
 		}
 	}
-	_pattern->setProperty("accepted", (int)d->item->userCommand(_action, _method, _buttons, _modifier, _mpos, _w));
+	_pattern->setProperty("accepted", d->item->userCommand(_action, _method, _buttons, _modifier, _mpos, _w));
 }
 
 jItem * jItemHandler::item() const
@@ -1650,7 +1702,7 @@ struct jInputPattern::Data
 			addAction(jInputPattern::ItemPanStart, jInputPattern::MousePress, Qt::RightButton).
 			addAction(jInputPattern::ItemPanEnd, jInputPattern::MouseRelease, Qt::RightButton).
 			addAction(jInputPattern::ItemPanMove, jInputPattern::MouseMove, Qt::RightButton).
-            addAction(jInputPattern::ItemMenuRequested, jInputPattern::MousePress, Qt::RightButton).
+            addAction(jInputPattern::ItemMenuRequested, jInputPattern::MouseRelease, Qt::RightButton).
             addAction(jInputPattern::ItemSelected, jInputPattern::MousePress, Qt::LeftButton);
 	}
 	void addEntry(int _action, int _method, int _code, int _modifier)
@@ -1735,6 +1787,14 @@ struct jInputPattern::Data
 		}
 		::qSort(_accepted.begin(), _accepted.end()); 
 		return _accepted;
+	}
+	static bool actionsForwardSort(const ActionEntry & _entry1, const ActionEntry & _entry2)
+	{
+		return (_entry1.action < _entry2.action);
+	}
+	static bool actionsBackwardSort(const ActionEntry & _entry1, const ActionEntry & _entry2)
+	{
+		return (_entry1.action > _entry2.action);
 	}
 };
 
@@ -1946,16 +2006,17 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 	if (_actions.count())
 	{
 		bool _accepted = false;
+		qSort(_actions.begin(), _actions.end(), & Data::actionsForwardSort);
 		foreach (Data::ActionEntry _entry, _actions)
 		{
 			setProperty("accepted", false);
 			emit actionAccepted(_entry.action, _method, _code, _modifier, _mpos, dynamic_cast<QWidget *>(_object));
-			if (property("accepted").toBool())
-			{
-				_accepted = true;
-			}
+			_accepted = _accepted || property("accepted").toBool();
 		}
-		return _accepted;
+		if (_accepted)
+		{
+			return true;
+		}
 	}
 	return _object->eventFilter(_object, _event);
 }
@@ -2395,11 +2456,21 @@ void jView::actionAccepted(int _action, int _method, int _code, int _modifier, Q
 	{
 		return;
 	}
-	d->pattern.setProperty("accepted", (int)userCommand(_action, _method, _code, _modifier, _mpos, _w));
+	d->pattern.setProperty("accepted", userCommand(_action, _method, _code, _modifier, _mpos, _w));
 }
 
 bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, QPointF _mpos, QWidget * /*_w*/)
 {
+	if (_method == jInputPattern::MousePress)
+	{
+		d->press_point = _mpos;
+	}
+	else
+	if (_method == jInputPattern::MouseRelease)
+	{
+		d->release_point = _mpos;
+	}
+
 	switch (_action)
 	{
 	case jInputPattern::MoveCursorLeft:
@@ -2564,22 +2635,20 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		}
 		break;
 	case jInputPattern::ZoomStart:
-		d->press_point = _mpos;
-		d->move_point = d->press_point;
+		d->move_point = _mpos;
 
 		d->in_zoom = true;
 		d->viewport.selector().setRect(QRectF());
 		d->viewport.selector().setVisible(true);
 		break;
 	case jInputPattern::ZoomEnd:	
-		d->release_point = _mpos;
-
 		d->in_zoom = false;
 		d->viewport.selector().setVisible(false);
 
 		if (d->press_point.x() != d->release_point.x())
 		{
-			if ((d->press_point.x() > d->release_point.x()) && (d->press_point.y() < d->release_point.y()))
+//			if ((d->press_point.x() > d->release_point.x()) && (d->press_point.y() < d->release_point.y()))
+			if (d->press_point.x() > d->release_point.x())
 			{
 				d->viewport.zoomOut();
 			}
@@ -2609,15 +2678,12 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		}
 		break;
 	case jInputPattern::PanStart:
-		d->press_point = _mpos;
-		d->move_point = d->press_point;
+		d->move_point = _mpos;
 
 		d->before_pan_cursor = cursor();
 		setCursor(Qt::OpenHandCursor);
 		break;
 	case jInputPattern::PanEnd:
-		d->release_point = _mpos;
-
 		setCursor(d->before_pan_cursor);
 		d->adjustCoordinator(rect(), d->release_point);
 		d->renderer->rebuild();
@@ -2628,6 +2694,8 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			emit contextMenuRequested(mapToGlobal(_mpos.toPoint()));
 		}
 		break;
+	default:
+		return false;
 	}
 	return true;
 }
@@ -3181,11 +3249,11 @@ void jPreview::render(QPainter & _painter) const
 	}
 	if (d->x_axis_visible && _x_axis && ((d->orientation & Qt::Horizontal) == Qt::Horizontal))
 	{
-                _x_axis->render(_painter, _rect, Qt::Horizontal, _zoom_rect.left(), _zoom_rect.right(), false);
+        _x_axis->render(_painter, _rect, Qt::Horizontal, _zoom_rect.left(), _zoom_rect.right(), false);
 	}
 	if (d->y_axis_visible && _y_axis && ((d->orientation & Qt::Vertical) == Qt::Vertical))
 	{
-                _y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top(), false);
+        _y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top(), false);
 	}
 	d->updateSelector();
 	d->selector.render(_painter, _rect, _zoom_rect);
@@ -3240,19 +3308,19 @@ jInputPattern & jPreview::inputPattern() const
 
 void jPreview::actionAccepted(int _action, int _method, int _code, int _modifier, QPointF _mpos, QWidget * _w)
 {
-	d->pattern.setProperty("accepted", (int)userCommand(_action, _method, _code, _modifier, _mpos, _w));
-}
-
-bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifier, QPointF _mpos, QWidget * _w)
-{
 	if (_w != this)
 	{
-		return false;
+		return;
 	}
-	if (_action > jInputPattern::WidgetActionGroupEnd)
+	if ((_action < jInputPattern::WidgetActionGroupBegin) || (_action > jInputPattern::WidgetActionGroupEnd))
 	{
-		return false;
+		return;
 	}
+	d->pattern.setProperty("accepted", userCommand(_action, _method, _code, _modifier, _mpos, _w));
+}
+
+bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifier, QPointF _mpos, QWidget * /*_w*/)
+{
     QMouseEvent _me(QEvent::MouseButtonRelease, _mpos.toPoint(), (Qt::MouseButton)_code, (Qt::MouseButtons)_code, (Qt::KeyboardModifiers)_modifier);
     QWheelEvent _we(_modifier < 0 ? d->viewToPreviewScreen(rect(), d->view->rect().center()).toPoint() : _mpos.toPoint(), _modifier, (Qt::MouseButtons)_code, Qt::NoModifier);
 	switch (_action)

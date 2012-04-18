@@ -63,7 +63,9 @@ class jItem1D: public jItem
     virtual jItem1D<T, TX> & setData(Point * _data, unsigned int _width, bool _deep_copy = false);
     virtual jItem1D<T, TX> & setData(Radial * _data, unsigned int _width, bool _deep_copy = false);
 
-    const TX * x() const;
+    const TX * xData() const;
+    TX x(int _idx = 0) const;
+    T y(int _idx = 0) const;
 private:
     int data_model, line_style;
     double bar_width;
@@ -840,9 +842,62 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
 }
 
 template <class T, class TX>
-const TX * jItem1D<T, TX>::x() const
+const TX * jItem1D<T, TX>::xData() const
 {
     return x_data;
+}
+
+template <class T, class TX>
+TX jItem1D<T, TX>::x(int _idx) const
+{
+    const int _width = size().width();
+    if (_width <= 0)
+    {
+        return (0);
+    }
+    _idx = qMin<int>(qMax<int>(0, _idx), _width - 1);
+    switch (data_model)
+    {
+        case FlatData:
+        {
+            if (x_data == 0)
+            {
+                return (_idx);
+            }
+            else
+            {
+                return (x_data[_idx]);
+            }
+        }
+        case PointData:
+        {
+            return ((const Point * const)data())[_idx].x;
+        }
+    }
+    return (0);
+}
+
+template <class T, class TX>
+T jItem1D<T, TX>::y(int _idx) const
+{
+    const int _width = size().width();
+    if (_width <= 0)
+    {
+        return (0);
+    }
+    _idx = qMin<int>(qMax<int>(0, _idx), _width - 1);
+    switch (data_model)
+    {
+        case FlatData:
+        {
+            return ((const Flat * const)data())[_idx];
+        }
+        case PointData:
+        {
+            return ((const Point * const)data())[_idx].y;
+        }
+    }
+    return (0);
 }
 
 template <class T, class TX>
