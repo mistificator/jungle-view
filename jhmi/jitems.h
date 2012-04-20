@@ -32,13 +32,13 @@ public:
     enum {FlatData = 1, PointData = 2, RadialData = 3};
     struct Point
     {
-        T x;
-        TX y;
+        TX x;
+        T y;
     };
     struct Radial
     {
-        T v;
-        TX t;
+        TX v;
+        T t;
     };
     typedef T Flat;
 
@@ -62,7 +62,7 @@ public:
     virtual jItem1D<T, TX> & setData(Flat * _data, TX * _x, unsigned int _width, bool _deep_copy = false);
     virtual jItem1D<T, TX> & setData(Point * _data, unsigned int _width, bool _deep_copy = false);
     virtual jItem1D<T, TX> & setData(Radial * _data, unsigned int _width, bool _deep_copy = false);
-    virtual jItem1D<T, TX> & setData(const QPointF & _point);
+    virtual jItem1D<T, TX> & setData(const QPointF & _point, int _data_model = PointData);
 
     const TX * xData() const;
     TX x(int _idx = 0) const;
@@ -338,35 +338,35 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 				const double _bar_width = jAxis::normalizeFromScale(_x_axis, bar_width);
 				switch (line_style)
 				{
-				case Dots:
-				case Lines:
-				{
-					_points.reserve(_width);
-					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					case Dots:
+					case Lines:
 					{
-						_points << QPointF(x_data[_idx], -_y_data[_idx]);
+						_points.reserve(_width);
+						for (unsigned int _idx = 0; _idx < _width; _idx++)
+						{
+							_points << QPointF(x_data[_idx], -_y_data[_idx]);
+						}
+						break;
 					}
-					break;
-				}
-				case Ticks:
-				{
-					_points.reserve(_width * 2);
-					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					case Ticks:
 					{
-						_points << QPointF(x_data[_idx], -_y_data[_idx]);
-						_points << QPointF(x_data[_idx], 0);
+						_points.reserve(_width * 2);
+						for (unsigned int _idx = 0; _idx < _width; _idx++)
+						{
+							_points << QPointF(x_data[_idx], -_y_data[_idx]);
+							_points << QPointF(x_data[_idx], 0);
+						}
+						break;
 					}
-					break;
-				}
-				case Bars:
-				{
-					_rects.reserve(_width);
-					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					case Bars:
 					{
-						_rects << QRectF(QPointF(x_data[_idx] - (_bar_width / 2.0), -_y_data[_idx]), QSizeF(_bar_width, _y_data[_idx]));
+						_rects.reserve(_width);
+						for (unsigned int _idx = 0; _idx < _width; _idx++)
+						{
+							_rects << QRectF(QPointF(x_data[_idx] - (_bar_width / 2.0), -_y_data[_idx]), QSizeF(_bar_width, _y_data[_idx]));
+						}
+						break;
 					}
-					break;
-				}
 				}
 
 			}
@@ -378,35 +378,35 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 			const double _bar_width = jAxis::normalizeFromScale(_x_axis, bar_width);
 			switch (line_style)
 			{
-			case Dots:
-			case Lines:
-			{
-				_points.reserve(_width);
-				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				case Dots:
+				case Lines:
 				{
-					_points << QPointF(_data[_idx].x, -_data[_idx].y);
+					_points.reserve(_width);
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						_points << QPointF(_data[_idx].x, -_data[_idx].y);
+					}
+					break;
 				}
-				break;
-			}
-			case Ticks:
-			{
-				_points.reserve(_width * 2);
-				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				case Ticks:
 				{
-					_points << QPointF(_data[_idx].x, -_data[_idx].y);
-					_points << QPointF(_data[_idx].x, 0);
+					_points.reserve(_width * 2);
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						_points << QPointF(_data[_idx].x, -_data[_idx].y);
+						_points << QPointF(_data[_idx].x, 0);
+					}
+					break;
 				}
-				break;
-			}
-			case Bars:
-			{
-				_rects.reserve(_width);
-				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				case Bars:
 				{
-					_rects << QRectF(QPointF(_data[_idx].x - (_bar_width / 2.0), -_data[_idx].y), QSizeF(_bar_width, _data[_idx].y));
+					_rects.reserve(_width);
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						_rects << QRectF(QPointF(_data[_idx].x - (_bar_width / 2.0), -_data[_idx].y), QSizeF(_bar_width, _data[_idx].y));
+					}
+					break;
 				}
-				break;
-			}
 			}
 			break;
 		}
@@ -415,42 +415,42 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 			const Radial * const _data = (const Radial * const)data();
 			switch (line_style)
 			{
-			case Dots:
-			{
-				_points.reserve(_width);
-				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				case Dots:
 				{
-					_points << QPointF(_data[_idx].v * ::cosf(_data[_idx].t), -_data[_idx].v * ::sinf(_data[_idx].t));
+					_points.reserve(_width);
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						_points << QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(_data[_idx].t));
+					}
+					break;
 				}
-				break;
-			}
-			case Lines:
-			{
-				_points.reserve(_width + 1);
-				for (unsigned int _idx = 0; _idx < _width; _idx++)
+				case Lines:
 				{
-					_points << QPointF(_data[_idx].v, _data[_idx].t);
+					_points.reserve(_width + 1);
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						_points << QPointF(_data[_idx].v, _data[_idx].t);
+					}
+					::qSort(_points.begin(), _points.end(), &radialSort);
+					_points << _points[0];
+					for (unsigned int _idx = 0; _idx < _width + 1; _idx++)
+					{
+						const double & _v = _points[_idx].x();
+						const double & _t = _points[_idx].y();
+						_points[_idx] = QPointF(_v * qCos(_t), _v * qSin(_t));
+					}
+					break;
 				}
-				::qSort(_points.begin(), _points.end(), &radialSort);
-				_points << _points[0];
-				for (unsigned int _idx = 0; _idx < _width + 1; _idx++)
+				case Ticks:
 				{
-					const double & _v = _points[_idx].x();
-					const double & _t = _points[_idx].y();
-					_points[_idx] = QPointF(_v * ::cosf(_t), -_v * ::sinf(_t));
+					_points.reserve(_width * 2);
+					for (unsigned int _idx = 0; _idx < _width; _idx++)
+					{
+						_points << QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(_data[_idx].t));
+						_points << QPointF(0, 0);
+					}
+					break;
 				}
-				break;
-			}
-			case Ticks:
-			{
-				_points.reserve(_width * 2);
-				for (unsigned int _idx = 0; _idx < _width; _idx++)
-				{
-					_points << QPointF(_data[_idx].v * ::cosf(_data[_idx].t), -_data[_idx].v * ::sinf(_data[_idx].t));
-					_points << QPointF(0, 0);
-				}
-				break;
-			}
 			}
 			break;
 		}
@@ -648,7 +648,7 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 				{
 					for (unsigned int _idx = 0; _idx < _width; _idx++)
 					{
-						if (_adj_rect.contains(QPointF(_data[_idx].v * ::cosf(_data[_idx].t), _data[_idx].v * ::sinf(_data[_idx].t))))
+						if (_adj_rect.contains(QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(_data[_idx].t))))
 						{
 							THREAD_UNSAFE
 									return true;
@@ -669,7 +669,7 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 						if (_v < _data[_idx].v)
 						{
 							THREAD_UNSAFE
-									return true;
+							return true;
 						}
 					}
 					break;
@@ -779,14 +779,14 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
     case RadialData:
     {
         const Radial * const _data = (const Radial * const)data();
-        _left = _data[0].v * ::cosf(_data[0].t);
-        _right = _data[0].v * ::cosf(_data[0].t);
-        _top = _data[0].v * ::sinf(_data[0].t);
-        _bottom = _data[0].v * ::sinf(_data[0].t);
+        _left = _data[0].v * qCos(_data[0].t);
+        _right = _data[0].v * qCos(_data[0].t);
+        _top = _data[0].v * qSin(_data[0].t);
+        _bottom = _data[0].v * qSin(_data[0].t);
         for (unsigned int _idx = 0; _idx < _width; _idx++)
         {
-            const double & _x = _data[_idx].v * ::cosf(_data[_idx].t);
-            const double & _y = _data[_idx].v * ::sinf(_data[_idx].t);
+            const double & _x = _data[_idx].v * qCos(_data[_idx].t);
+            const double & _y = _data[_idx].v * qSin(_data[_idx].t);
             if (_x < _left)
             {
                 _left = _x;
@@ -961,11 +961,20 @@ jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Radial * _data
 }
 
 template <class T, class TX>
-jItem1D<T, TX> & jItem1D<T, TX>::setData(const QPointF & _point)
+jItem1D<T, TX> & jItem1D<T, TX>::setData(const QPointF & _point, int _data_model)
 {
-    jFigureItem<T, TX>::Point _pt;
-    _pt.x = _point.x(); _pt.y = _point.y();
-    jItem1D<T, TX>::setData(& _pt, 1, true);
+	if (_data_model == RadialData)
+	{
+		jFigureItem<T, TX>::Radial _pt;
+		_pt.v = _point.x(); _pt.t = _point.y();
+		jItem1D<T, TX>::setData(& _pt, 1, true);
+	}
+	else
+	{
+		jFigureItem<T, TX>::Point _pt;
+		_pt.x = _point.x(); _pt.y = _point.y();
+		jItem1D<T, TX>::setData(& _pt, 1, true);
+	}
     return (* this);
 }
 
