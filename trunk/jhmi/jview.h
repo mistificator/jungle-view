@@ -911,6 +911,10 @@ public:
     jView & setGridEnabled(bool _draw_grid);
     bool gridEnabled() const;
 
+	enum {AxesInForeplane = 0, AxesInBackplane = 1};
+	jView & setAxesPlane(int _plane);
+	int axesPlane() const;
+
 	jViewport & viewport() const;
 	jCoordinator & coordinator() const;
 	jMarker & horizontalMarker() const;

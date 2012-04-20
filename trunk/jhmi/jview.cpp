@@ -2041,9 +2041,11 @@ struct jView::Data
 	jLazyRenderer * renderer;
 	jInputPattern pattern;
     QRect widget_rect;
+	int axes_plane;
 	Data()
 	{
 		pattern.setDefaultPattern();
+		axes_plane = jView::AxesInForeplane;
 		x_axis = new jAxis();
 		y_axis = new jAxis();
 		internal_x_axis = true;
@@ -2275,13 +2277,24 @@ jAxis * jView::yAxis() const
 
 jView & jView::setGridEnabled(bool _draw_grid)
 {
-        SAFE_SET(d->draw_grid, _draw_grid);
-        return * this;
+	SAFE_SET(d->draw_grid, _draw_grid);
+	return * this;
 }
 
 bool jView::gridEnabled() const
 {
     return SAFE_GET(d->draw_grid);
+}
+
+jView & jView::setAxesPlane(int _plane)
+{
+	SAFE_SET(d->axes_plane, _plane);
+	return * this;
+}
+
+int jView::axesPlane() const
+{
+	return d->axes_plane;
 }
 
 jViewport & jView::viewport() const
@@ -2402,6 +2415,25 @@ void jView::render(QPainter & _painter) const
 	{
 		_painter.fillRect(_rect, d->background);
 	}
+	if (d->axes_plane == AxesInBackplane)
+	{
+		_x_axis->render(
+			_painter, 
+			_rect, 
+			Qt::Horizontal,
+			_viewport_rect.left(),
+						   _viewport_rect.right(),
+						   d->draw_grid
+				);
+		_y_axis->render(
+			_painter, 
+			_rect, 
+			Qt::Vertical,
+			_viewport_rect.top(),
+						   _viewport_rect.bottom(),
+						   d->draw_grid
+						   );
+	}
 	::qSort(_items.begin(), _items.end(), &Data::itemZSort);
 	foreach (jItem * _item, _items)
     {
@@ -2411,22 +2443,25 @@ void jView::render(QPainter & _painter) const
 	{
 		_selector->render(_painter, _rect, _viewport_rect);
 	}
-	_x_axis->render(
-		_painter, 
-		_rect, 
-		Qt::Horizontal,
-		_viewport_rect.left(),
-                       _viewport_rect.right(),
-                       d->draw_grid
-			);
-	_y_axis->render(
-		_painter, 
-		_rect, 
-		Qt::Vertical,
-		_viewport_rect.top(),
-                       _viewport_rect.bottom(),
-                       d->draw_grid
-                       );
+	if (d->axes_plane == AxesInForeplane)
+	{
+		_x_axis->render(
+			_painter, 
+			_rect, 
+			Qt::Horizontal,
+			_viewport_rect.left(),
+						   _viewport_rect.right(),
+						   d->draw_grid
+				);
+		_y_axis->render(
+			_painter, 
+			_rect, 
+			Qt::Vertical,
+			_viewport_rect.top(),
+						   _viewport_rect.bottom(),
+						   d->draw_grid
+						   );
+	}
 	foreach (jMarker * _marker, _markers)
 	{
 		_marker->render(_painter, _rect, _viewport_rect);
@@ -2533,7 +2568,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			{
 				QPointF _p1 = d->screenToAxis(rect(), _pt_new);
 				QPointF _p2 = d->screenToAxis(rect(), _pt_current);
-				d->viewport.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
+				d->viewport.pan(_p1.x() - _p2.x(), _p1.y() - _p2.y());
 				d->updateViewports(d->viewport.rect());
 				QPoint _local_pt = mapFromGlobal(_pt_current);
 				d->adjustCoordinator(rect(), _local_pt);
@@ -2556,7 +2591,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			{
 				QPointF _p1 = d->screenToAxis(rect(), _pt_new);
 				QPointF _p2 = d->screenToAxis(rect(), _pt_current);
-				d->viewport.pan(_p1.x() - _p2.x(), - _p1.y() + _p2.y());
+				d->viewport.pan(_p1.x() - _p2.x(), _p1.y() - _p2.y());
 				d->updateViewports(d->viewport.rect());
 				QPoint _local_pt = mapFromGlobal(_pt_current);
 				d->adjustCoordinator(rect(), _local_pt);
@@ -2638,7 +2673,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 
 		d->in_zoom = true;
 		d->viewport.selector().setRect(QRectF());
-		d->viewport.selector().setVisible(true);
+		d->viewport.selector().setVisible(d->viewport.zoomOrientation() != 0);
 		break;
 	case jInputPattern::ZoomEnd:	
 		d->in_zoom = false;
