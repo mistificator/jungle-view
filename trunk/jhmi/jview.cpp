@@ -3512,7 +3512,10 @@ struct jLazyRenderer::Data
 	}
 	void recreateThreadPool(int _max_threads, int _exp_time = 60000)
 	{
-		delete thread_pool;
+		if (thread_pool)
+		{
+			delete thread_pool;
+		}
 		thread_pool = new QThreadPool();
 		thread_pool->setMaxThreadCount(_max_threads);
 		thread_pool->setExpiryTimeout(_exp_time);
