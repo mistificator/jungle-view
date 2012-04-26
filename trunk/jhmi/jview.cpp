@@ -3851,6 +3851,19 @@ void jSync::reset()
 	d->previews.clear();
 }
 
+jSync & jSync::setLazyRendererEnabled(bool _state, int _max_threads_count)
+{
+	foreach (jView * _view, d->views)
+	{
+		_view->lazyRenderer().setMaxThreads(_max_threads_count).setEnabled(_state);
+	}
+	foreach (jPreview * _preview, d->previews)
+	{
+		_preview->lazyRenderer().setMaxThreads(_max_threads_count).setEnabled(_state);
+	}
+	return (* this);
+}
+
 void jSync::onPanned(const QRectF & _rect)
 {
 	jView * _sender = dynamic_cast<jView *>(sender()->parent());

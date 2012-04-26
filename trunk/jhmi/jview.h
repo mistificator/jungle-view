@@ -1060,7 +1060,7 @@ public:
 	/*!
 	\return number of frames
 	*/
-        quint64 counter() const;
+    quint64 counter() const;
 
 	//! Enables/disables multi-threaded mode.
 	/*!
@@ -1142,6 +1142,8 @@ public:
 	const QVector<jPreview *> & previews() const;
 
 	void reset();
+
+	jSync & setLazyRendererEnabled(bool _state, int _max_threads_count = 1);
 public slots:
 	void rebuild();
 private slots:
