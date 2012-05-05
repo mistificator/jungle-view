@@ -226,7 +226,6 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 	range_func _range_func = d->range_func;
 	const QRect _lo_rect = _metrics.boundingRect(_range_func(_lo, this));
 	const QRect _hi_rect = _metrics.boundingRect(_range_func(_hi, this));
-	THREAD_UNSAFE
 	THREAD_SAFE(Write)
 	switch (_orientation)
 	{
@@ -247,6 +246,7 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 		}
 	}
 	THREAD_UNSAFE
+	THREAD_UNSAFE
 	QVector<double> _ticks = d->calcTicks(_lo, _hi);
 	if (_ticks.count() > 0)
 	{
@@ -258,9 +258,7 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 			}
 		}
 	}
-	THREAD_SAFE(Write)
-	d->count = _ticks.count();
-	THREAD_UNSAFE
+	d->count = SAFE_GET(_ticks.count());
 	const unsigned int _tick_length = 5;
 	switch (_orientation)
 	{
@@ -3494,7 +3492,7 @@ struct jLazyRenderer::Data
 	int priority;
 	jTimeSync time_sync;
 	jLazyRenderer::render_func render_func;
-	QReadWriteLock * rw_lock;
+	RecursiveLocker * rw_lock;
 	Data()
 	{
 		thread_pool = 0;
