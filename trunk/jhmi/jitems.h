@@ -582,7 +582,7 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 							if (_adj_rect.contains(QPointF(x_data[_idx], _y_data[_idx])))
 							{
 								THREAD_UNSAFE
-										return true;
+								return true;
 							}
 						}
 						break;
@@ -595,7 +595,7 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 							if (_adj_rect.intersects(QRectF(QPointF((double)x_data[_idx] - 1, _y_data[_idx]), QPointF(x_data[_idx] + 1, 0))))
 							{
 								THREAD_UNSAFE
-										return true;
+								return true;
 							}
 						}
 						break;
@@ -617,7 +617,7 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 						if (_adj_rect.contains(QPointF(_data[_idx].x, _data[_idx].y)))
 						{
 							THREAD_UNSAFE
-									return true;
+							return true;
 						}
 					}
 					break;
@@ -630,7 +630,7 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 						if (_adj_rect.intersects(QRectF(QPointF((double)_data[_idx].x - 1, _data[_idx].y), QPointF(_data[_idx].x + 1, 0))))
 						{
 							THREAD_UNSAFE
-									return true;
+							return true;
 						}
 					}
 					break;
@@ -651,7 +651,7 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 						if (_adj_rect.contains(QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(_data[_idx].t))))
 						{
 							THREAD_UNSAFE
-									return true;
+							return true;
 						}
 					}
 					break;
