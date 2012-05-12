@@ -420,7 +420,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 					_points.reserve(_width);
 					for (unsigned int _idx = 0; _idx < _width; _idx++)
 					{
-						_points << QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(_data[_idx].t));
+						_points << QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(-_data[_idx].t));
 					}
 					break;
 				}
@@ -437,7 +437,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 					{
 						const double & _v = _points[_idx].x();
 						const double & _t = _points[_idx].y();
-						_points[_idx] = QPointF(_v * qCos(_t), _v * qSin(_t));
+						_points[_idx] = QPointF(_v * qCos(_t), _v * qSin(-_t));
 					}
 					break;
 				}
@@ -446,7 +446,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 					_points.reserve(_width * 2);
 					for (unsigned int _idx = 0; _idx < _width; _idx++)
 					{
-						_points << QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(_data[_idx].t));
+						_points << QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(-_data[_idx].t));
 						_points << QPointF(0, 0);
 					}
 					break;
@@ -648,7 +648,7 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 				{
 					for (unsigned int _idx = 0; _idx < _width; _idx++)
 					{
-						if (_adj_rect.contains(QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(_data[_idx].t))))
+						if (_adj_rect.contains(QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(-_data[_idx].t))))
 						{
 							THREAD_UNSAFE
 							return true;
@@ -781,12 +781,12 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
         const Radial * const _data = (const Radial * const)data();
         _left = _data[0].v * qCos(_data[0].t);
         _right = _data[0].v * qCos(_data[0].t);
-        _top = _data[0].v * qSin(_data[0].t);
-        _bottom = _data[0].v * qSin(_data[0].t);
+        _top = _data[0].v * qSin(-_data[0].t);
+        _bottom = _data[0].v * qSin(-_data[0].t);
         for (unsigned int _idx = 0; _idx < _width; _idx++)
         {
             const double & _x = _data[_idx].v * qCos(_data[_idx].t);
-            const double & _y = _data[_idx].v * qSin(_data[_idx].t);
+            const double & _y = _data[_idx].v * qSin(-_data[_idx].t);
             if (_x < _left)
             {
                 _left = _x;
