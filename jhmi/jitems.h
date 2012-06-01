@@ -459,18 +459,34 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
     if (_x_axis && _x_axis->isLog10ScaleEnabled())
     {
         const double _minimum = _src_rect.left();
-        for (int _idx = 0; _idx < _points.count(); _idx++)
-        {
-            _points[_idx].setX(_x_axis->toLog10(_points[_idx].x(), _minimum));
-        }
+		if (data_model == Bars)
+		{
+		}
+		else
+		{
+			for (int _idx = 0; _idx < _points.count(); _idx++)
+			{
+				_points[_idx].setX(_x_axis->toLog10(_points[_idx].x(), _minimum));
+			}
+		}
     }
     if (_y_axis && _y_axis->isLog10ScaleEnabled())
     {
         const double _minimum = -_src_rect.bottom();
-        for (int _idx = 0; _idx < _points.count(); _idx++)
-        {
-            _points[_idx].setY(-_y_axis->toLog10(-_points[_idx].y(), _minimum));
-        }
+		if (line_style == Bars)
+		{
+			for (int _idx = 0; _idx < _rects.count(); _idx++)
+			{
+				_rects[_idx].setTop(-_y_axis->toLog10(-_rects[_idx].top(), _minimum));
+			}
+		}
+		else
+		{
+			for (int _idx = 0; _idx < _points.count(); _idx++)
+			{
+				_points[_idx].setY(-_y_axis->toLog10(-_points[_idx].y(), _minimum));
+			}
+		}
     }
     THREAD_UNSAFE
 
