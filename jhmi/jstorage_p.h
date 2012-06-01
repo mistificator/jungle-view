@@ -530,7 +530,7 @@ class jStorage<T, TX>::jStorageThread : public QThread
 {
 	DECL_MUTEX
 public:
-	jStorageThread(jStorage<T, TX> * _storage, QReadWriteLock * _rw_lock);
+    jStorageThread(jStorage<T, TX> * _storage, RecursiveLocker * _rw_lock);
 	~jStorageThread();
 	QVector< QMap<int, QVector<T> > > items(quint64 _lo, quint64 _hi, QVector<TX> * _x) const;
 	void stop();
@@ -542,7 +542,7 @@ protected:
 	void run();
 private:
 	jStorage<T, TX> * storage;
-	QReadWriteLock * storage_rw_lock;
+    RecursiveLocker * storage_rw_lock;
 	bool finished;
 	bool stop_thread;
 	quint64 items_processed;
@@ -565,7 +565,7 @@ private:
 };
 
 template <class T, class TX>
-jStorage<T, TX>::jStorageThread::jStorageThread(jStorage<T, TX> * _storage, QReadWriteLock * _rw_lock) : QThread()
+jStorage<T, TX>::jStorageThread::jStorageThread(jStorage<T, TX> * _storage, RecursiveLocker * _rw_lock) : QThread()
 {
 	storage = _storage;
 	storage_rw_lock = _rw_lock;

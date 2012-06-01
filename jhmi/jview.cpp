@@ -399,7 +399,7 @@ int jAxis::id() const
 
 jAxis & jAxis::setLog10ScaleEnabled(bool _state)
 {
-	d->log10_enabled = _state;
+    SAFE_SET(d->log10_enabled, _state);
 	return * this;
 }
 
@@ -410,7 +410,7 @@ bool jAxis::isLog10ScaleEnabled() const
 
 jAxis & jAxis::setLog10Multiplier(double _mpy)
 {
-	d->log10_mpy = _mpy;
+    SAFE_SET(d->log10_mpy, _mpy);
 	return * this;
 }
 
