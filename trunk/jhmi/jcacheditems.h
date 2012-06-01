@@ -28,7 +28,7 @@ private:
 	QVector<T> items;
 	QVector<TX> x_data;
 	int ch;
-	jMutex local_mtx;
+    RecursiveLocker local_mtx;
 protected:
 	jItem1D<T, TX> & setData(typename jItem1D<T, TX>::Flat *, unsigned int, bool)			{ return * this; }
 	jItem1D<T, TX> & setData(typename jItem1D<T, TX>::Flat *, TX *, unsigned int, bool)		{ return * this; }
