@@ -405,6 +405,9 @@ public:
 	jLabel & setBackground(const QBrush & _brush);
 	QBrush background() const;
 
+	jLabel & setAutoSize(bool _state);
+	bool autoSize() const;
+
 	virtual void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect);
 };
 
