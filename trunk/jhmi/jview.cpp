@@ -877,9 +877,11 @@ struct jLabel::Data
 	bool visible;
 	QTextOption options;
 	QBrush background;
+	bool auto_size;
 	Data()
 	{
 		visible = true;
+		auto_size = true;
 	}
 	~Data()
 	{
@@ -889,7 +891,7 @@ struct jLabel::Data
 
 jLabel::jLabel(const QString & _text): d(new Data())
 {
-	d->text = _text;
+	setText(_text);
 }
 
 jLabel::~jLabel()
@@ -900,6 +902,10 @@ jLabel::~jLabel()
 jLabel & jLabel::setText(const QString & _text)
 {
 	SAFE_SET(d->text, _text);
+	if (d->auto_size)
+	{
+		setSize(sizeHint());
+	}
 	return * this;
 }
 
@@ -983,6 +989,20 @@ jLabel & jLabel::setBackground(const QBrush & _brush)
 QBrush jLabel::background() const
 {
 	return SAFE_GET(d->background);
+}
+
+jLabel & jLabel::setAutoSize(bool _state)
+{
+	if (d->auto_size = _state)
+	{
+		setSize(sizeHint());
+	}
+	return * this;
+}
+
+bool jLabel::autoSize() const
+{
+	return (d->auto_size);
 }
 
 void jLabel::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect)
@@ -1107,9 +1127,7 @@ void jCoordinator::render(QPainter & _painter, const QRectF & _dst_rect, const Q
 	QPointF _offset = d->offset;
 	format_func _format_func = d->format_func;
 	d->label.
-		setText(_format_func(_pos.x(), _pos.y(), const_cast<jAxis *>(_x_axis), const_cast<jAxis *>(_y_axis), this));
-	d->label.
-		setSize(d->label.sizeHint()).
+		setText(_format_func(_pos.x(), _pos.y(), const_cast<jAxis *>(_x_axis), const_cast<jAxis *>(_y_axis), this)).
 		setPos(QPointF(_pos.x(), _src_rect.top() + _src_rect.bottom() - _pos.y()));
 
 	QSizeF _size = d->label.size();
