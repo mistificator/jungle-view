@@ -110,6 +110,9 @@ public:
 	*/
 	double alignment() const;
 
+	jAxis & setAlignmentOffset(double _offset);
+	double alignmentOffset() const;
+
 	//! Sets tick length.
 	/*!
 	Tick length is measured in pixels.

@@ -25,6 +25,7 @@ struct jAxis::Data
 	int id;
 	double log10_mpy;
 	bool log10_enabled;
+	double alignment_offset;
 	Data()
 	{
 		log10_enabled = false;
@@ -39,6 +40,7 @@ struct jAxis::Data
 		visible = true;
         grid_pen = QColor(Qt::black);
 		id = 0;
+		alignment_offset = 0.0;
 	}
 	~Data()
 	{
@@ -46,7 +48,7 @@ struct jAxis::Data
 	}
 	double alignTick(double _value, double _alignment) const
 	{
-                return static_cast<qint64>(_value / _alignment) * _alignment;
+		return (static_cast<qint64>(_value / _alignment) * _alignment) + alignment_offset;
 	}
 	QVector<double> calcTicks(double _lo, double _hi) const
 	{
@@ -196,6 +198,17 @@ unsigned int jAxis::count() const
 double jAxis::alignment() const
 {
 	return d->alignment;
+}
+
+jAxis & jAxis::setAlignmentOffset(double _offset)
+{
+	SAFE_SET(d->alignment_offset, _offset);
+	return (* this);
+}
+
+double jAxis::alignmentOffset() const
+{
+	return (d->alignment_offset);
 }
 
 jAxis & jAxis::setTickLength(unsigned int _length)
