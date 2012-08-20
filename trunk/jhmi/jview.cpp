@@ -480,16 +480,11 @@ struct jSelector::Data
 	bool visible;
 	QBrush background;
 	jItem1D<double> item;
-	jItem1D<double>::Point points[5];
+	bool preview_enabled;
 	Data() 
 	{
-		points[0].x = 0; points[0].y = 0;
-		points[1].x = 0; points[1].y = 0;
-		points[2].x = 0; points[2].y = 0;
-		points[3].x = 0; points[3].y = 0;
-		points[4].x = 0; points[4].y = 0;
 		visible = true;
-		item.setData(points, 5);
+		preview_enabled = false;
 	}
 	~Data()
 	{
@@ -524,11 +519,7 @@ jSelector & jSelector::setRect(const QRectF & _rect)
 {
 	THREAD_SAFE(Write)
 	d->rect = _rect;
-	d->points[4].x = _rect.left(); d->points[4].y = _rect.top();
-	d->points[0].x = _rect.left(); d->points[0].y = _rect.top();
-	d->points[1].x = _rect.right(); d->points[1].y = _rect.top();
-	d->points[2].x = _rect.right(); d->points[2].y = _rect.bottom();
-	d->points[3].x = _rect.left(); d->points[3].y = _rect.bottom();
+	d->item.setData(_rect);
 	THREAD_UNSAFE
 	return * this;
 }
@@ -575,6 +566,14 @@ void jSelector::render(QPainter & _painter, const QRectF & _dst_rect, const QRec
 	THREAD_UNSAFE
 }
 
+void jSelector::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect)
+{
+	if (d->preview_enabled)
+	{
+		render(_painter, _dst_rect, _src_rect);
+	}
+}
+
 jSelector & jSelector::setBackground(const QBrush & _brush)
 {
 	SAFE_SET(d->background, _brush);
@@ -584,6 +583,22 @@ jSelector & jSelector::setBackground(const QBrush & _brush)
 QBrush jSelector::background() const
 {
 	return SAFE_GET(d->background);
+}
+
+jSelector & jSelector::setPreviewEnabled(bool _state)
+{
+	SAFE_SET(d->preview_enabled, _state);
+	return * this;
+}
+
+bool jSelector::previewEnabled() const
+{
+	return d->preview_enabled;
+}
+
+jItem & jSelector::internalItem() const
+{
+	return d->item;
 }
 
 // ------------------------------------------------------------------------
@@ -891,10 +906,12 @@ struct jLabel::Data
 	QTextOption options;
 	QBrush background;
 	bool auto_size;
+	bool preview_enabled;
 	Data()
 	{
 		visible = true;
 		auto_size = true;
+		preview_enabled = false;
 	}
 	~Data()
 	{
@@ -1038,6 +1055,14 @@ void jLabel::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF 
 	THREAD_UNSAFE
 }
 
+void jLabel::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect)
+{
+	if (d->preview_enabled)
+	{
+		render(_painter, _dst_rect, _src_rect);
+	}
+}
+
 QSizeF jLabel::sizeHint() const
 {
 	THREAD_SAFE(Read)
@@ -1053,6 +1078,16 @@ QSizeF jLabel::sizeHint() const
 	return QSizeF(_w, _h);
 }
 
+jLabel & jLabel::setPreviewEnabled(bool _state)
+{
+	SAFE_SET(d->preview_enabled, _state);
+	return * this;
+}
+
+bool jLabel::previewEnabled() const
+{
+	return d->preview_enabled;
+}
 
 // ------------------------------------------------------------------------
 
@@ -1573,14 +1608,12 @@ struct jMarker::Data
 	int orientation;
 	double value;
 	jItem1D<double> item;
-	jItem1D<double>::Point points[2];
+	bool preview_enabled;
 	Data()
 	{
-		points[0].x = 0; points[0].y = 0;
-		points[1].x = 0; points[1].y = 0;
 		value = 0.0;
 		orientation = Qt::Vertical;
-		item.setData(points, 2);
+		preview_enabled = false;
 	}
 	~Data()
 	{
@@ -1600,9 +1633,7 @@ jMarker::~jMarker()
 
 jMarker & jMarker::setPen(const QPen & _pen)
 {
-	THREAD_SAFE(Write)
 	d->item.setPen(_pen);
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -1624,9 +1655,7 @@ double jMarker::value() const
 
 jMarker & jMarker::setVisible(bool _state)
 {
-	THREAD_SAFE(Write)
 	d->item.setVisible(_state);
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -1657,18 +1686,40 @@ void jMarker::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF
 	{
 	case Qt::Vertical:
 		{
-			d->points[0].x = _value; d->points[0].y = _src_rect.top();
-			d->points[1].x = _value; d->points[1].y = _src_rect.bottom();
+			d->item.setData(QLineF(_value, _src_rect.top(), _value, _src_rect.bottom()));
 			break;
 		}
 	case Qt::Horizontal:
 		{
-			d->points[0].x = _src_rect.left(); d->points[0].y = _value;
-			d->points[1].x = _src_rect.right(); d->points[1].y = _value;
+			d->item.setData(QLineF(_src_rect.left(), _value, _src_rect.right(), _value));
 			break;
 		}
 	}
 	d->item.render(_painter, _dst_rect, _src_rect);
+}
+
+void jMarker::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect)
+{
+	if (d->preview_enabled)
+	{
+		render(_painter, _dst_rect, _src_rect);
+	}
+}
+
+jMarker & jMarker::setPreviewEnabled(bool _state)
+{
+	SAFE_SET(d->preview_enabled, _state);
+	return * this;
+}
+
+bool jMarker::previewEnabled() const
+{
+	return d->preview_enabled;
+}
+
+jItem & jMarker::internalItem() const
+{
+	return d->item;
 }
 
 // ------------------------------------------------------------------------
@@ -2066,7 +2117,7 @@ struct jView::Data
 	QBrush background;
 	QPointF press_point, release_point, move_point;
     bool in_zoom, draw_grid;
-	QCursor before_pan_cursor;
+	QCursor default_cursor;
 	jLazyRenderer * renderer;
 	jInputPattern pattern;
     QRect widget_rect;
@@ -2534,6 +2585,8 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		d->release_point = _mpos;
 	}
 
+	const QCursor & _cursor = cursor();
+
 	switch (_action)
 	{
 	case jInputPattern::MoveCursorLeft:
@@ -2710,7 +2763,6 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 
 		if (d->press_point.x() != d->release_point.x())
 		{
-//			if ((d->press_point.x() > d->release_point.x()) && (d->press_point.y() < d->release_point.y()))
 			if (d->press_point.x() > d->release_point.x())
 			{
 				d->viewport.zoomOut();
@@ -2743,17 +2795,21 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 	case jInputPattern::PanStart:
 		d->move_point = _mpos;
 
-		d->before_pan_cursor = cursor();
-		setCursor(Qt::OpenHandCursor);
+		if ((_cursor.shape() != Qt::OpenHandCursor) && (_cursor.shape() != Qt::ClosedHandCursor))
+		{
+			d->default_cursor = _cursor;
+			setCursor(Qt::OpenHandCursor);
+		}
 		break;
 	case jInputPattern::PanEnd:
-		setCursor(d->before_pan_cursor);
+		setCursor(d->default_cursor);
 		d->adjustCoordinator(rect(), d->release_point);
 		d->renderer->rebuild();
 		break;
 	case jInputPattern::ContextMenuRequested:
 		if ((d->press_point == d->release_point) || (_method == jInputPattern::KeyPress) || (_method == jInputPattern::KeyRelease))
 		{
+			setCursor(d->default_cursor);
 			emit contextMenuRequested(mapToGlobal(_mpos.toPoint()));
 		}
 		break;
@@ -2779,9 +2835,58 @@ QVector<jLabel *> jView::labels() const
 	return SAFE_GET(d->labels);
 }
 
+jView & jView::addSelector(jSelector * _selector)
+{
+	return addSelectors(QVector<jSelector *>() << _selector);
+}
+
+jView & jView::addSelectors(const QVector<jSelector *> & _selectors)
+{
+	THREAD_SAFE(Write)
+	d->selectors << _selectors;
+	for (int _idx = 0; _idx < _selectors.count(); _idx++)
+	{
+		installEventFilter(& _selectors[_idx]->internalItem().inputPattern());
+	}
+	THREAD_UNSAFE
+	return (* this);
+}
+
+jView & jView::setSelector(jSelector * _selector)
+{
+	return setSelectors(QVector<jSelector *>() << _selector);
+}
+
+jView & jView::removeSelector(jSelector * _selector)
+{
+	return removeSelectors(QVector<jSelector *>() << _selector);
+}
+
+jView & jView::removeSelectors(const QVector<jSelector *> & _selectors)
+{
+	THREAD_SAFE(Write)
+	foreach (jSelector * _selector, _selectors)
+	{
+		QVector<jSelector *>::iterator _it = ::qFind(d->selectors.begin(), d->selectors.end(), _selector);
+		if (_it != d->selectors.end())
+		{
+			removeEventFilter(& (* _it)->internalItem().inputPattern());
+			d->selectors.erase(_it);
+		}
+	}
+	THREAD_UNSAFE
+	return * this;
+}
+
 jView & jView::setSelectors(const QVector<jSelector *> & _selectors)
 {
-	SAFE_SET(d->selectors, _selectors);
+	THREAD_SAFE(Write)
+	d->selectors = _selectors;
+	for (int _idx = 0; _idx < d->selectors.count(); _idx++)
+	{
+		installEventFilter(& d->selectors[_idx]->internalItem().inputPattern());
+	}
+	THREAD_UNSAFE
 	return * this;
 }
 
@@ -2826,7 +2931,13 @@ void jView::resizeEvent(QResizeEvent *)
 
 jView & jView::setMarkers(const QVector<jMarker *> & _markers)
 {
-	SAFE_SET(d->markers, _markers);
+	THREAD_SAFE(Write)
+	d->markers = _markers;
+	for (int _idx = 0; _idx < d->selectors.count(); _idx++)
+	{
+		installEventFilter(& d->markers[_idx]->internalItem().inputPattern());
+	}
+	THREAD_UNSAFE
 	return * this;
 }
 
@@ -3304,17 +3415,44 @@ void jPreview::render(QPainter & _painter) const
 	::qSort(_items.begin(), _items.end(), &Data::itemZSort);
 	jAxis * _x_axis = const_cast<jAxis *>(d->view->xAxis());
 	jAxis * _y_axis = const_cast<jAxis *>(d->view->yAxis());
+	const int _axes_plane = d->view->axesPlane();
+	if (_axes_plane == jView::AxesInBackplane)
+	{
+		if (d->x_axis_visible && _x_axis && ((d->orientation & Qt::Horizontal) == Qt::Horizontal))
+		{
+			_x_axis->render(_painter, _rect, Qt::Horizontal, _zoom_rect.left(), _zoom_rect.right(), false);
+		}
+		if (d->y_axis_visible && _y_axis && ((d->orientation & Qt::Vertical) == Qt::Vertical))
+		{
+			_y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top(), false);
+		}
+	}
 	foreach (jItem * _item, _items)
 	{
 		_item->renderPreview(_painter, _rect, _zoom_rect, _x_axis, _y_axis);
 	}
-	if (d->x_axis_visible && _x_axis && ((d->orientation & Qt::Horizontal) == Qt::Horizontal))
+	foreach (jSelector * _selector, d->view->selectors())
 	{
-        _x_axis->render(_painter, _rect, Qt::Horizontal, _zoom_rect.left(), _zoom_rect.right(), false);
+		_selector->renderPreview(_painter, _rect, _zoom_rect);
 	}
-	if (d->y_axis_visible && _y_axis && ((d->orientation & Qt::Vertical) == Qt::Vertical))
+	foreach (jMarker * _marker, d->view->markers())
 	{
-        _y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top(), false);
+		_marker->renderPreview(_painter, _rect, _zoom_rect);
+	}
+	foreach (jLabel * _label, d->view->labels())
+	{
+		_label->renderPreview(_painter, _rect, _zoom_rect);
+	}
+	if (_axes_plane == jView::AxesInForeplane)
+	{
+		if (d->x_axis_visible && _x_axis && ((d->orientation & Qt::Horizontal) == Qt::Horizontal))
+		{
+			_x_axis->render(_painter, _rect, Qt::Horizontal, _zoom_rect.left(), _zoom_rect.right(), false);
+		}
+		if (d->y_axis_visible && _y_axis && ((d->orientation & Qt::Vertical) == Qt::Vertical))
+		{
+			_y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top(), false);
+		}
 	}
 	d->updateSelector();
 	d->selector.render(_painter, _rect, _zoom_rect);

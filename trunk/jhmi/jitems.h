@@ -63,6 +63,8 @@ public:
     virtual jItem1D<T, TX> & setData(Point * _data, unsigned int _width, bool _deep_copy = false);
     virtual jItem1D<T, TX> & setData(Radial * _data, unsigned int _width, bool _deep_copy = false);
     virtual jItem1D<T, TX> & setData(const QPointF & _point, int _data_model = PointData);
+    virtual jItem1D<T, TX> & setData(const QRectF & _rect);
+    virtual jItem1D<T, TX> & setData(const QLineF & _line);
 
     const TX * xData() const;
     TX x(int _idx = 0) const;
@@ -553,6 +555,7 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
     _adj_rect.setTop(jAxis::normalizeFromScale(_y_axis, _adj_rect.top()));
     _adj_rect.setBottom(jAxis::normalizeFromScale(_y_axis, _adj_rect.bottom()));
 
+	QPainterPath _pp;
     switch (data_model)
     {
 		case FlatData:
@@ -560,66 +563,24 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 			const Flat * const _y_data = (const Flat * const)data();
 			if (x_data == 0)
 			{
-				switch (line_style)
+				if (_width > 0)
 				{
-					case Dots:
-					case Lines:
-					{
-						for (unsigned int _x = 0; _x < _width; _x++)
-						{
-							if (_adj_rect.contains(QPointF(_x, _y_data[_x])))
-							{
-								THREAD_UNSAFE
-								return true;
-							}
-						}
-						break;
-					}
-					case Ticks:
-					case Bars:
-					{
-						for (unsigned int _x = 0; _x < _width; _x++)
-						{
-							if (_adj_rect.intersects(QRectF(QPointF((int)_x - 1, _y_data[_x]), QPointF(_x + 1, 0))))
-							{
-								THREAD_UNSAFE
-								return true;
-							}
-						}
-						break;
-					}
+					_pp.moveTo(QPointF(0, _y_data[0]));
+				}
+				for (unsigned int _x = 1; _x < _width; _x++)
+				{
+					_pp.lineTo(QPointF(_x, _y_data[_x]));
 				}
 			}
 			else
 			{
-				switch (line_style)
+				if (_width > 0)
 				{
-					case Dots:
-					case Lines:
-					{
-						for (unsigned int _idx = 0; _idx < _width; _idx++)
-						{
-							if (_adj_rect.contains(QPointF(x_data[_idx], _y_data[_idx])))
-							{
-								THREAD_UNSAFE
-								return true;
-							}
-						}
-						break;
-					}
-					case Ticks:
-					case Bars:
-					{
-						for (unsigned int _idx = 0; _idx < _width; _idx++)
-						{
-							if (_adj_rect.intersects(QRectF(QPointF((double)x_data[_idx] - 1, _y_data[_idx]), QPointF(x_data[_idx] + 1, 0))))
-							{
-								THREAD_UNSAFE
-								return true;
-							}
-						}
-						break;
-					}
+					_pp.moveTo(QPointF(x_data[0], _y_data[0]));
+				}
+				for (unsigned int _idx = 1; _idx < _width; _idx++)
+				{
+					_pp.lineTo(QPointF(x_data[_idx], _y_data[_idx]));
 				}
 			}
 			break;
@@ -627,79 +588,29 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 		case PointData:
 		{
 			const Point * const _data = (const Point * const)data();
-			switch (line_style)
+			if (_width > 0)
 			{
-				case Dots:
-				case Lines:
-				{
-					for (unsigned int _idx = 0; _idx < _width; _idx++)
-					{
-						if (_adj_rect.contains(QPointF(_data[_idx].x, _data[_idx].y)))
-						{
-							THREAD_UNSAFE
-							return true;
-						}
-					}
-					break;
-				}
-				case Ticks:
-				case Bars:
-				{
-					for (unsigned int _idx = 0; _idx < _width; _idx++)
-					{
-						if (_adj_rect.intersects(QRectF(QPointF((double)_data[_idx].x - 1, _data[_idx].y), QPointF(_data[_idx].x + 1, 0))))
-						{
-							THREAD_UNSAFE
-							return true;
-						}
-					}
-					break;
-				}
+				_pp.moveTo(QPointF(_data[0].x, _data[0].y));
+			}
+			for (unsigned int _idx = 1; _idx < _width; _idx++)
+			{
+				_pp.lineTo(QPointF(_data[_idx].x, _data[_idx].y));
 			}
 			break;
 		}
 		case RadialData:
 		{
 			const Radial * const _data = (const Radial * const)data();
-			switch (line_style)
+			_pp.moveTo(QPointF(_offset_x, _offset_y));
+			for (unsigned int _idx = 0; _idx < _width; _idx++)
 			{
-				case Dots:
-				case Lines:
-				{
-					for (unsigned int _idx = 0; _idx < _width; _idx++)
-					{
-						if (_adj_rect.contains(QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(-_data[_idx].t))))
-						{
-							THREAD_UNSAFE
-							return true;
-						}
-					}
-					break;
-				}
-				case Ticks:
-				case Bars:
-				{
-					const double _mid_x = _adj_rect.x() + _adj_rect.width() / 2;
-					const double _mid_y = _adj_rect.y() + _adj_rect.height() / 2;
-					const double _mid_x_2 = _mid_x * _mid_x;
-					const double _mid_y_2 = _mid_y * _mid_y;
-					const double _v = ::qSqrt(_mid_x_2 + _mid_y_2 + 0.0001);
-					for (unsigned int _idx = 0; _idx < _width; _idx++)
-					{
-						if (_v < _data[_idx].v)
-						{
-							THREAD_UNSAFE
-							return true;
-						}
-					}
-					break;
-				}
+				_pp.lineTo(QPointF(_data[_idx].v * qCos(_data[_idx].t), _data[_idx].v * qSin(-_data[_idx].t)));
 			}
 			break;
 		}
     }
     THREAD_UNSAFE
-    return false;
+    return _pp.intersects(_adj_rect);
 }
 
 template <class T, class TX>
@@ -985,16 +896,39 @@ jItem1D<T, TX> & jItem1D<T, TX>::setData(const QPointF & _point, int _data_model
 {
 	if (_data_model == RadialData)
 	{
-		jFigureItem<T, TX>::Radial _pt;
+		jItem1D<T, TX>::Radial _pt;
 		_pt.v = _point.x(); _pt.t = _point.y();
 		jItem1D<T, TX>::setData(& _pt, 1, true);
 	}
 	else
 	{
-		jFigureItem<T, TX>::Point _pt;
+		jItem1D<T, TX>::Point _pt;
 		_pt.x = _point.x(); _pt.y = _point.y();
 		jItem1D<T, TX>::setData(& _pt, 1, true);
 	}
+    return (* this);
+}
+
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setData(const QRectF & _rect)
+{
+	jItem1D<T, TX>::Point _pt[5];
+	_pt[0].x = _rect.left(); _pt[0].y = _rect.top();
+	_pt[1].x = _rect.right(); _pt[1].y = _rect.top();
+	_pt[2].x = _rect.right(); _pt[2].y = _rect.bottom();
+	_pt[3].x = _rect.left(); _pt[3].y = _rect.bottom();
+	_pt[4].x = _rect.left(); _pt[4].y = _rect.top();
+	jItem1D<T, TX>::setData(_pt, 5, true);
+    return (* this);
+}
+
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setData(const QLineF & _line)
+{
+	jItem1D<T, TX>::Point _pt[2];
+	_pt[0].x = _line.x1(); _pt[0].y = _line.y1();
+	_pt[1].x = _line.x2(); _pt[1].y = _line.y2();
+	jItem1D<T, TX>::setData(_pt, 2, true);
     return (* this);
 }
 
