@@ -137,7 +137,7 @@ public:
         \param _draw_grid grid visibility flag
 	\sa lo(), hi()
 	*/
-        virtual void render(QPainter & _painter, const QRectF & _dst_rect, int _orientation, double _lo, double _hi, bool _draw_grid);
+    virtual void render(QPainter & _painter, const QRectF & _dst_rect, int _orientation, double _lo, double _hi, bool _draw_grid);
 
 	//! Sets axis pen.
 	/*!
@@ -306,6 +306,8 @@ public:
 	static double normalizeFromScale(const jAxis * _axis, double _value);
 };
 
+class jItem;
+
 class jSelector
 {
 	PDATA
@@ -329,6 +331,12 @@ public:
 	QBrush background() const;
 
 	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect);
+	void renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect);
+
+	jSelector & setPreviewEnabled(bool _state);
+	bool previewEnabled() const;
+
+	jItem & internalItem() const;
 };
 
 class jViewport: public QObject
@@ -412,6 +420,10 @@ public:
 	bool autoSize() const;
 
 	virtual void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect);
+	virtual void renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect);
+
+	jLabel & setPreviewEnabled(bool _state);
+	bool previewEnabled() const;
 };
 
 //! Class jCoordinator represents tooltip near cursor placed on a view.
@@ -806,6 +818,12 @@ public:
 	int orientation() const;
 
 	void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect);
+	void renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect);
+
+	jMarker & setPreviewEnabled(bool _state);
+	bool previewEnabled() const;
+
+	jItem & internalItem() const;
 };
 
 class jInputPattern : public QObject
@@ -943,7 +961,12 @@ public:
 	jView & setLabels(const QVector<jLabel *> & _labels);
 	QVector<jLabel *> labels() const;
 
+	jView & addSelector(jSelector * _selector);
+	jView & addSelectors(const QVector<jSelector *> & _selectors);
+	jView & setSelector(jSelector * _selector);
 	jView & setSelectors(const QVector<jSelector *> & _selectors);
+	jView & removeSelector(jSelector * _selector);
+	jView & removeSelectors(const QVector<jSelector *> & _selectors);
 	QVector<jSelector *> selectors() const;
 
 	jView & setMarkers(const QVector<jMarker *> & _markers);
