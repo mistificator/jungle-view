@@ -295,7 +295,8 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 			if (x_data == 0)
 			{
 				double _fleft = jAxis::normalizeFromScale(_x_axis, _src_rect.left() - _origin.x());
-				double _fright = jAxis::normalizeFromScale(_x_axis, _src_rect.right() - _origin.x());
+//				double _fright = jAxis::normalizeFromScale(_x_axis, _src_rect.right() - _origin.x());
+				double _fright = jAxis::normalizeFromScale(_x_axis, _src_rect.right() - _origin.x() + 1.5);
 				const double _bar_width = jAxis::normalizeFromScale(_x_axis, bar_width);
 				if (_fright > _width)
 				{
