@@ -3929,12 +3929,12 @@ struct jSync::Data
 		QRectF _zoom_rect(_dst->viewport().rect());
 		if (_src->xAxis()->id())
 		{
-			if (_dst->xAxis()->id() == _src->xAxis()->id())
+			if ((_dst->xAxis()->id() == _src->xAxis()->id()) && (_dst->viewport().zoomOrientation() & Qt::Horizontal))
 			{
 				_zoom_rect.setLeft(_dst->xAxis()->mapFromAxis(_src_rect.left(), * _src->xAxis()));
 				_zoom_rect.setRight(_dst->xAxis()->mapFromAxis(_src_rect.right(), * _src->xAxis()));
 			}
-			if (_dst->yAxis()->id() == _src->xAxis()->id())
+			if ((_dst->yAxis()->id() == _src->xAxis()->id()) && (_dst->viewport().zoomOrientation() & Qt::Vertical))
 			{
 				_zoom_rect.setTop(_dst->yAxis()->mapFromAxis(_src_rect.left(), * _src->xAxis()));
 				_zoom_rect.setBottom(_dst->yAxis()->mapFromAxis(_src_rect.right(), * _src->xAxis()));
@@ -3942,17 +3942,18 @@ struct jSync::Data
 		}
 		if (_src->yAxis()->id())
 		{
-			if (_dst->yAxis()->id() == _src->yAxis()->id())
+			if ((_dst->yAxis()->id() == _src->yAxis()->id()) && (_dst->viewport().zoomOrientation() & Qt::Vertical))
 			{
 				_zoom_rect.setTop(_dst->yAxis()->mapFromAxis(_src_rect.top(), * _src->yAxis()));
 				_zoom_rect.setBottom(_dst->yAxis()->mapFromAxis(_src_rect.bottom(), * _src->yAxis()));
 			}
-			if (_dst->xAxis()->id() == _src->yAxis()->id())
+			if ((_dst->xAxis()->id() == _src->yAxis()->id()) && (_dst->viewport().zoomOrientation() & Qt::Horizontal))
 			{
 				_zoom_rect.setLeft(_dst->xAxis()->mapFromAxis(_src_rect.top(), * _src->yAxis()));
 				_zoom_rect.setRight(_dst->xAxis()->mapFromAxis(_src_rect.bottom(), * _src->yAxis()));
 			}
 		}
+
 		return _zoom_rect;
 	}
 	void update(jView * _view)
@@ -4059,13 +4060,17 @@ void jSync::onZoomedIn(const QRectF & _rect)
 	{
 		return;
 	}
+	if (_sender->viewport().zoomOrientation() == 0)
+	{
+		return;
+	}
 	foreach (jView * _view, d->views)
 	{
 		if ((_view == 0) || (_sender == _view))
 		{
 			continue;
 		}
-		QRectF _zoom_rect = d->mapRect(_sender, _rect, _view);
+		const QRectF _zoom_rect = d->mapRect(_sender, _rect, _view);
 		d->blockSignals(&_view->viewport());
 		_view->viewport().zoomIn(_zoom_rect);
 		d->unblockSignals(&_view->viewport());
@@ -4073,16 +4078,25 @@ void jSync::onZoomedIn(const QRectF & _rect)
 	}
 }
 
-void jSync::onZoomedOut(const QRectF &)
+void jSync::onZoomedOut(const QRectF & _rect)
 {
 	jView * _sender = dynamic_cast<jView *>(sender()->parent());
 	if (_sender == 0)
 	{
 		return;
 	}
+	if (_sender->viewport().zoomOrientation() == 0)
+	{
+		return;
+	}
 	foreach (jView * _view, d->views)
 	{
 		if ((_view == 0) || (_sender == _view))
+		{
+			continue;
+		}
+		const QRectF _zoom_rect = d->mapRect(_sender, _rect, _view);
+		if (_zoom_rect == _view->viewport().rect())
 		{
 			continue;
 		}
@@ -4093,16 +4107,25 @@ void jSync::onZoomedOut(const QRectF &)
 	}
 }
 
-void jSync::onZoomedFullView(const QRectF &)
+void jSync::onZoomedFullView(const QRectF & _rect)
 {
 	jView * _sender = dynamic_cast<jView *>(sender()->parent());
 	if (_sender == 0)
 	{
 		return;
 	}
+	if (_sender->viewport().zoomOrientation() == 0)
+	{
+		return;
+	}
 	foreach (jView * _view, d->views)
 	{
 		if ((_view == 0) || (_sender == _view))
+		{
+			continue;
+		}
+		const QRectF _zoom_rect = d->mapRect(_sender, _rect, _view);
+		if (_zoom_rect == _view->viewport().rect())
 		{
 			continue;
 		}
