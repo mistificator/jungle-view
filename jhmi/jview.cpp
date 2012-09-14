@@ -3042,8 +3042,10 @@ QVector<jItem *> jView::showToolTip(const QPointF & _point)
 
 void jView::rebuild()
 {
+	THREAD_SAFE(Read)
 	d->updateViewports(d->viewport.rect());
 	d->renderer->rebuild();
+	THREAD_UNSAFE
 }
 
 QRectF jView::itemsBoundingRect(bool _exclude_invisible) const
