@@ -364,7 +364,7 @@ public:
 	jViewport & setZoomOrientation(int _orientation);
 	int zoomOrientation() const;
 
-	QRectF adjustRect(const QRectF & _rect) const;
+	QRectF adjustRect(const QRectF & _rect, bool _to_orientation_only = false) const;
 
 	jViewport & setMinimumSize(const QSizeF & _size);
 	QSizeF minimumSize() const;
@@ -858,6 +858,12 @@ public:
 			PanMove =				WidgetActionGroupBegin + 11,
 			PanEnd =				WidgetActionGroupBegin + 12,
 			ContextMenuRequested =	WidgetActionGroupBegin + 13,
+			PreviewPanStart =		WidgetActionGroupBegin + 14,
+			PreviewPanMove =		WidgetActionGroupBegin + 15,
+			PreviewPanEnd =			WidgetActionGroupBegin + 16,
+			PreviewFullView =		WidgetActionGroupBegin + 17,
+			PreviewDeltaVertical =	WidgetActionGroupBegin + 18,
+			PreviewDeltaHorizontal =WidgetActionGroupBegin + 19,
 		WidgetActionGroupEnd =	WidgetActionGroupBegin + 999,
 
 		ItemActionGroupBegin =	WidgetActionGroupBegin + 1000,
@@ -889,8 +895,10 @@ public:
 	};
 
 	jInputPattern & addAction(int _action, int _method, int _code = 0, int _modifier = 0);
+	jInputPattern & removeAction(int _action);
 	jInputPattern & removeAction(int _action, int _method);
-	jInputPattern & removeActions(int _action);
+	jInputPattern & removeAction(int _action, int _method, int _code);
+	jInputPattern & removeAction(int _action, int _method, int _code, int _modifier);
 
 	void clear();
 
@@ -1139,6 +1147,7 @@ signals:
 	\param image
 	*/
 	void accepted(QImage);
+	void update();
 public slots:
 	//! Waits until any of rendering threads finishes the job.
 	/*!

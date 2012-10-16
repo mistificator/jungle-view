@@ -649,9 +649,9 @@ struct jViewport::Data
 		}
 		return _rect;
 	}
-	QRectF adjustRect(const QRectF & _rect) const
+	QRectF adjustRect(const QRectF & _rect, bool _to_orientation_only = false) const
 	{
-		QRectF _adj_rect = minmaxRect(_rect).intersected(base);
+		QRectF _adj_rect = _to_orientation_only ? _rect.intersected(base) : minmaxRect(_rect).intersected(base);
 		if ((orientation & Qt::Vertical) == 0)
 		{
 			_adj_rect.setTop(base.top());
@@ -859,9 +859,9 @@ int jViewport::zoomOrientation() const
 	return d->orientation;
 }
 
-QRectF jViewport::adjustRect(const QRectF & _rect) const
+QRectF jViewport::adjustRect(const QRectF & _rect, bool _to_orientation_only) const
 {
-	return SAFE_GET(d->adjustRect(_rect));
+	return SAFE_GET(d->adjustRect(_rect, _to_orientation_only));
 }
 
 jViewport & jViewport::setMinimumSize(const QSizeF & _size)
@@ -1774,6 +1774,12 @@ struct jInputPattern::Data
 			addAction(jInputPattern::PanStart, jInputPattern::MousePress, Qt::RightButton).
 			addAction(jInputPattern::PanEnd, jInputPattern::MouseRelease, Qt::RightButton).
 			addAction(jInputPattern::PanMove, jInputPattern::MouseMove, Qt::RightButton).
+			addAction(jInputPattern::PreviewPanStart, jInputPattern::MousePress, Qt::LeftButton).
+			addAction(jInputPattern::PreviewPanEnd, jInputPattern::MouseRelease, Qt::LeftButton).
+			addAction(jInputPattern::PreviewPanMove, jInputPattern::MouseMove, Qt::LeftButton).
+			addAction(jInputPattern::PreviewDeltaVertical, jInputPattern::WheelVertical).
+			addAction(jInputPattern::PreviewDeltaHorizontal, jInputPattern::WheelHorizontal).
+			addAction(jInputPattern::PreviewFullView, jInputPattern::MouseDoubleClick, Qt::LeftButton).
 			addAction(jInputPattern::MoveItemLeft, jInputPattern::KeyPress, Qt::Key_Left).
 			addAction(jInputPattern::MoveItemRight, jInputPattern::KeyPress, Qt::Key_Right).
 			addAction(jInputPattern::MoveItemUp, jInputPattern::KeyPress, Qt::Key_Up).
@@ -1806,6 +1812,43 @@ struct jInputPattern::Data
 		for (QVector<ActionEntry>::iterator _it = actions[_entry.action].begin(); _it != actions[_entry.action].end(); )
 		{
 			if (((*_it).action == _entry.action) && ((*_it).method == _entry.method))
+			{
+				actions[_entry.action].erase(_it);
+			}
+			else
+			{
+				_it++;
+			}
+		}
+	}
+	void removeEntry(int _action, int _method, int _code)
+	{
+		ActionEntry _entry;
+		_entry.action = _action;
+		_entry.method = _method;
+		_entry.code = _code;
+		for (QVector<ActionEntry>::iterator _it = actions[_entry.action].begin(); _it != actions[_entry.action].end(); )
+		{
+			if (((*_it).action == _entry.action) && ((*_it).method == _entry.method) && ((*_it).code == _entry.code))
+			{
+				actions[_entry.action].erase(_it);
+			}
+			else
+			{
+				_it++;
+			}
+		}
+	}
+	void removeEntry(int _action, int _method, int _code, int _modifier)
+	{
+		ActionEntry _entry;
+		_entry.action = _action;
+		_entry.method = _method;
+		_entry.code = _code;
+		_entry.modifier = _modifier;
+		for (QVector<ActionEntry>::iterator _it = actions[_entry.action].begin(); _it != actions[_entry.action].end(); )
+		{
+			if (((*_it).action == _entry.action) && ((*_it).method == _entry.method) && ((*_it).code == _entry.code) && ((*_it).modifier == _entry.modifier))
 			{
 				actions[_entry.action].erase(_it);
 			}
@@ -1926,7 +1969,19 @@ jInputPattern & jInputPattern::removeAction(int _action, int _method)
 	return * this;
 }
 
-jInputPattern & jInputPattern::removeActions(int _action)
+jInputPattern & jInputPattern::removeAction(int _action, int _method, int _code)
+{
+	d->removeEntry(_action, _method, _code);
+	return * this;
+}
+
+jInputPattern & jInputPattern::removeAction(int _action, int _method, int _code, int _modifier)
+{
+	d->removeEntry(_action, _method, _code, _modifier);
+	return * this;
+}
+
+jInputPattern & jInputPattern::removeAction(int _action)
 {
 	d->removeEntries(_action);
 	return * this;
@@ -2744,7 +2799,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			QPointF _move_point = _mpos;
 			if (d->in_zoom)
 			{
-				d->viewport.selector().setRect(d->viewport.adjustRect(d->screenToAxis(rect(), QRectF(d->press_point, _move_point))));
+				d->viewport.selector().setRect(d->viewport.adjustRect(d->screenToAxis(rect(), QRectF(d->press_point, _move_point)), true));
 				d->renderer->rebuild();
 			}
 			d->move_point = _move_point;
@@ -3526,31 +3581,28 @@ bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifie
     QWheelEvent _we(_modifier < 0 ? d->viewToPreviewScreen(rect(), d->view->rect().center()).toPoint() : _mpos.toPoint(), _modifier, (Qt::MouseButtons)_code, Qt::NoModifier);
 	switch (_action)
 	{
-	case jInputPattern::ZoomStart:
-    case jInputPattern::PanStart:
+	case jInputPattern::PreviewPanStart:
 		d->prev_point = _mpos.toPoint();
 		d->press_point = _mpos.toPoint();
 		d->saved_cursor = cursor();
 		setCursor(d->pan_cursor);
 		break;
-	case jInputPattern::ZoomEnd:
-	case jInputPattern::PanEnd:
+	case jInputPattern::PreviewPanEnd:
 		if (d->press_point == _mpos.toPoint())
 		{
             d->setToPosition(rect(), &_me);
 		}
 		setCursor(d->saved_cursor);
 		break;
-	case jInputPattern::ZoomMove:
-	case jInputPattern::PanMove:
+	case jInputPattern::PreviewPanMove:
         d->pan(rect(), &_me);
 		d->prev_point = _mpos.toPoint();
 		break;
-	case jInputPattern::ZoomFullView:
+	case jInputPattern::PreviewFullView:
         d->zoomFullView(rect(), &_me);
 		break;
-	case jInputPattern::ZoomDeltaVertical:
-	case jInputPattern::ZoomDeltaHorizontal:
+	case jInputPattern::PreviewDeltaVertical:
+	case jInputPattern::PreviewDeltaHorizontal:
         if (_we.orientation() != d->orientation)
         {
             d->wheelScale(rect(), &_we);
@@ -3741,7 +3793,6 @@ struct jLazyRenderer::Data
 		}
 		force_update = true;
 		rw_lock->unlock();
-		widget->update();
 	}
 	void render(QPaintDevice & _device)
 	{
@@ -3759,6 +3810,7 @@ jLazyRenderer::jLazyRenderer(QWidget * _widget, jLazyRenderer::render_func _rend
 	d->rw_lock = & rw_lock;
 	setAutoDelete(false);
 	connect(this, SIGNAL(accepted(QImage)), this, SLOT(onAccepted(QImage)));
+	connect(this, SIGNAL(update()), d->widget, SLOT(update()));
 }
 
 jLazyRenderer::~jLazyRenderer()
@@ -3837,6 +3889,7 @@ void jLazyRenderer::flush(bool _process_events)
 void jLazyRenderer::onAccepted(const QImage & _image)
 {
 	d->accepted(_image);
+	emit update();
 }
 
 jLazyRenderer & jLazyRenderer::setPriority(int _priority)
@@ -3859,16 +3912,19 @@ bool jLazyRenderer::eventFilter(QObject * _object, QEvent * _event)
 		case QEvent::Paint:
 			{
 				d->start(this);
+				_event->accept();
 				return true;
 			}
 		case QEvent::Hide:
 			{
 				flush();
+				_event->accept();
 				return true;
 			}
 		}
 	}
-	return QObject::eventFilter(_object, _event);
+	_event->ignore();
+	return false;
 }
 
 void jLazyRenderer::rebuild()
