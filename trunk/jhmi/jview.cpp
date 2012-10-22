@@ -1284,9 +1284,14 @@ jItem & jItem::setBytesPerItem(unsigned int _bytes_per_item)
 jItem & jItem::setData(void * _data, unsigned int _width, unsigned int _height, bool _deep_copy)
 {
 	THREAD_SAFE(Write)
-	d->clear();
-	d->width = _width;
-	d->height = _height;
+	if (_data == 0)
+	{
+		d->clear();
+		d->deep_copy = false;
+		d->width = 0;
+		d->height = 0;
+		return * this;
+	}
 	d->deep_copy = _deep_copy;
 	if (!_deep_copy)
 	{
@@ -1294,10 +1299,16 @@ jItem & jItem::setData(void * _data, unsigned int _width, unsigned int _height, 
 	}
 	else
 	{
-		unsigned int _data_size = _width * _height * d->bytes_per_item;
-		d->data = new char [_data_size];
+		const unsigned int _data_size = _width * _height * d->bytes_per_item;
+		if (_data_size != d->width * d->height * d->bytes_per_item)
+		{
+			d->clear();
+			d->data = new char [_data_size];
+		}
 		::qMemCopy(d->data, _data, _data_size);
 	}
+	d->width = _width;
+	d->height = _height;
 	THREAD_UNSAFE
 	return * this;
 }
