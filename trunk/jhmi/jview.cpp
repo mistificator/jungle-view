@@ -1290,6 +1290,7 @@ jItem & jItem::setData(void * _data, unsigned int _width, unsigned int _height, 
 		d->deep_copy = false;
 		d->width = 0;
 		d->height = 0;
+		THREAD_UNSAFE
 		return * this;
 	}
 	d->deep_copy = _deep_copy;
