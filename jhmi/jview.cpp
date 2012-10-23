@@ -671,6 +671,14 @@ struct jViewport::Data
 			history[_idx] = minmaxRect(history[_idx]);
 		}
 	}
+	void moveHistory(double _dx, double _dy)
+	{
+		for (int _idx = history.count() - 1; _idx >= 0; _idx--)
+		{
+			history[_idx].moveTo(history[_idx].x() + _dx, history[_idx].y() + _dy); 
+			history[_idx] = adjustRect(history[_idx]);
+		}
+	}
 };
 
 jViewport::jViewport(): QObject(), d(new Data())
@@ -842,7 +850,8 @@ void jViewport::pan(double _dx, double _dy)
 	{
 		_dy = d->base.bottom() - _rect.bottom();
 	}
-	d->history.back() = d->adjustRect(QRectF(QPointF(_rect.left() + _dx, _rect.top() + _dy), _rect.size()));
+//	d->history.back() = d->adjustRect(QRectF(QPointF(_rect.left() + _dx, _rect.top() + _dy), _rect.size()));
+	d->moveHistory(_dx, _dy);
 	QRectF _history_back = d->history.back();
 	THREAD_UNSAFE
 	emit panned(_history_back);
