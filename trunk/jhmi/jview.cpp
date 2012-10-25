@@ -2471,9 +2471,9 @@ jView & jView::addItems(const QVector<jItem *> & _items)
 {
 	THREAD_SAFE(Write)
 	d->items << _items;
-	for (int _idx = d->items.count() - _items.count(); _idx < d->items.count(); _idx++)
+	foreach (jItem * _item, _items)
 	{
-		installEventFilter(& d->items[_idx]->inputPattern());
+		installEventFilter(& _item->inputPattern());
 	}
 	THREAD_UNSAFE
 	return * this;
@@ -2492,9 +2492,9 @@ jView & jView::setItems(const QVector<jItem *> & _items)
 {
 	THREAD_SAFE(Write)
 	d->items = _items;
-	for (int _idx = 0; _idx < d->items.count(); _idx++)
+	foreach (jItem * _item, _items)
 	{
-		installEventFilter(& d->items[_idx]->inputPattern());
+		installEventFilter(& _item->inputPattern());
 	}
 	THREAD_UNSAFE
 	return * this;
@@ -2506,7 +2506,7 @@ jView & jView::removeItem(jItem * _item)
 	QVector<jItem *>::iterator _it = ::qFind(d->items.begin(), d->items.end(), _item);
 	if (_it != d->items.end())
 	{
-		removeEventFilter(& (* _it)->inputPattern());
+		removeEventFilter(& _item->inputPattern());
 		d->items.erase(_it);
 	}
 	THREAD_UNSAFE
@@ -2521,7 +2521,7 @@ jView & jView::removeItems(const QVector<jItem *> & _items)
 		QVector<jItem *>::iterator _it = ::qFind(d->items.begin(), d->items.end(), _item);
 		if (_it != d->items.end())
 		{
-			removeEventFilter(& (* _it)->inputPattern());
+			removeEventFilter(& _item->inputPattern());
 			d->items.erase(_it);
 		}
 	}
