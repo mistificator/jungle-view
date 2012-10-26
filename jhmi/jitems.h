@@ -32,11 +32,16 @@ public:
     enum {FlatData = 1, PointData = 2, RadialData = 3};
     struct Point
     {
+		Point(): x(0), y(0) {}
+		Point(TX _x, T _y): x(_x), y(_y) {}
+		Point(const QPointF & _pt): x(_pt.x()), y(_pt.y()) {}
         TX x;
         T y;
     };
     struct Radial
     {
+		Radial(): v(0), t(0) {}
+		Radial(TX _v, T _t): v(_v), t(_t) {}
         TX v;
         T t;
     };

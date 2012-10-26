@@ -966,7 +966,12 @@ public:
 	jView & setBackground(const QBrush & _brush);
 	QBrush background() const;
 
+	jView & addLabel(jLabel * _label);
+	jView & addLabels(const QVector<jLabel *> & _labels);
+	jView & setLabel(jLabel * _label);
 	jView & setLabels(const QVector<jLabel *> & _labels);
+	jView & removeLabel(jLabel * _label);
+	jView & removeLabels(const QVector<jLabel *> & _labels);
 	QVector<jLabel *> labels() const;
 
 	jView & addSelector(jSelector * _selector);

@@ -1053,11 +1053,12 @@ void jLabel::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF 
 		return;
 	}
 	QTransform _transform;
-	if (::jQuadToQuad(_src_rect, _dst_rect, _transform))
+    QRectF _adj_src_rect = QRectF(QPointF(_src_rect.left(), - _src_rect.bottom()), _src_rect.size());
+	if (::jQuadToQuad(_adj_src_rect, _dst_rect, _transform))
 	{
 		_painter.setPen(d->pen);
 		_painter.setFont(d->font);
-		QRectF _rect = QRectF(_transform.map(d->pos), d->size);
+		QRectF _rect = QRectF(_transform.map(QPointF(d->pos.x(), -d->pos.y())), d->size);
 		_painter.fillRect(_rect, d->background);
 		_painter.drawText(_rect, d->text, d->options);
 	}
@@ -1185,7 +1186,7 @@ void jCoordinator::render(QPainter & _painter, const QRectF & _dst_rect, const Q
 	format_func _format_func = d->format_func;
 	d->label.
 		setText(_format_func(_pos.x(), _pos.y(), const_cast<jAxis *>(_x_axis), const_cast<jAxis *>(_y_axis), this)).
-		setPos(QPointF(_pos.x(), _src_rect.top() + _src_rect.bottom() - _pos.y()));
+		setPos(_pos);
 
 	QSizeF _size = d->label.size();
 	THREAD_UNSAFE
@@ -2898,6 +2899,45 @@ void jView::mouseMoveEvent(QMouseEvent * _me)
 	QPointF _move_point = _me->posF();
 	d->adjustCoordinator(rect(), _move_point);
 	d->renderer->rebuild();
+}
+
+
+jView & jView::addLabel(jLabel * _label)
+{
+	return addLabels(QVector<jLabel *>() << _label);
+}
+
+jView & jView::addLabels(const QVector<jLabel *> & _labels)
+{
+	THREAD_SAFE(Write)
+	d->labels << _labels;
+	THREAD_UNSAFE
+	return (* this);
+}
+
+jView & jView::setLabel(jLabel * _label)
+{
+	return setLabels(QVector<jLabel *>() << _label);
+}
+
+jView & jView::removeLabel(jLabel * _label)
+{
+	return removeLabels(QVector<jLabel *>() << _label);
+}
+
+jView & jView::removeLabels(const QVector<jLabel *> & _labels)
+{
+	THREAD_SAFE(Write)
+	foreach (jLabel * _label, _labels)
+	{
+		QVector<jLabel *>::iterator _it = ::qFind(d->labels.begin(), d->labels.end(), _label);
+		if (_it != d->labels.end())
+		{
+			d->labels.erase(_it);
+		}
+	}
+	THREAD_UNSAFE
+	return * this;
 }
 
 jView & jView::setLabels(const QVector<jLabel *> & _labels)
