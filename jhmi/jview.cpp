@@ -673,10 +673,26 @@ struct jViewport::Data
 	}
 	void moveHistory(double _dx, double _dy)
 	{
-		for (int _idx = history.count() - 1; _idx >= 0; _idx--)
+		for (int _idx = history.count() - 1; _idx > 0; _idx--)
 		{
-			history[_idx].moveTo(history[_idx].x() + _dx, history[_idx].y() + _dy); 
+			history[_idx].moveTo(history[_idx].x() + _dx, history[_idx].y() + _dy);
 			history[_idx] = adjustRect(history[_idx]);
+		}
+		if (!history.isEmpty())
+		{
+			QRectF _adj_rect;
+			history[0].moveTo(history[0].x() + _dx, history[0].y());
+			_adj_rect = adjustRect(history[0]);
+			if (_adj_rect.width() != history[0].width())
+			{
+				history[0].moveTo(history[0].x() - _dx, history[0].y());
+			}
+			history[0].moveTo(history[0].x(), history[0].y() + _dy);
+			_adj_rect = adjustRect(history[0]);
+			if (_adj_rect.height() != history[0].height())
+			{
+				history[0].moveTo(history[0].x(), history[0].y() - _dy);
+			}
 		}
 	}
 };

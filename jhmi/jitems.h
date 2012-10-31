@@ -1096,20 +1096,43 @@ void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
         _h = _log_h;
     }
 
-	QRectF _src_img_rect = QRectF(
-		_src_rect.left() - _origin.x(),
-		_h - (_src_rect.bottom() - _origin.y()),
-		_src_rect.width(),
-		_src_rect.height()
-		);
-	if (scaler)
+    QTransform _transform;
+    if (::jQuadToQuad(_src_rect, _dst_rect, _transform))
     {
-		_painter.drawImage(QPointF(), scaler(_image, _src_img_rect, _dst_rect.size(), this));
-    }
-    else
-    {
-        _painter.drawImage(_dst_rect, _image, _src_img_rect, (Qt::ImageConversionFlags)conversion_flags);
-    }
+	    QRectF _adj_src_rect = QRectF(QPointF(_src_rect.left() - _origin.x(), _src_rect.top() - _origin.y()), _src_rect.size());
+		if (_adj_src_rect.left() < 0)
+		{
+			_adj_src_rect.setLeft(0);
+		}
+		if (_adj_src_rect.top() < 0)
+		{
+			_adj_src_rect.setTop(0);
+		}
+		if (_adj_src_rect.right() > _w)
+		{
+			_adj_src_rect.setRight(_w);
+		}
+		if (_adj_src_rect.bottom() > _h)
+		{
+			_adj_src_rect.setBottom(_h);
+		}
+
+		const QRectF _src_img_rect = QRectF(
+			_adj_src_rect.left(),
+			_h - (_adj_src_rect.bottom()),
+			_adj_src_rect.width(),
+			_adj_src_rect.height()
+			);
+
+		if (scaler)
+		{
+			_painter.drawImage(QPointF(), scaler(_image, _src_img_rect, _transform.mapRect(_adj_src_rect).size(), this));
+		}
+		else
+		{
+			_painter.drawImage(QRectF(QPointF(), _transform.mapRect(_adj_src_rect).size()), _image, _src_img_rect, (Qt::ImageConversionFlags)conversion_flags);
+		}
+	}
 
 	if (_need_to_delete)
     {
