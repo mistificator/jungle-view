@@ -1068,15 +1068,43 @@ void jLabel::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF 
 		THREAD_UNSAFE
 		return;
 	}
+
 	QTransform _transform;
-    QRectF _adj_src_rect = QRectF(QPointF(_src_rect.left(), - _src_rect.bottom()), _src_rect.size());
-	if (::jQuadToQuad(_adj_src_rect, _dst_rect, _transform))
+	if (::jQuadToQuad(_src_rect, _dst_rect, _transform))
 	{
-		_painter.setPen(d->pen);
-		_painter.setFont(d->font);
-		QRectF _rect = QRectF(_transform.map(QPointF(d->pos.x(), -d->pos.y())), d->size);
-		_painter.fillRect(_rect, d->background);
-		_painter.drawText(_rect, d->text, d->options);
+		QRectF _rect = QRectF(_transform.map(QPointF(d->pos.x(), d->pos.y())), d->size);
+		_rect.moveTo(QPointF(_dst_rect.left() + _rect.left(), _dst_rect.top() + _rect.top() - _rect.height()));
+		
+		double _x = 0, _y = 0;
+		if (_dst_rect.contains(_rect) == false)
+		{
+			if (_dst_rect.right() < _rect.right())
+			{
+				_x -= d->size.width();
+			}
+			if (_dst_rect.top() > _rect.top())
+			{
+				_y -= d->size.height();
+			}
+		}
+		if (_x == 0)
+		{
+			_x += _dst_rect.left();
+		}
+		if (_y == 0)
+		{
+			_y += _dst_rect.top();
+		}
+
+	    QRectF _adj_src_rect = QRectF(QPointF(_src_rect.left(), - _src_rect.bottom()), _src_rect.size());
+		if (::jQuadToQuad(_adj_src_rect, QRectF(_x, _y, _dst_rect.width(), _dst_rect.height()), _transform))
+		{
+			_rect = QRectF(_transform.map(QPointF(d->pos.x(), -d->pos.y())), d->size);
+			_painter.setPen(d->pen);
+			_painter.setFont(d->font);
+			_painter.fillRect(_rect, d->background);
+			_painter.drawText(_rect, d->text, d->options);
+		}
 	}
 	THREAD_UNSAFE
 }
@@ -1204,39 +1232,10 @@ void jCoordinator::render(QPainter & _painter, const QRectF & _dst_rect, const Q
 		setText(_format_func(_pos.x(), _pos.y(), const_cast<jAxis *>(_x_axis), const_cast<jAxis *>(_y_axis), this)).
 		setPos(_pos);
 
-	QSizeF _size = d->label.size();
 	THREAD_UNSAFE
 
-	QTransform _transform;
-	if (::jQuadToQuad(_src_rect, _dst_rect, _transform))
-	{
-		QRectF _rect = QRectF(_transform.map(_pos), _size);
-		_rect.moveTo(QPointF(_dst_rect.left() + _offset.x() + _rect.left(), _dst_rect.top() - _offset.y() + _rect.top() - _rect.height()));
-		
-		double _x = 0, _y = 0;
-		if (_dst_rect.contains(_rect) == false)
-		{
-			if (_dst_rect.right() < _rect.right())
-			{
-				_x -= _offset.x() + _size.width();
-			}
-			if (_dst_rect.top() > _rect.top())
-			{
-				_y -= _offset.y() + _size.height();
-			}
-		}
-		if (_x == 0)
-		{
-			_x += _offset.x() + _dst_rect.left();
-		}
-		if (_y == 0)
-		{
-			_y += _offset.y() + _dst_rect.top();
-		}
-
-		d->label.
-			render(_painter, QRectF(_x, _y, _dst_rect.width(), _dst_rect.height()), _src_rect);
-	}
+	d->label.
+		render(_painter, _dst_rect, _src_rect);
 }
 
 // ------------------------------------------------------------------------
@@ -3738,6 +3737,15 @@ QCursor jPreview::panCursor() const
 	return SAFE_GET(d->pan_cursor);
 }
 
+QPointF jPreview::previewToViewScreen(const QPointF & _point) const
+{
+	return SAFE_GET(d->previewToViewScreen(rect(), _point));
+}
+
+QPointF jPreview::viewToPreviewScreen(const QPointF & _point) const
+{
+	return SAFE_GET(d->viewToPreviewScreen(rect(), _point));
+}
 
 // ------------------------------------------------------------------------
 

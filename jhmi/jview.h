@@ -1058,6 +1058,9 @@ public:
 
 	jPreview & setPanCursor(const QCursor & _pan_cursor);
 	QCursor panCursor() const;
+
+	QPointF previewToViewScreen(const QPointF & _point) const;
+	QPointF viewToPreviewScreen(const QPointF & _point) const;
 public slots:
 	void rebuild();
 	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
