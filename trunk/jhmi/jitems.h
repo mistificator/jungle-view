@@ -309,6 +309,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 				}
 				const qint32 _left = ((qint32)_fleft) < 0 ? 0 : _fleft;
 				const qint32 _right = ((qint32)_fright) < 0 ? 0 : _fright;
+				const double _ratio = (_right - _left) / _dst_rect.width();
 				switch (line_style)
 				{
 				case Dots:
@@ -323,20 +324,51 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 				}
 				case Ticks:
 				{
-					_points.reserve((_right - _left) * 2);
-					for (int _x = _left; _x < _right; _x++)
+					if (_ratio >= 2)
 					{
-						_points << QPointF(_x, -_y_data[_x]);
-						_points << QPointF( _x, 0);
+						const int _i_ratio = _ratio;
+						QVector<T> _ys(_i_ratio);
+						_points.resize((_right - _left) * 2 / _i_ratio);
+						for (int _x = _left, _j = 0; _x <= _right - _i_ratio; _x+= _i_ratio)
+						{
+							::qMemCopy(_ys.data(), _y_data + _x, _i_ratio * sizeof(T));
+							::qSort(_ys);
+							_points[_j++] = QPointF(_x, -_ys.back());
+							_points[_j++] = QPointF(_x, 0); 
+						}
+					}
+					else
+					{
+						_points.reserve((_right - _left) * 2);
+						for (int _x = _left; _x < _right; _x++)
+						{
+							_points << QPointF(_x, -_y_data[_x]);
+							_points << QPointF(_x, 0);
+						}
 					}
 					break;
 				}
 				case Bars:
 				{
-					_rects.reserve(_right - _left);
-					for (int _x = _left; _x < _right; _x++)
+					if (_ratio >= 2)
 					{
-						_rects << QRectF(QPointF(_x - (_bar_width / 2.0), - _y_data[_x]), QSizeF(_bar_width, _y_data[_x]));
+						const int _i_ratio = _ratio;
+						QVector<T> _ys(_i_ratio);
+						_rects.resize((_right - _left) / _i_ratio);
+						for (int _x = _left, _j = 0; _x <= _right - _i_ratio; _x+= _i_ratio)
+						{
+							::qMemCopy(_ys.data(), _y_data + _x, _i_ratio * sizeof(T));
+							::qSort(_ys);
+							_rects[_j++] = QRectF(QPointF(_x - (_bar_width / 2.0), - _ys.back()), QSizeF(_bar_width, _ys.back()));
+						}
+					}
+					else
+					{
+						_rects.reserve(_right - _left);
+						for (int _x = _left; _x < _right; _x++)
+						{
+							_rects << QRectF(QPointF(_x - (_bar_width / 2.0), - _y_data[_x]), QSizeF(_bar_width, _y_data[_x]));
+						}
 					}
 				}
 				}
