@@ -1768,7 +1768,7 @@ struct jInputPattern::Data
 		int action, method, code, modifier;
 		bool operator == (const ActionEntry & _other) const
 		{
-			return (action == _other.action) && (method == _other.method) && (code == _other.code) && (modifier == _other.modifier);
+			return (action == _other.action) && (method == _other.method) && (code == _other.code) && ((modifier & 0x7f000000) == (_other.modifier & 0x7f000000));
 		}
 		bool operator <(const ActionEntry & _other) const
 		{
@@ -1833,7 +1833,7 @@ struct jInputPattern::Data
 		_entry.action = _action;
 		_entry.method = _method;
 		_entry.code = _code;
-		_entry.modifier = _modifier;
+		_entry.modifier = (_modifier & 0x7f000000);
 		QVector<ActionEntry>::iterator _it = ::qFind(actions[_entry.action].begin(), actions[_entry.action].end(), _entry);
 		if (_it != actions[_entry.action].end())
 		{
@@ -1885,7 +1885,7 @@ struct jInputPattern::Data
 		_entry.modifier = _modifier;
 		for (QVector<ActionEntry>::iterator _it = actions[_entry.action].begin(); _it != actions[_entry.action].end(); )
 		{
-			if (((*_it).action == _entry.action) && ((*_it).method == _entry.method) && ((*_it).code == _entry.code) && ((*_it).modifier == _entry.modifier))
+			if (((*_it).action == _entry.action) && ((*_it).method == _entry.method) && ((*_it).code == _entry.code) && (((*_it).modifier & 0x7f000000) == (_entry.modifier & 0x7f000000)))
 			{
 				actions[_entry.action].erase(_it);
 			}
@@ -1938,7 +1938,7 @@ struct jInputPattern::Data
 		{
 			foreach (ActionEntry _entry, actions[_tmp_action])
 			{
-				if ((_entry.method == _method) && (_entry.code == _code) && (_entry.modifier == _modifier))
+				if ((_entry.method == _method) && (_entry.code == _code) && ((_entry.modifier & 0x7f000000) == (_modifier & 0x7f000000)))
 				{
 					_accepted << _entry;
 				}
@@ -2157,9 +2157,9 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 		_we = dynamic_cast<QWheelEvent *>(_event);
 		_method = (_we->orientation() == Qt::Vertical) ? WheelVertical : WheelHorizontal;
 		_code = _we->buttons();
-		_modifier = _we->delta();
+		_modifier = ((quint16)_we->delta()) | _we->modifiers();
 		_mpos = _we->pos();
-		_actions = d->checkAction(_method, _code);
+		_actions = d->checkAction(_method, _code, _modifier & 0x7f000000);
 		break;
 	case QEvent::MouseMove:
 		_me = dynamic_cast<QMouseEvent *>(_event);
@@ -2779,12 +2779,12 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			QRectF _rect;
 			const QRectF & _zoom_rect = d->viewport.rect();
 			double _k = (_axis_point_x - _zoom_rect.left()) / _zoom_rect.width();
-			if (_modifier > 0)
+			if ((qint16)(_modifier & 0x0000ffff) > 0)
 			{
 				_rect = QRectF(QPointF(_axis_point_x - (_zoom_rect.width() * _k) / 2.0, _zoom_rect.top()) , 
 					QSizeF(_zoom_rect.width() / 2.0, _zoom_rect.height()));
 			}
-			if (_modifier < 0)
+			if ((qint16)(_modifier & 0x0000ffff) < 0)
 			{
 				if (_zoom_rect.width() * 2.0 > d->viewport.maximumSize().width())
 				{
@@ -2808,12 +2808,12 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			QRectF _rect;
 			const QRectF & _zoom_rect = d->viewport.rect();
 			double _k = (_axis_point_y - _zoom_rect.top()) / _zoom_rect.height();
-			if (_modifier > 0)
+			if ((qint16)(_modifier & 0x0000ffff) > 0)
 			{
 				_rect = QRectF(QPointF(_zoom_rect.left(), _axis_point_y - (_zoom_rect.height() * _k) / 2.0) , 
 					QSizeF(_zoom_rect.width(), _zoom_rect.height() / 2.0));
 			}
-			if (_modifier < 0)
+			if ((qint16)(_modifier & 0x0000ffff) < 0)
 			{
 				if (_zoom_rect.height() * 2.0 > d->viewport.maximumSize().height())
 				{
@@ -3654,7 +3654,11 @@ void jPreview::actionAccepted(int _action, int _method, int _code, int _modifier
 bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifier, QPointF _mpos, QWidget * /*_w*/)
 {
     QMouseEvent _me(QEvent::MouseButtonRelease, _mpos.toPoint(), (Qt::MouseButton)_code, (Qt::MouseButtons)_code, (Qt::KeyboardModifiers)_modifier);
-    QWheelEvent _we(_modifier < 0 ? d->viewToPreviewScreen(rect(), d->view->rect().center()).toPoint() : _mpos.toPoint(), _modifier, (Qt::MouseButtons)_code, Qt::NoModifier);
+    QWheelEvent _we(
+		(qint16)(_modifier & 0x0000ffff) < 0 ? d->viewToPreviewScreen(rect(), d->view->rect().center()).toPoint() : _mpos.toPoint(), 
+		(qint16)(_modifier & 0x0000ffff), 
+		(Qt::MouseButtons)_code, 
+		(Qt::KeyboardModifiers)(_modifier & 0x7f000000));
 	switch (_action)
 	{
 	case jInputPattern::PreviewPanStart:
