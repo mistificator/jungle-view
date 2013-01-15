@@ -940,6 +940,13 @@ public:
 	jView & setYAxis(jAxis * _axis);
 	jAxis * yAxis() const;
 
+	jView & setXAxisVisibleOverride(bool _state);
+	jView & setYAxisVisibleOverride(bool _state);
+	bool isXAxisVisibleOverride() const;
+	bool isYAxisVisibleOverride() const;
+	bool isXAxisVisible() const;
+	bool isYAxisVisible() const;
+
     jView & setGridEnabled(bool _draw_grid);
     bool gridEnabled() const;
 

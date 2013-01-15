@@ -2197,6 +2197,7 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 struct jView::Data
 {
 	jAxis * x_axis, * y_axis;
+	bool x_axis_vis_ovr, y_axis_vis_ovr;
 	bool internal_x_axis, internal_y_axis;
 	jViewport viewport;
 	jCoordinator coordinator;
@@ -2224,6 +2225,8 @@ struct jView::Data
 		internal_y_axis = true;
 		in_zoom = false;
         draw_grid = false;
+		x_axis_vis_ovr = true;
+		y_axis_vis_ovr = true;
 		coordinator.label().
 			setVisible(true);
 		hmarker.
@@ -2447,6 +2450,38 @@ jAxis * jView::yAxis() const
 	return d->y_axis;
 }
 
+jView & jView::setXAxisVisibleOverride(bool _state)
+{
+	SAFE_SET(d->x_axis_vis_ovr, _state);
+	return * this;
+}
+
+jView & jView::setYAxisVisibleOverride(bool _state)
+{
+	SAFE_SET(d->y_axis_vis_ovr, _state);
+	return * this;
+}
+
+bool jView::isXAxisVisibleOverride() const
+{
+	return SAFE_GET(d->x_axis_vis_ovr);
+}
+
+bool jView::isYAxisVisibleOverride() const
+{
+	return SAFE_GET(d->y_axis_vis_ovr);
+}
+
+bool jView::isXAxisVisible() const
+{
+	return SAFE_GET(d->x_axis_vis_ovr) && d->x_axis->isVisible();
+}
+
+bool jView::isYAxisVisible() const
+{
+	return SAFE_GET(d->y_axis_vis_ovr) && d->y_axis->isVisible();
+}
+
 jView & jView::setGridEnabled(bool _draw_grid)
 {
 	SAFE_SET(d->draw_grid, _draw_grid);
@@ -2589,22 +2624,28 @@ void jView::render(QPainter & _painter) const
 	}
 	if (d->axes_plane == AxesInBackplane)
 	{
-		_x_axis->render(
-			_painter, 
-			_rect, 
-			Qt::Horizontal,
-			_viewport_rect.left(),
-						   _viewport_rect.right(),
-						   d->draw_grid
-				);
-		_y_axis->render(
-			_painter, 
-			_rect, 
-			Qt::Vertical,
-			_viewport_rect.top(),
-						   _viewport_rect.bottom(),
-						   d->draw_grid
-						   );
+		if (d->x_axis_vis_ovr)
+		{
+			_x_axis->render(
+				_painter, 
+				_rect, 
+				Qt::Horizontal,
+				_viewport_rect.left(),
+							   _viewport_rect.right(),
+							   d->draw_grid
+					);
+		}
+		if (d->y_axis_vis_ovr)
+		{
+			_y_axis->render(
+				_painter, 
+				_rect, 
+				Qt::Vertical,
+				_viewport_rect.top(),
+							   _viewport_rect.bottom(),
+							   d->draw_grid
+					);
+		}
 	}
 	::qSort(_items.begin(), _items.end(), &Data::itemZSort);
 	foreach (jItem * _item, _items)
@@ -2617,22 +2658,28 @@ void jView::render(QPainter & _painter) const
 	}
 	if (d->axes_plane == AxesInForeplane)
 	{
-		_x_axis->render(
-			_painter, 
-			_rect, 
-			Qt::Horizontal,
-			_viewport_rect.left(),
-						   _viewport_rect.right(),
-						   d->draw_grid
-				);
-		_y_axis->render(
-			_painter, 
-			_rect, 
-			Qt::Vertical,
-			_viewport_rect.top(),
-						   _viewport_rect.bottom(),
-						   d->draw_grid
-						   );
+		if (d->x_axis_vis_ovr)
+		{
+			_x_axis->render(
+				_painter, 
+				_rect, 
+				Qt::Horizontal,
+				_viewport_rect.left(),
+							   _viewport_rect.right(),
+							   d->draw_grid
+					);
+		}
+		if (d->y_axis_vis_ovr)
+		{
+			_y_axis->render(
+				_painter, 
+				_rect, 
+				Qt::Vertical,
+				_viewport_rect.top(),
+							   _viewport_rect.bottom(),
+							   d->draw_grid
+					);
+		}
 	}
 	foreach (jMarker * _marker, _markers)
 	{
