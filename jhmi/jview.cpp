@@ -233,7 +233,8 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 	QPen _pen = d->pen;
 	QBrush _background = d->background;
 	QPen _grid_pen = d->grid_pen;
-	_painter.setPen(_pen);
+//	_painter.setPen(_pen);
+	_painter.setPen(_background.color());
 	_painter.setFont(d->font);
 	QFontMetrics _metrics = _painter.fontMetrics();
 	range_func _range_func = d->range_func;
@@ -278,6 +279,7 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 	case Qt::Vertical:
 		{
 			const int _x = _tick_length + _pen.width();
+			_painter.setPen(_background.color());
 			_painter.drawLine(
 				_dst_rect.left() + _pen.width() / 2,
 				_dst_rect.top(),
@@ -287,6 +289,7 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 			for (int _idx = 0; _idx < _ticks.count(); _idx++)
 			{
 				int _y = _dst_rect.height() - ((_ticks[_idx] - _lo) * _dst_rect.height() / (_hi - _lo));
+				_painter.setPen(_background.color());
 				_painter.drawLine(0, _y, _tick_length, _y);
 				QString _str = _range_func(_ticks[_idx], this);
 				QRect _rect = _metrics.boundingRect(_str);
@@ -296,14 +299,15 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 				if ((_y - _h >= 0) && (_y + (_h / 2) <= _dst_rect.height()))
 				{
 					_painter.fillRect(QRectF(QPointF(_x, _y - _h + 2), _rect.size()), _background);
+					_painter.setPen(_pen);
 					_painter.drawText(_x, _y, _str);
 				}
                 if (_draw_grid)
                 {
-                    _painter.save();
+                    //_painter.save();
                     _painter.setPen(_grid_pen);
                     _painter.drawLine(_x + _w, _y - _h / 2, _dst_rect.width(), _y - _h / 2);
-                    _painter.restore();
+                    //_painter.restore();
                 }
 			}
 			break;
@@ -320,6 +324,7 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 			for (int _idx = 0; _idx < _ticks.count(); _idx++)
 			{
 				int _x = (_ticks[_idx] - _lo) * _dst_rect.width() / (_hi - _lo);
+				_painter.setPen(_background.color());
 				_painter.drawLine(_x, _dst_rect.bottom(), _x, _y + _pen.width());
 				QString _str = _range_func(_ticks[_idx], this);
 				QRect _rect = _metrics.boundingRect(_str);
@@ -329,14 +334,15 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 				if ((_x - (_w / 2) >= 0) && (_x + _w <= _dst_rect.width()))
 				{
 					_painter.fillRect(QRectF(QPointF(_x, _y - _h + 2), _rect.size()), _background);
+					_painter.setPen(_pen);
 					_painter.drawText(_x, _y, _str);
 				}
                 if (_draw_grid)
                 {
-                    _painter.save();
+                    //_painter.save();
                     _painter.setPen(_grid_pen);
                     _painter.drawLine(_x + _w / 2, 0, _x + _w / 2, _y - _h + 2);
-                    _painter.restore();
+                    //_painter.restore();
                 }
 			}
 			break;
