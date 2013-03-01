@@ -1109,6 +1109,8 @@ void jLabel::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF 
 			_painter.setPen(d->pen);
 			_painter.setFont(d->font);
 			_painter.fillRect(_rect, d->background);
+			_rect.moveLeft(_rect.left() + 4);
+			_rect.moveTop(_rect.top() + 4);
 			_painter.drawText(_rect, d->text, d->options);
 		}
 	}
@@ -1132,9 +1134,10 @@ QSizeF jLabel::sizeHint() const
 	THREAD_UNSAFE
 	foreach (const QString & _str, _text.split("\n"))
 	{
-		_w = qMax<double>(_w, _fm.width(_str));
+		_w = qMax<double>(_w, _fm.width(_str)) + 8;
 		_h += _fm.height();
 	}
+	_h += 8;
 	return QSizeF(_w, _h);
 }
 
@@ -2101,6 +2104,11 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 	{
 		return false;
 	}
+	QWidget * _widget = dynamic_cast<QWidget *>(_object);
+	if (_widget && !_widget->isEnabled())
+	{
+		return false;
+	}
 	QMouseEvent *	_me	= 0;
 	QKeyEvent *	_ke	= 0;
 	QWheelEvent *	_we	= 0;
@@ -2108,6 +2116,7 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 	QVector<Data::ActionEntry> _actions;
 	int _code = 0;
 	int _modifier = 0;
+	int _delta = 0;
 	QPointF _mpos = QPoint(0, 0);
 	switch (_event->type())
 	{
@@ -2163,7 +2172,9 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 		_we = dynamic_cast<QWheelEvent *>(_event);
 		_method = (_we->orientation() == Qt::Vertical) ? WheelVertical : WheelHorizontal;
 		_code = _we->buttons();
-		_modifier = ((quint16)_we->delta()) | _we->modifiers();
+		_delta = _we->delta();
+		_modifier = _we->modifiers();
+		_modifier = ((quint16)_delta) | _modifier;
 		_mpos = _we->pos();
 		_actions = d->checkAction(_method, _code, _modifier & 0x7f000000);
 		break;
@@ -2187,7 +2198,7 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 		foreach (Data::ActionEntry _entry, _actions)
 		{
 			setProperty("accepted", false);
-			emit actionAccepted(_entry.action, _method, _code, _modifier, _mpos, dynamic_cast<QWidget *>(_object));
+			emit actionAccepted(_entry.action, _method, _code, _modifier, _mpos, _widget);
             _accepted = _accepted || property("accepted").toBool();
 		}
         if (_accepted) // first processed are items, cause they installed as events last, so we can exit
@@ -2872,7 +2883,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 				{
 					return false;
 				}
-				_rect = QRectF(QPointF(_zoom_rect.left(), _axis_point_y - (_zoom_rect.height() * _k) / 2.0) , 
+				_rect = QRectF(QPointF(_zoom_rect.left(), _axis_point_y - (_zoom_rect.height() * _k) * 2.0) , 
 					QSizeF(_zoom_rect.width(), _zoom_rect.height() * 2.0));
 			}
 			if (_rect.isValid())
