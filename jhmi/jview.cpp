@@ -2318,15 +2318,15 @@ struct jView::Data
 	void adjustCoordinator(const QRectF & _screen_rect, const QPointF & _local_pt)
 	{
 		QPointF _axis_pt = screenToAxis(_screen_rect, _local_pt);
-		if (hmarker.isVisible())
+		if (hmarker.value() != _axis_pt.y())
 		{
 			hmarker.setValue(_axis_pt.y());
 		}
-		if (vmarker.isVisible())
+		if (vmarker.value() != _axis_pt.x())
 		{
 			vmarker.setValue(_axis_pt.x());
 		}
-		if (coordinator.label().isVisible())
+		if (coordinator.pos() != _axis_pt)
 		{
 			coordinator.setPos(_axis_pt);
 		}
