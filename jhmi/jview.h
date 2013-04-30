@@ -1015,6 +1015,7 @@ public:
 	virtual bool userCommand(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 
 	QPointF cursorPos() const;
+	void restoreCursorBeforePan();
 public slots:
 	void rebuild();
 	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position

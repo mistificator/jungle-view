@@ -1511,15 +1511,25 @@ bool jItem::userCommand(int _action, int _method, int, int, QPointF _mpos, QWidg
 		d->release_point = _mpos;
 	}
 
+	jView * _view = dynamic_cast<jView *>(_w);
+	if (_view == 0)
+	{
+		return (false);
+	}
+
 	switch (_action)
 	{
 		case jInputPattern::ItemMenuRequested:
-		{
-			if ((d->press_point == d->release_point) || (_method == jInputPattern::KeyPress) || (_method == jInputPattern::KeyRelease))
 			{
-				d->item_control->emitContextMenuRequested(_w->mapToGlobal(_mpos.toPoint()));
+				if ((d->press_point == d->release_point) || (_method == jInputPattern::KeyPress) || (_method == jInputPattern::KeyRelease))
+				{
+					_view->restoreCursorBeforePan();
+					d->item_control->emitContextMenuRequested(_view->mapToGlobal(_mpos.toPoint()));
+				}
 			}
-		}
+			break;
+		default:
+			return false;
 	}   
 	return (true);
 }
@@ -2958,19 +2968,30 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		}
 		break;
 	case jInputPattern::PanEnd:
-		setCursor(d->default_cursor);
+		restoreCursorBeforePan();
 		d->adjustCoordinator(rect(), d->release_point);
 		d->renderer->rebuild();
 		break;
 	case jInputPattern::ContextMenuRequested:
 		if ((d->press_point == d->release_point) || (_method == jInputPattern::KeyPress) || (_method == jInputPattern::KeyRelease))
 		{
-			setCursor(d->default_cursor);
+			restoreCursorBeforePan();
 			emit contextMenuRequested(mapToGlobal(_mpos.toPoint()));
 		}
 		break;
+	default:
+		return false;
 	}
 	return true;
+}
+
+void jView::restoreCursorBeforePan()
+{
+	const QCursor & _cursor = cursor();
+	if (_cursor.shape() == Qt::ClosedHandCursor || _cursor.shape() == Qt::OpenHandCursor)
+	{
+		setCursor(d->default_cursor);
+	}
 }
 
 void jView::mouseMoveEvent(QMouseEvent * _me)
@@ -3762,6 +3783,8 @@ bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifie
             d->view->rebuild();
         }
 		break;
+	default:
+		return false;
 	}
 	return true;
 }
