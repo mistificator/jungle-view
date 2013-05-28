@@ -872,22 +872,29 @@ T jItem1D<T, TX>::y(int _idx) const
 template <class T, class TX>
 jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Flat * _data, unsigned int _width, bool _deep_copy)
 {
+	TX * _prev_x_data = 0;
     if (x_data && isDeepCopy())
     {
-        delete [] x_data;
+		_prev_x_data = x_data;
         x_data = 0;
     }
     setDataModel(jItem1D<T, TX>::FlatData);
     jItem::setData(_data, _width, 1, _deep_copy);
+	if (_prev_x_data)
+	{
+        delete [] x_data;
+	}
     return * this;
 }
 
 template <class T, class TX>
 jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Flat * _data, TX * _x, unsigned int _width, bool _deep_copy = false)
 {
+	TX * _prev_x_data = 0;
     if (x_data && isDeepCopy())
     {
-        delete [] x_data;
+		_prev_x_data = x_data;
+        x_data = 0;
     }
     if (_deep_copy)
     {
@@ -900,32 +907,46 @@ jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Flat * _data, 
     }
     setDataModel(jItem1D<T, TX>::FlatData);
     jItem::setData(_data, _width, 1, _deep_copy);
+	if (_prev_x_data)
+	{
+        delete [] x_data;
+	}
     return * this;
 }
 
 template <class T, class TX>
 jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Point * _data, unsigned int _width, bool _deep_copy)
 {
+	TX * _prev_x_data = 0;
     if (x_data && isDeepCopy())
     {
-        delete [] x_data;
+		_prev_x_data = x_data;
         x_data = 0;
     }
     setDataModel(jItem1D<T, TX>::PointData);
     jItem::setData(_data, _width, 1, _deep_copy);
+	if (_prev_x_data)
+	{
+        delete [] x_data;
+	}
     return * this;
 }
 
 template <class T, class TX>
 jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Radial * _data, unsigned int _width, bool _deep_copy)
 {
+	TX * _prev_x_data = 0;
     if (x_data && isDeepCopy())
     {
-        delete [] x_data;
+		_prev_x_data = x_data;
         x_data = 0;
     }
     setDataModel(jItem1D<T, TX>::RadialData);
     jItem::setData(_data, _width, 1, _deep_copy);
+	if (_prev_x_data)
+	{
+        delete [] x_data;
+	}
     return * this;
 }
 
