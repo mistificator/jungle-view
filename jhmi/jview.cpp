@@ -4,9 +4,15 @@
 
 // ------------------------------------------------------------------------
 
-bool jQuadToQuad(const QRectF & _from, const QRectF & _to, QTransform & _transform)
+__inline bool jQuadToQuad(const QRectF & _from, const QRectF & _to, QTransform & _transform)
 {
 	return QTransform::quadToQuad(QPolygonF(_from).mid(0, 4), QPolygonF(_to).mid(0, 4), _transform);
+}
+
+__inline bool intEqual(double _op1, double _op2)
+{
+	static const double _precision = 1000000;
+	return ((qint64)(_op1 * _precision + (double)0.5) == (qint64)(_op2 * _precision + (double)0.5));
 }
 
 // ------------------------------------------------------------------------
@@ -56,7 +62,7 @@ struct jAxis::Data
 		{
 			return QVector<double>();
 		}
-		if (_hi == _lo)
+		if (intEqual(_hi, _lo))
 		{
 			return QVector<double>();
 		}
@@ -90,7 +96,7 @@ struct jAxis::Data
 			_ticks << _value;
 		}
 
-        if (qFloor(_step) == _step)
+        if (intEqual(qFloor(_step), _step))
 		{
 			quint64 _mply = 1;
 			while ((_ticks.count() / 2) * 2 > (int)count_hint)
@@ -98,7 +104,7 @@ struct jAxis::Data
 				_mply *= 2;
 				for (int _idx = 0; _idx < _ticks.count(); )
 				{
-                    if (alignTick(_ticks[_idx], _step * _mply) != _ticks[_idx])
+                    if (!intEqual(alignTick(_ticks[_idx], _step * _mply), _ticks[_idx]))
                     {
                         _ticks.remove(_idx);
 					}
@@ -450,12 +456,12 @@ double jAxis::fromLog10(double _value) const
 
 double jAxis::mapToAxis(double _value, const jAxis & _dst) const
 {
-	return (d->hi != d->lo) ? _dst.d->lo + ((_value - d->lo) * (_dst.d->hi - _dst.d->lo) / (d->hi - d->lo)) : 0.0;
+	return (!intEqual(d->hi, d->lo)) ? _dst.d->lo + ((_value - d->lo) * (_dst.d->hi - _dst.d->lo) / (d->hi - d->lo)) : 0.0;
 }
 
 double jAxis::mapFromAxis(double _value, const jAxis & _src) const
 {
-	return (_src.d->hi != _src.d->lo) ? d->lo + ((_value - _src.d->lo) * (d->hi - d->lo) / (_src.d->hi - _src.d->lo)) : 0.0;
+	return (!intEqual(_src.d->hi, _src.d->lo)) ? d->lo + ((_value - _src.d->lo) * (d->hi - d->lo) / (_src.d->hi - _src.d->lo)) : 0.0;
 }
 
 double jAxis::normalizeToScale(double _value, double _minimum) const
@@ -689,13 +695,13 @@ struct jViewport::Data
 			QRectF _adj_rect;
 			history[0].moveTo(history[0].x() + _dx, history[0].y());
 			_adj_rect = adjustRect(history[0]);
-			if (_adj_rect.width() != history[0].width())
+			if (!intEqual(_adj_rect.width(), history[0].width()))
 			{
 				history[0].moveTo(history[0].x() - _dx, history[0].y());
 			}
 			history[0].moveTo(history[0].x(), history[0].y() + _dy);
 			_adj_rect = adjustRect(history[0]);
-			if (_adj_rect.height() != history[0].height())
+			if (!intEqual(_adj_rect.height(), history[0].height()))
 			{
 				history[0].moveTo(history[0].x(), history[0].y() - _dy);
 			}
@@ -854,6 +860,10 @@ jSelector & jViewport::selector() const
 
 void jViewport::pan(double _dx, double _dy)
 {
+	if (_dx == 0.0 && _dy == 0.0)
+	{
+		return;
+	}
 	THREAD_SAFE(Write)
 	QRectF _rect = d->history.back();
 	if (_rect.left() + _dx < d->base.left())
@@ -1318,7 +1328,7 @@ jItem & jItem::setBytesPerItem(unsigned int _bytes_per_item)
 jItem & jItem::setData(void * _data, unsigned int _width, unsigned int _height, bool _deep_copy)
 {
 	THREAD_SAFE(Write)
-	if (_data == 0)
+	if (_data == 0 || _width == 0 || _height == 0)
 	{
 		d->clear();
 		d->deep_copy = false;
@@ -2328,11 +2338,11 @@ struct jView::Data
 	void adjustCoordinator(const QRectF & _screen_rect, const QPointF & _local_pt)
 	{
 		QPointF _axis_pt = screenToAxis(_screen_rect, _local_pt);
-		if (hmarker.value() != _axis_pt.y())
+		if (!intEqual(hmarker.value(), _axis_pt.y()))
 		{
 			hmarker.setValue(_axis_pt.y());
 		}
-		if (vmarker.value() != _axis_pt.x())
+		if (!intEqual(vmarker.value(), _axis_pt.x()))
 		{
 			vmarker.setValue(_axis_pt.x());
 		}
@@ -2862,14 +2872,18 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			{
 				if (_zoom_rect.width() * 2.0 > d->viewport.maximumSize().width())
 				{
-					return false;
+					_rect = QRectF(QPointF(d->viewport.rectBase().left(), _zoom_rect.top()), 
+						QSize(d->viewport.rectBase().width(), _zoom_rect.height()));
 				}
-				_rect =	QRectF(QPointF(_axis_point_x - (_zoom_rect.width() * _k) * 2.0, _zoom_rect.top()) , 
-					QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
+				else
+				{
+					_rect =	QRectF(QPointF(_axis_point_x - (_zoom_rect.width() * _k) * 2.0, _zoom_rect.top()) , 
+						QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
+				}
 			}
 			if (_rect.isValid())
 			{
-				d->viewport.zoomIn(_rect);
+				d->viewport.zoomIn(d->viewport.adjustRect(_rect));
 				d->updateViewports(d->viewport.rect());
 				d->adjustCoordinator(rect(), _mpos);
 				d->renderer->rebuild();
@@ -2891,14 +2905,18 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			{
 				if (_zoom_rect.height() * 2.0 > d->viewport.maximumSize().height())
 				{
-					return false;
+					_rect = QRectF(QPointF(_zoom_rect.left(), d->viewport.rect().top()), 
+						QSize(_zoom_rect.width(), d->viewport.rectBase().height()));
 				}
-				_rect = QRectF(QPointF(_zoom_rect.left(), _axis_point_y - (_zoom_rect.height() * _k) * 2.0) , 
-					QSizeF(_zoom_rect.width(), _zoom_rect.height() * 2.0));
+				else
+				{
+					_rect = QRectF(QPointF(_zoom_rect.left(), _axis_point_y - (_zoom_rect.height() * _k) * 2.0) , 
+						QSizeF(_zoom_rect.width(), _zoom_rect.height() * 2.0));
+				}
 			}
 			if (_rect.isValid())
 			{
-				d->viewport.zoomIn(_rect);
+				d->viewport.zoomIn(d->viewport.adjustRect(_rect));
 				d->updateViewports(d->viewport.rect());
 				d->adjustCoordinator(rect(), _mpos);
 				d->renderer->rebuild();
@@ -2927,7 +2945,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		d->in_zoom = false;
 		d->viewport.selector().setVisible(false);
 
-		if (d->press_point.x() != d->release_point.x())
+		if (!intEqual(d->press_point.x(), d->release_point.x()))
 		{
 			if (d->press_point.x() > d->release_point.x())
 			{
@@ -4280,9 +4298,10 @@ void jSync::onPanned(const QRectF & _rect)
 			continue;
 		}
 		QRectF _zoom_rect = d->mapRect(_sender, _rect, _view);
-		d->blockSignals(&_view->viewport());
-		_view->viewport().pan(_zoom_rect.x() - _view->viewport().rect().x(), _zoom_rect.y() - _view->viewport().rect().y());
-		d->unblockSignals(&_view->viewport());
+		jViewport & _viewport = _view->viewport();
+		d->blockSignals(&_viewport);
+		_viewport.pan(_zoom_rect.x() - _viewport.rect().x(), _zoom_rect.y() - _viewport.rect().y());
+		d->unblockSignals(&_viewport);
 		d->update(_view);
 	}
 }
