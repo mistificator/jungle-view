@@ -230,12 +230,11 @@ unsigned int jAxis::tickLength() const
 
 void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientation, double _lo, double _hi, bool _draw_grid)
 {
-	THREAD_SAFE(Read)
 	if (d->visible == false)
 	{
-		THREAD_UNSAFE
 		return;
 	}
+	THREAD_SAFE(Read)
 	QPen _pen = d->pen;
 	QBrush _background = d->background;
 	QPen _grid_pen = d->grid_pen;
@@ -554,12 +553,11 @@ bool jSelector::isVisible() const
 
 void jSelector::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect)
 {
-	THREAD_SAFE(Read)
 	if (d->visible == false)
 	{
-		THREAD_UNSAFE
 		return;
 	}
+	THREAD_SAFE(Read)
 	QTransform _transform;
 	const QRectF _rect = d->rect;
 	const QBrush _brush = d->background;
@@ -1078,13 +1076,12 @@ bool jLabel::autoSize() const
 
 void jLabel::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect)
 {
-	THREAD_SAFE(Read)
 	if (d->visible == false)
 	{
-		THREAD_UNSAFE
 		return;
 	}
 
+	THREAD_SAFE(Read)
 	QTransform _transform;
 	if (::jQuadToQuad(_src_rect, _dst_rect, _transform))
 	{
@@ -2551,6 +2548,7 @@ jView & jView::addItem(jItem * _item)
 	THREAD_SAFE(Write)
 	d->items << _item;
 	installEventFilter(& d->items.back()->inputPattern());
+	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
 	THREAD_UNSAFE
 	return * this;
 }
@@ -2563,6 +2561,7 @@ jView & jView::addItems(const QVector<jItem *> & _items)
 	{
 		installEventFilter(& _item->inputPattern());
 	}
+	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
 	THREAD_UNSAFE
 	return * this;
 }
@@ -2572,6 +2571,7 @@ jView & jView::setItem(jItem * _item)
 	THREAD_SAFE(Write)
 	d->items = QVector<jItem *>() << _item;
 	installEventFilter(& d->items.back()->inputPattern());
+	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
 	THREAD_UNSAFE
 	return * this;
 }
@@ -2584,6 +2584,7 @@ jView & jView::setItems(const QVector<jItem *> & _items)
 	{
 		installEventFilter(& _item->inputPattern());
 	}
+	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
 	THREAD_UNSAFE
 	return * this;
 }
@@ -2597,6 +2598,7 @@ jView & jView::removeItem(jItem * _item)
 		removeEventFilter(& _item->inputPattern());
 		d->items.erase(_it);
 	}
+	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
 	THREAD_UNSAFE
 	return * this;
 }
@@ -2613,6 +2615,7 @@ jView & jView::removeItems(const QVector<jItem *> & _items)
 			d->items.erase(_it);
 		}
 	}
+	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
 	THREAD_UNSAFE
 	return * this;
 }
@@ -2684,7 +2687,6 @@ void jView::render(QPainter & _painter) const
 					);
 		}
 	}
-	::qSort(_items.begin(), _items.end(), &Data::itemZSort);
 	foreach (jItem * _item, _items)
     {
 		_item->render(_painter, _rect, _viewport_rect, _x_axis, _y_axis);
