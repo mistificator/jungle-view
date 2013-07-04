@@ -620,7 +620,8 @@ struct jViewport::Data
 	jSelector selector;
 	int orientation;
 	QSizeF minimum_size, maximum_size;
-	Data()
+	RecursiveLocker * rw_lock_instance;
+	Data(RecursiveLocker * _instance): rw_lock_instance(_instance)
 	{
 		history << QRectF();
 		selector.setVisible(false);
@@ -631,6 +632,7 @@ struct jViewport::Data
 	{
 
 	}
+	RecursiveLocker & rw_lock() const { return * rw_lock_instance; }
 	QRectF minmaxRect(QRectF _rect) const
 	{
 		if (_rect.size().width() < minimum_size.width())
@@ -707,7 +709,7 @@ struct jViewport::Data
 	}
 };
 
-jViewport::jViewport(): QObject(), d(new Data())
+jViewport::jViewport(): QObject(), d(new Data(& rw_lock))
 {
 	setZoomOrientation(Qt::Vertical | Qt::Horizontal);
 }
@@ -2649,6 +2651,8 @@ QBrush jView::background() const
 
 void jView::render(QPainter & _painter) const
 {
+	rw_lock.setEnabled(d->renderer->isEnabled());
+	d->viewport.d->rw_lock().setEnabled(d->renderer->isEnabled());
 	THREAD_SAFE(Read)
 	QVector<jItem *> _items = d->items;
     QRectF _rect = d->widget_rect;
@@ -3643,6 +3647,7 @@ void jPreview::render(QPainter & _painter) const
 	{
 		return;
 	}
+	rw_lock.setEnabled(d->renderer->isEnabled());
     QRectF _rect = d->widget_rect;
 	if (d->background.style() != Qt::NoBrush)
 	{
@@ -4040,6 +4045,7 @@ quint64 jLazyRenderer::counter() const
 
 jLazyRenderer & jLazyRenderer::setEnabled(bool _state)
 {
+	rw_lock.setEnabled(_state);
 	if (_state == false)
 	{
 		SAFE_SET(d->enabled, false);
