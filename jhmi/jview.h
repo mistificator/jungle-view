@@ -344,6 +344,7 @@ class jViewport: public QObject
 	Q_OBJECT
 	PDATA
 	DECL_MUTEX
+	friend class jView;
 public:
 	jViewport();
 	virtual ~jViewport();
