@@ -3396,12 +3396,14 @@ struct jPreview::Data
 	bool x_axis_visible, y_axis_visible;
 	QCursor saved_cursor, pan_cursor;
     QRect widget_rect;
+	int min_dim;
 	Data()
 	{
 		saved_cursor = Qt::OpenHandCursor;
 		pan_cursor = Qt::ClosedHandCursor;
 		pattern.setDefaultPattern();
 		view = 0;
+		min_dim = 32;
 		orientation = Qt::Vertical | Qt::Horizontal;
 		x_axis_visible = false;
 		y_axis_visible = false;
@@ -3417,24 +3419,50 @@ struct jPreview::Data
 		}
 		return false;
 	}
-	void updateSelector()
+	void updateSelector(const QRectF & _rect)
 	{
-		if (view)
+		QTransform _back_transform, _transform;
+		if ((view == 0) || (::jQuadToQuad(view->viewport().rectBase(), _rect, _back_transform) == false))
 		{
-			QRectF _rect = view->viewport().rect();
-			QRectF _base = view->viewport().rectBase();
-			if ((orientation & Qt::Vertical) == 0)
-			{
-				_rect.setTop(_base.top());
-				_rect.setBottom(_base.bottom());
-			}
-			if ((orientation & Qt::Horizontal) == 0)
-			{
-				_rect.setLeft(_base.left());
-				_rect.setRight(_base.right());
-			}
-			selector.setRect(_rect);
+			return;
 		}
+		QRectF _viewport_rect = view->viewport().rect();
+		QRectF _viewport_rect_base = view->viewport().rectBase();
+		QRectF _rect_adjusted = _rect;
+
+		QRectF _screen_rect = _back_transform.mapRect(_viewport_rect);
+		const int _min_dim = min_dim;
+		if (_screen_rect.width() < _min_dim)
+		{
+			const float _dx = qMin(_rect_adjusted.width(), _min_dim - _screen_rect.width()) / 2;
+			_screen_rect.adjust(- _dx, 0, _dx, 0);
+			_rect_adjusted.adjust(- _dx, 0, _dx, 0);
+		}
+		if (_screen_rect.height() < _min_dim)
+		{
+			const float _dy = qMin(_rect_adjusted.height(), _min_dim - _screen_rect.height()) / 2;
+			_screen_rect.adjust(0, - _dy, 0, _dy);
+			_rect_adjusted.adjust(0, - _dy, 0, _dy);
+		}
+
+		if (::jQuadToQuad(_rect_adjusted, view->viewport().rectBase(), _transform) == false)
+		{
+			return;
+		}
+
+		_viewport_rect = _transform.mapRect(_screen_rect);
+
+		if ((orientation & Qt::Vertical) == 0)
+		{
+			_viewport_rect.setTop(_viewport_rect_base.top());
+			_viewport_rect.setBottom(_viewport_rect_base.bottom());
+		}
+		if ((orientation & Qt::Horizontal) == 0)
+		{
+			_viewport_rect.setLeft(_viewport_rect_base.left());
+			_viewport_rect.setRight(_viewport_rect_base.right());
+		}
+		selector.setRect(_viewport_rect);
 	}
     QPointF previewToViewScreen(const QRectF & _rect, const QPointF & _point) const // screen to screen
 	{
@@ -3697,7 +3725,7 @@ void jPreview::render(QPainter & _painter) const
 			_y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top(), false);
 		}
 	}
-	d->updateSelector();
+	d->updateSelector(_rect);
 	d->selector.render(_painter, _rect, _zoom_rect);
 }
 
@@ -3861,6 +3889,17 @@ QPointF jPreview::previewToViewScreen(const QPointF & _point) const
 QPointF jPreview::viewToPreviewScreen(const QPointF & _point) const
 {
 	return SAFE_GET(d->viewToPreviewScreen(rect(), _point));
+}
+
+jPreview & jPreview::setMinimumSelectorSize(int _min_dim)
+{
+	SAFE_SET(d->min_dim, _min_dim);
+	return (* this);
+}
+
+int jPreview::minimumSelectorSize() const
+{
+	return d->min_dim;
 }
 
 // ------------------------------------------------------------------------

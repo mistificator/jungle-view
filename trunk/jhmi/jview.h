@@ -1070,6 +1070,9 @@ public:
 
 	QPointF previewToViewScreen(const QPointF & _point) const;
 	QPointF viewToPreviewScreen(const QPointF & _point) const;
+
+	jPreview & setMinimumSelectorSize(int _min_dim);
+	int minimumSelectorSize() const;
 public slots:
 	void rebuild();
 	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
