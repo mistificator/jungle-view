@@ -52,11 +52,25 @@ struct jAxis::Data
 	{
 
 	}
-	double alignTick(double _value, double _alignment) const
+	__inline double alignTick(double _value, double _alignment) const
 	{
-		return (static_cast<qint64>(_value / _alignment) * _alignment) + alignment_offset;
+		qint64 _k = 0;
+		if (alignment_offset >= _alignment)
+		{
+			_k = (alignment_offset / _alignment);
+		}
+		else
+		if (alignment_offset < 0)
+		{
+			_k = (alignment_offset / _alignment);
+			if (_k * _alignment != alignment_offset)
+			{
+				_k--;
+			}
+		}
+		return ((static_cast<qint64>(_value / _alignment) - _k) * _alignment) + alignment_offset;
 	}
-	QVector<double> calcTicks(double _lo, double _hi) const
+	__inline QVector<double> calcTicks(double _lo, double _hi) const
 	{
 		if (alignment <= 0.0)
 		{
@@ -633,7 +647,7 @@ struct jViewport::Data
 
 	}
 	RecursiveLocker & rw_lock() const { return * rw_lock_instance; }
-	QRectF minmaxRect(QRectF _rect) const
+	__inline QRectF minmaxRect(QRectF _rect) const
 	{
 		if (_rect.size().width() < minimum_size.width())
 		{
@@ -661,7 +675,7 @@ struct jViewport::Data
 		}
 		return _rect;
 	}
-	QRectF adjustRect(const QRectF & _rect, bool _to_orientation_only = false) const
+	__inline QRectF adjustRect(const QRectF & _rect, bool _to_orientation_only = false) const
 	{
 		QRectF _adj_rect = _to_orientation_only ? _rect.intersected(base) : minmaxRect(_rect).intersected(base);
 		if ((orientation & Qt::Vertical) == 0)
@@ -676,14 +690,14 @@ struct jViewport::Data
 		}
 		return _adj_rect;
 	}
-	void adjustHistory()
+	__inline void adjustHistory()
 	{
 		for (int _idx = 0; _idx < history.count(); _idx++)
 		{
 			history[_idx] = minmaxRect(history[_idx]);
 		}
 	}
-	void moveHistory(double _dx, double _dy)
+	__inline void moveHistory(double _dx, double _dy)
 	{
 		for (int _idx = history.count() - 1; _idx > 0; _idx--)
 		{
@@ -1293,7 +1307,7 @@ struct jItem::Data
 	{
 		clear();
 	}
-	void clear()
+	__inline void clear()
 	{
 		if (data)
 		{
@@ -1817,7 +1831,7 @@ struct jInputPattern::Data
 	~Data()
 	{
 	}
-	void setDefaultPattern(jInputPattern * _pattern)
+	__inline void setDefaultPattern(jInputPattern * _pattern)
 	{
 		if (_pattern == 0)
 		{
@@ -1855,7 +1869,7 @@ struct jInputPattern::Data
             addAction(jInputPattern::ItemMenuRequested, jInputPattern::MouseRelease, Qt::RightButton).
             addAction(jInputPattern::ItemSelected, jInputPattern::MousePress, Qt::LeftButton);
 	}
-	void addEntry(int _action, int _method, int _code, int _modifier)
+	__inline void addEntry(int _action, int _method, int _code, int _modifier)
 	{
 		ActionEntry _entry;
 		_entry.action = _action;
@@ -1869,7 +1883,7 @@ struct jInputPattern::Data
 		}
 		actions[_entry.action] << _entry;
 	}
-	void removeEntry(int _action, int _method)
+	__inline void removeEntry(int _action, int _method)
 	{
 		ActionEntry _entry;
 		_entry.action = _action;
@@ -1886,7 +1900,7 @@ struct jInputPattern::Data
 			}
 		}
 	}
-	void removeEntry(int _action, int _method, int _code)
+	__inline void removeEntry(int _action, int _method, int _code)
 	{
 		ActionEntry _entry;
 		_entry.action = _action;
@@ -1904,7 +1918,7 @@ struct jInputPattern::Data
 			}
 		}
 	}
-	void removeEntry(int _action, int _method, int _code, int _modifier)
+	__inline void removeEntry(int _action, int _method, int _code, int _modifier)
 	{
 		ActionEntry _entry;
 		_entry.action = _action;
@@ -1923,11 +1937,11 @@ struct jInputPattern::Data
 			}
 		}
 	}
-	void removeEntries(int _action)
+	__inline void removeEntries(int _action)
 	{
 		actions.remove(_action);
 	}
-	QVector<int> methods(int _action) const
+	__inline QVector<int> methods(int _action) const
 	{
 		QVector<int> _methods;
 		foreach (int _tmp_action, actions.keys())
@@ -1942,7 +1956,7 @@ struct jInputPattern::Data
 		}
 		return _methods;
 	}
-	void codes(int _action, int _method, QVector<int> & _codes, QVector<int> & _modifiers) const
+	__inline void codes(int _action, int _method, QVector<int> & _codes, QVector<int> & _modifiers) const
 	{
 		foreach (int _tmp_action, actions.keys())
 		{
@@ -1959,7 +1973,7 @@ struct jInputPattern::Data
 			}
 		}
 	}
-	QVector<ActionEntry> checkAction(int _method, int _code = 0, int _modifier = 0)
+	__inline QVector<ActionEntry> checkAction(int _method, int _code = 0, int _modifier = 0)
 	{
 		QVector<ActionEntry> _accepted;
 		foreach (int _tmp_action, actions.keys())
@@ -1975,11 +1989,11 @@ struct jInputPattern::Data
 		::qSort(_accepted.begin(), _accepted.end()); 
 		return _accepted;
 	}
-	static bool actionsForwardSort(const ActionEntry & _entry1, const ActionEntry & _entry2)
+	__inline static bool actionsForwardSort(const ActionEntry & _entry1, const ActionEntry & _entry2)
 	{
 		return (_entry1.action < _entry2.action);
 	}
-	static bool actionsBackwardSort(const ActionEntry & _entry1, const ActionEntry & _entry2)
+	__inline static bool actionsBackwardSort(const ActionEntry & _entry1, const ActionEntry & _entry2)
 	{
 		return (_entry1.action > _entry2.action);
 	}
@@ -2283,7 +2297,7 @@ struct jView::Data
 			delete y_axis;
 		}
 	}
-	QTransform screenToAxisTransform(const QRectF & _screen_rect) const
+	__inline QTransform screenToAxisTransform(const QRectF & _screen_rect) const
 	{
 		QTransform _transform;
 		const QRectF & _viewport_rect = viewport.rect();
@@ -2295,15 +2309,15 @@ struct jView::Data
 		QTransform::quadToQuad(QPolygonF(_screen_rect).mid(0, 4), _viewport_poly, _transform);
 		return _transform;
 	}
-	QRectF screenToAxis(const QRectF & _screen_rect, const QRectF & _src_rect) const
+	__inline QRectF screenToAxis(const QRectF & _screen_rect, const QRectF & _src_rect) const
 	{
 		return screenToAxisTransform(_screen_rect).mapRect(_src_rect);
 	}
-	QPointF screenToAxis(const QRectF & _screen_rect, const QPointF & _src_point) const
+	__inline QPointF screenToAxis(const QRectF & _screen_rect, const QPointF & _src_point) const
 	{
 		return screenToAxisTransform(_screen_rect).map(_src_point);
 	}
-	QTransform axisToScreenTransform(const QRectF & _screen_rect) const
+	__inline QTransform axisToScreenTransform(const QRectF & _screen_rect) const
 	{
 		QTransform _transform;
 		QPolygonF _screen_poly;
@@ -2314,19 +2328,19 @@ struct jView::Data
 		QTransform::quadToQuad(QPolygonF(viewport.rect()).mid(0, 4), _screen_poly, _transform);
 		return _transform;
 	}
-	QRectF axisToScreen(const QRectF & _src_rect, const QRectF & _screen_rect) const
+	__inline QRectF axisToScreen(const QRectF & _src_rect, const QRectF & _screen_rect) const
 	{
 		return axisToScreenTransform(_screen_rect).mapRect(_src_rect);
 	}
-	QPointF axisToScreen(const QPointF & _src_point, const QRectF & _screen_rect) const
+	__inline QPointF axisToScreen(const QPointF & _src_point, const QRectF & _screen_rect) const
 	{
 		return axisToScreenTransform(_screen_rect).map(_src_point);
 	}
-	void setZoomFullView()
+	__inline void setZoomFullView()
 	{
 		viewport.setZoomFullView(* x_axis, * y_axis);
 	}
-	static bool itemZSort(const jItem * _item1, const jItem * _item2)
+	__inline static bool itemZSort(const jItem * _item1, const jItem * _item2)
 	{
 		if (_item1 && _item2)
 		{
@@ -2334,7 +2348,7 @@ struct jView::Data
 		}
 		return false;
 	}
-	void adjustCoordinator(const QRectF & _screen_rect, const QPointF & _local_pt)
+	__inline void adjustCoordinator(const QRectF & _screen_rect, const QPointF & _local_pt)
 	{
 		QPointF _axis_pt = screenToAxis(_screen_rect, _local_pt);
 		if (!intEqual(hmarker.value(), _axis_pt.y()))
@@ -2350,18 +2364,18 @@ struct jView::Data
 			coordinator.setPos(_axis_pt);
 		}
 	}
-	void updateViewports(const QRectF & _rect)
+	__inline void updateViewports(const QRectF & _rect)
 	{
 		foreach (jItem * _item, items)
 		{
 			_item->updateViewport(_rect);
 		}
 	}
-	static void render_func(QWidget * _widget, QPainter & _painter)
+	__inline static void render_func(QWidget * _widget, QPainter & _painter)
 	{
 		dynamic_cast<jView *>(_widget)->render(_painter);
 	}
-	void init(QWidget * _instance)
+	__inline void init(QWidget * _instance)
 	{
 		viewport.setParent(_instance);
 
@@ -3411,7 +3425,7 @@ struct jPreview::Data
 	~Data()
 	{
 	}
-	static bool itemZSort(const jItem * _item1, const jItem * _item2)
+	__inline static bool itemZSort(const jItem * _item1, const jItem * _item2)
 	{
 		if (_item1 && _item2)
 		{
@@ -3419,7 +3433,7 @@ struct jPreview::Data
 		}
 		return false;
 	}
-	void updateSelector(const QRectF & _rect)
+	__inline void updateSelector(const QRectF & _rect)
 	{
 		QTransform _back_transform, _transform;
 		if ((view == 0) || (::jQuadToQuad(view->viewport().rectBase(), _rect, _back_transform) == false))
@@ -3464,7 +3478,7 @@ struct jPreview::Data
 		}
 		selector.setRect(_viewport_rect);
 	}
-    QPointF previewToViewScreen(const QRectF & _rect, const QPointF & _point) const // screen to screen
+    __inline QPointF previewToViewScreen(const QRectF & _rect, const QPointF & _point) const // screen to screen
 	{
 		QTransform _transform;
 		if ((view == 0) || (::jQuadToQuad(_rect, view->viewport().rectBase(), _transform) == false))
@@ -3473,7 +3487,7 @@ struct jPreview::Data
 		}
         return view->axisToScreen(_transform.map(_point));
 	}
-    QPointF viewToPreviewScreen(const QRectF & _rect, const QPointF & _point) const // screen to screen
+    __inline QPointF viewToPreviewScreen(const QRectF & _rect, const QPointF & _point) const // screen to screen
     {
         QTransform _transform;
         if ((view == 0) || (::jQuadToQuad(view->viewport().rectBase(), _rect, _transform) == false))
@@ -3482,7 +3496,7 @@ struct jPreview::Data
         }
         return _transform.map(view->screenToAxis(_point));
     }    
-	void setToPosition(const QRect & _rect, const QMouseEvent * _me)
+	__inline void setToPosition(const QRect & _rect, const QMouseEvent * _me)
 	{
 		if (view == 0)
 		{
@@ -3524,7 +3538,7 @@ struct jPreview::Data
 		view->viewport().pan(_delta_x, _delta_y);
 		view->rebuild();
 	}
-    void pan(const QRect & _rect, const QMouseEvent * _me)
+    __inline void pan(const QRect & _rect, const QMouseEvent * _me)
 	{
 		if (view == 0)
 		{
@@ -3564,7 +3578,7 @@ struct jPreview::Data
 		view->viewport().pan(_delta_x, _delta_y);
 		view->rebuild();
 	}
-    void zoomFullView(const QRectF &, const QMouseEvent *)
+    __inline void zoomFullView(const QRectF &, const QMouseEvent *)
 	{
 		if (view == 0)
 		{
@@ -3573,7 +3587,7 @@ struct jPreview::Data
 		view->viewport().zoomFullView();
 		view->rebuild();
 	}
-	void wheelScale(const QRectF & _rect, const QWheelEvent * _we)
+	__inline void wheelScale(const QRectF & _rect, const QWheelEvent * _we)
 	{
 		if (view == 0)
 		{
@@ -3589,7 +3603,7 @@ struct jPreview::Data
         QCoreApplication::postEvent(view, _wheel);
         QCoreApplication::sendPostedEvents(view, QEvent::Wheel);
 	}
-	static void render_func(QWidget * _widget, QPainter & _painter)
+	__inline static void render_func(QWidget * _widget, QPainter & _painter)
 	{
 		dynamic_cast<jPreview *>(_widget)->render(_painter);
 	}
@@ -3910,14 +3924,14 @@ class jTimeSync
 public:
 	jTimeSync() {}
 	~jTimeSync() {}
-	QTime registerInstance()
+	__inline QTime registerInstance()
 	{
 		QMutexLocker _locker(&mutex);
 		QTime _time = QTime::currentTime();
 		entries[_time] = true;
 		return _time;
 	}
-	bool checkpoint(const QTime & _check_time)
+	__inline bool checkpoint(const QTime & _check_time)
 	{
 		QMutexLocker _locker(&mutex);
 		if (entries[_check_time] == false)
@@ -3933,7 +3947,7 @@ public:
 		}
 		return true;
 	}
-	void unregisterInstance(const QTime & _time)
+	__inline void unregisterInstance(const QTime & _time)
 	{
 		QMutexLocker _locker(&mutex);
 		entries.remove(_time);
@@ -3971,7 +3985,7 @@ struct jLazyRenderer::Data
 	{
 		delete thread_pool;
 	}
-	void recreateThreadPool(int _max_threads, int _exp_time = 60000)
+	__inline void recreateThreadPool(int _max_threads, int _exp_time = 60000)
 	{
 		if (thread_pool)
 		{
@@ -3981,7 +3995,7 @@ struct jLazyRenderer::Data
 		thread_pool->setMaxThreadCount(_max_threads);
 		thread_pool->setExpiryTimeout(_exp_time);
 	}
-	void rebuild(QRunnable * _instance)
+	__inline void rebuild(QRunnable * _instance)
 	{
 		if (!force_update)
 		{
@@ -3989,7 +4003,7 @@ struct jLazyRenderer::Data
             thread_pool->tryStart(_instance);
 		}
 	}
-	void start(QRunnable * _instance)
+	__inline void start(QRunnable * _instance)
 	{
         QPainter _painter(widget);
 		_painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing, false);
@@ -4006,7 +4020,7 @@ struct jLazyRenderer::Data
 			render_func(widget, _painter);
 		}
 	}
-    void flush(bool _process_events)
+    __inline void flush(bool _process_events)
 	{
 		rw_lock->lockForWrite();
 		bool _state = enabled;
@@ -4024,7 +4038,7 @@ struct jLazyRenderer::Data
 		enabled = _state;
 		rw_lock->unlock();
 	}
-	void accepted(const QImage & _image)
+	__inline void accepted(const QImage & _image)
 	{
 		rw_lock->lockForWrite();
 		if (enabled)
@@ -4034,7 +4048,7 @@ struct jLazyRenderer::Data
 		force_update = true;
 		rw_lock->unlock();
 	}
-	void render(QPaintDevice & _device)
+	__inline void render(QPaintDevice & _device)
 	{
 		QPainter _painter(&_device);
 		_painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing, false);
@@ -4198,7 +4212,7 @@ struct jSync::Data
 	{
 
 	}
-	void connectAll(jSync * _sync)
+	__inline void connectAll(jSync * _sync)
 	{
 		foreach (jView * _view, views)
 		{
@@ -4208,7 +4222,7 @@ struct jSync::Data
 			QObject::connect(&_view->viewport(), SIGNAL(zoomedFullView(QRectF)), _sync, SLOT(onZoomedFullView(QRectF)));
 		}
 	}
-	void disconnectAll(jSync * _sync)
+	__inline void disconnectAll(jSync * _sync)
 	{
 		foreach (jView * _view, views)
 		{
@@ -4218,12 +4232,12 @@ struct jSync::Data
 			QObject::disconnect(&_view->viewport(), SIGNAL(zoomedFullView(QRectF)), _sync, SLOT(onZoomedFullView(QRectF)));
 		}
 	}
-	void reconnectAll(jSync * _sync)
+	__inline void reconnectAll(jSync * _sync)
 	{
 		disconnectAll(_sync);
 		connectAll(_sync);
 	}
-	QRectF mapRect(jView * _src, const QRectF & _src_rect, jView * _dst)
+	__inline QRectF mapRect(jView * _src, const QRectF & _src_rect, jView * _dst)
 	{
 		QRectF _zoom_rect(_dst->viewport().rect());
 		if (_src->xAxis()->id())
@@ -4255,7 +4269,7 @@ struct jSync::Data
 
 		return _zoom_rect;
 	}
-	void update(jView * _view)
+	__inline void update(jView * _view)
 	{
 		_view->lazyRenderer().rebuild();
 		foreach (jPreview * _preview, previews)
@@ -4266,12 +4280,12 @@ struct jSync::Data
 			}
 		}
 	}
-	void blockSignals(QObject * _object)
+	__inline void blockSignals(QObject * _object)
 	{
 		blocked_signals[_object].push(_object->signalsBlocked());
 		_object->blockSignals(true);
 	}
-	void unblockSignals(QObject * _object)
+	__inline void unblockSignals(QObject * _object)
 	{
 		_object->blockSignals(blocked_signals[_object].pop(_object->signalsBlocked()));
 	}
@@ -4469,7 +4483,7 @@ struct jLegend::Data
 	{
 
 	}
-	static bool itemZSort(const jItem * _item1, const jItem * _item2)
+	__inline static bool itemZSort(const jItem * _item1, const jItem * _item2)
 	{
 		if (_item1 && _item2)
 		{
@@ -4477,7 +4491,7 @@ struct jLegend::Data
 		}
 		return false;
 	}
-	void createWidgets()
+	__inline void createWidgets()
 	{
 		QLayoutItem * _child;
 		while ((_child = layout->takeAt(0)) != 0) 
@@ -4515,7 +4529,7 @@ struct jLegend::Data
 			layout->addWidget(_updown_scrollbar, _idx, 3);
 		}
 	}
-	void updateWidgets()
+	__inline void updateWidgets()
 	{
 		::qSort(items.begin(), items.end(), &itemZSort);
 		for (int _idx = 0; _idx < items.count(); _idx++)
