@@ -1727,7 +1727,7 @@ jMarker & jMarker::setValue(double _value)
 	return * this;
 }
 
-double jMarker::value() const
+inline double jMarker::value() const
 {
 	return d->value;
 }
@@ -2554,7 +2554,7 @@ int jView::axesPlane() const
 	return d->axes_plane;
 }
 
-jViewport & jView::viewport() const
+inline jViewport & jView::viewport() const
 {
 	return d->viewport;
 }

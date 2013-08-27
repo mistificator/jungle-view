@@ -265,7 +265,7 @@ int jItem1D<T, TX>::dataModel() const
     return data_model;
 }
 
-static bool radialSort(const QPointF & _p1, const QPointF & _p2)
+static inline bool radialSort(const QPointF & _p1, const QPointF & _p2)
 {
     return (_p1.y() < _p2.y());
 }
@@ -328,12 +328,20 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 					{
 						const int _i_ratio = _ratio;
 						QVector<T> _ys(_i_ratio);
+						T * _ys_ptr = _ys.data();
 						_points.resize((_right - _left) * 2 / _i_ratio);
 						for (int _x = _left, _j = 0; _x <= _right - _i_ratio; _x+= _i_ratio)
 						{
-							::qMemCopy(_ys.data(), _y_data + _x, _i_ratio * sizeof(T));
-							::qSort(_ys);
-							_points[_j++] = QPointF(_x, -_ys.back());
+							::qMemCopy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
+							T _ys_max = _ys[0];
+							for (int _i = 1; _i < _i_ratio; _i++)
+							{
+								if (_ys_max < _ys_ptr[_i])
+								{
+									_ys_max = _ys_ptr[_i];
+								}
+							}
+							_points[_j++] = QPointF(_x, -_ys_max);
 							_points[_j++] = QPointF(_x, 0); 
 						}
 					}
@@ -354,11 +362,19 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 					{
 						const int _i_ratio = _ratio;
 						QVector<T> _ys(_i_ratio);
+						T * _ys_ptr = _ys.data();
 						_rects.resize((_right - _left) / _i_ratio);
 						for (int _x = _left, _j = 0; _x <= _right - _i_ratio; _x+= _i_ratio)
 						{
-							::qMemCopy(_ys.data(), _y_data + _x, _i_ratio * sizeof(T));
-							::qSort(_ys);
+							::qMemCopy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
+							T _ys_max = _ys[0];
+							for (int _i = 1; _i < _i_ratio; _i++)
+							{
+								if (_ys_max < _ys_ptr[_i])
+								{
+									_ys_max = _ys_ptr[_i];
+								}
+							}
 							_rects[_j++] = QRectF(QPointF(_x - (_bar_width / 2.0), - _ys.back()), QSizeF(_bar_width, _ys.back()));
 						}
 					}
