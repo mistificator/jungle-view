@@ -1363,7 +1363,7 @@ jItem & jItem::setData(void * _data, unsigned int _width, unsigned int _height, 
 			d->clear();
 			d->data = new char [_data_size];
 		}
-		::qMemCopy(d->data, _data, _data_size);
+		mrMemCopy(d->data, _data, _data_size);
 	}
 	d->width = _width;
 	d->height = _height;

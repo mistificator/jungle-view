@@ -5,6 +5,7 @@
 #include <QtGui>
 #include <QtOpenGL/QtOpenGL>
 #include "./../thread_utils/recursive_locker.h"
+#include "./../thread_utils/memory_routines.h"
 
 #ifdef JUNGLE_USES_OPENGL
 	#define JUNGLE_WIDGET_CLASS QGLWidget
