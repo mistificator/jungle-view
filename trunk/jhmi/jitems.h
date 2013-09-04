@@ -332,7 +332,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 						_points.resize((_right - _left) * 2 / _i_ratio);
 						for (int _x = _left, _j = 0; _x <= _right - _i_ratio; _x+= _i_ratio)
 						{
-							::qMemCopy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
+							mrMemCopy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
 							T _ys_max = _ys[0];
 							for (int _i = 1; _i < _i_ratio; _i++)
 							{
@@ -366,7 +366,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 						_rects.resize((_right - _left) / _i_ratio);
 						for (int _x = _left, _j = 0; _x <= _right - _i_ratio; _x+= _i_ratio)
 						{
-							::qMemCopy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
+							mrMemCopy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
 							T _ys_max = _ys[0];
 							for (int _i = 1; _i < _i_ratio; _i++)
 							{
@@ -915,7 +915,7 @@ jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Flat * _data, 
     if (_deep_copy)
     {
         x_data = new TX[_width];
-        ::qMemCopy(x_data, _x, _width * sizeof(TX));
+        mrMemCopy(x_data, _x, _width * sizeof(TX));
     }
     else
     {
