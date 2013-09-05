@@ -3187,7 +3187,7 @@ jView & jView::setMarkers(const QVector<jMarker *> & _markers)
 {
 	THREAD_SAFE(Write)
 	d->markers = _markers;
-	for (int _idx = 0; _idx < d->selectors.count(); _idx++)
+	for (int _idx = 0; _idx < d->markers.count(); _idx++)
 	{
 		installEventFilter(& d->markers[_idx]->internalItem().inputPattern());
 	}
