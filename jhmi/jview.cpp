@@ -1350,15 +1350,18 @@ jItem & jItem::setData(void * _data, unsigned int _width, unsigned int _height, 
 		THREAD_UNSAFE
 		return * this;
 	}
-	d->deep_copy = _deep_copy;
 	if (!_deep_copy)
 	{
+		if (d->deep_copy)
+		{
+			d->clear();
+		}
 		d->data = _data;
 	}
 	else
 	{
 		const unsigned int _data_size = _width * _height * d->bytes_per_item;
-		if (_data_size != d->width * d->height * d->bytes_per_item)
+		if (_data_size != d->width * d->height * d->bytes_per_item || !d->deep_copy)
 		{
 			d->clear();
 			d->data = new char [_data_size];
@@ -1367,6 +1370,7 @@ jItem & jItem::setData(void * _data, unsigned int _width, unsigned int _height, 
 	}
 	d->width = _width;
 	d->height = _height;
+	d->deep_copy = _deep_copy;
 	THREAD_UNSAFE
 	return * this;
 }
@@ -2644,6 +2648,9 @@ void jView::clear()
 		removeEventFilter(& d->items[_idx]->inputPattern());
 	}
 	d->items.clear();
+	d->labels.clear();
+	d->selectors.clear();
+	d->markers.clear();
 	THREAD_UNSAFE
 }
 
