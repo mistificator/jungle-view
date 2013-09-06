@@ -647,6 +647,24 @@ struct jViewport::Data
 
 	}
 	RecursiveLocker & rw_lock() const { return * rw_lock_instance; }
+	__inline QRectF minmaxRect0(QRectF _rect) const
+	{
+		_rect = minmaxRect(_rect);
+		if (_rect.size().width() < maximum_size.width())
+		{
+			const double _dx = maximum_size.width() - _rect.size().width();
+			_rect.setLeft(_rect.left() - _dx / 2.0);			
+			_rect.setRight(_rect.right() + _dx / 2.0);			
+		}
+		if (_rect.size().height() < maximum_size.height())
+		{
+			const double _dy = maximum_size.height() - _rect.size().height();
+			_rect.setTop(_rect.top() - _dy / 2.0);			
+			_rect.setBottom(_rect.bottom() + _dy / 2.0);			
+		}
+		return _rect;
+
+	}
 	__inline QRectF minmaxRect(QRectF _rect) const
 	{
 		if (_rect.size().width() < minimum_size.width())
@@ -692,7 +710,11 @@ struct jViewport::Data
 	}
 	__inline void adjustHistory()
 	{
-		for (int _idx = 0; _idx < history.count(); _idx++)
+		if (!history.isEmpty())
+		{
+			history[0] = minmaxRect0(history[0]);
+		}
+		for (int _idx = 1; _idx < history.count(); _idx++)
 		{
 			history[_idx] = minmaxRect(history[_idx]);
 		}
@@ -1583,6 +1605,12 @@ bool jItem::previewEnabled() const
 	return d->preview_enabled;
 }
 
+void jItem::clear()
+{
+	setData(0, 0, 0);
+}
+
+
 // ------------------------------------------------------------------------
 
 struct jItemHandler::Data
@@ -2463,8 +2491,8 @@ jView & jView::setXAxis(jAxis * _axis)
 			d->internal_x_axis = true;
 			d->x_axis = new jAxis();
 		}
-		d->setZoomFullView();
 	}
+	d->setZoomFullView();
 	THREAD_UNSAFE
 	return * this;
 }
@@ -2493,8 +2521,8 @@ jView & jView::setYAxis(jAxis * _axis)
 			d->internal_y_axis = true;
 			d->y_axis = new jAxis();
 		}
-		d->setZoomFullView();
 	}
+	d->setZoomFullView();
 	THREAD_UNSAFE
 	return * this;
 }
@@ -4012,6 +4040,10 @@ struct jLazyRenderer::Data
 	}
 	__inline void start(QRunnable * _instance)
 	{
+		if (!widget->updatesEnabled())
+		{
+			return;
+		}
         QPainter _painter(widget);
 		_painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing, false);
 		if (enabled)

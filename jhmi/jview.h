@@ -744,6 +744,8 @@ public:
 
 	jItem & setPreviewEnabled(bool _state);
 	bool previewEnabled() const;
+
+	void clear();
 protected:
 	//! Directly sets pointer to input data with its measurements.
 	/*!
