@@ -3452,7 +3452,7 @@ struct jPreview::Data
 		pan_cursor = Qt::ClosedHandCursor;
 		pattern.setDefaultPattern();
 		view = 0;
-		min_dim = 32;
+		min_dim = 1;
 		orientation = Qt::Vertical | Qt::Horizontal;
 		x_axis_visible = false;
 		y_axis_visible = false;
@@ -3468,35 +3468,42 @@ struct jPreview::Data
 		}
 		return false;
 	}
-	__inline void updateSelector(const QRectF & _rect)
+	__inline QRectF updateSelector(const QRectF & _rect)
 	{
 		QTransform _back_transform, _transform;
 		if ((view == 0) || (::jQuadToQuad(view->viewport().rectBase(), _rect, _back_transform) == false))
 		{
-			return;
+			return QRectF();
 		}
-		QRectF _viewport_rect = view->viewport().rect();
 		QRectF _viewport_rect_base = view->viewport().rectBase();
+		const int _min_dim = min_dim;
+		if (_min_dim == 1)
+		{
+			return _viewport_rect_base;
+		}
+
+		QRectF _viewport_rect = view->viewport().rect();
 		QRectF _rect_adjusted = _rect;
 
+		float _dx = 0, _dy = 0;
+
 		QRectF _screen_rect = _back_transform.mapRect(_viewport_rect);
-		const int _min_dim = min_dim;
 		if (_screen_rect.width() < _min_dim)
 		{
-			const float _dx = qMin(_rect_adjusted.width(), _min_dim - _screen_rect.width()) / 2;
+			_dx = qMin(_rect_adjusted.width(), _min_dim - _screen_rect.width()) / 2;
 			_screen_rect.adjust(- _dx, 0, _dx, 0);
 			_rect_adjusted.adjust(- _dx, 0, _dx, 0);
 		}
 		if (_screen_rect.height() < _min_dim)
 		{
-			const float _dy = qMin(_rect_adjusted.height(), _min_dim - _screen_rect.height()) / 2;
+			_dy = qMin(_rect_adjusted.height(), _min_dim - _screen_rect.height()) / 2;
 			_screen_rect.adjust(0, - _dy, 0, _dy);
 			_rect_adjusted.adjust(0, - _dy, 0, _dy);
 		}
 
-		if (::jQuadToQuad(_rect_adjusted, view->viewport().rectBase(), _transform) == false)
+		if (::jQuadToQuad(_rect_adjusted, _viewport_rect_base, _transform) == false)
 		{
-			return;
+			return _viewport_rect_base;
 		}
 
 		_viewport_rect = _transform.mapRect(_screen_rect);
@@ -3512,6 +3519,24 @@ struct jPreview::Data
 			_viewport_rect.setRight(_viewport_rect_base.right());
 		}
 		selector.setRect(_viewport_rect);
+
+		if (::jQuadToQuad(_rect, _viewport_rect_base, _transform) == false)
+		{
+			return _viewport_rect_base;
+		}
+
+		QRectF _min_dim_transformed = _transform.mapRect(QRectF(0, 0, _dx, _dy));
+
+		if ((orientation & Qt::Vertical) == Qt::Vertical)
+		{
+			_viewport_rect_base.adjust(0, -_min_dim_transformed.height(), 0, _min_dim_transformed.height());
+		}
+		if ((orientation & Qt::Horizontal) == Qt::Horizontal)
+		{
+			_viewport_rect_base.adjust(-_min_dim_transformed.width(), 0, _min_dim_transformed.width(), 0);
+		}
+
+		return _viewport_rect_base;
 	}
     __inline QPointF previewToViewScreen(const QRectF & _rect, const QPointF & _point) const // screen to screen
 	{
@@ -3731,6 +3756,7 @@ void jPreview::render(QPainter & _painter) const
 		_painter.fillRect(_rect, d->background);
 	}
 	QRectF _zoom_rect = d->view->viewport().rectBase();
+	QRectF _adjusted_zoom_rect = d->updateSelector(_rect);
 	QVector<jItem *> _items = d->view->items();
 	::qSort(_items.begin(), _items.end(), &Data::itemZSort);
 	jAxis * _x_axis = const_cast<jAxis *>(d->view->xAxis());
@@ -3740,41 +3766,40 @@ void jPreview::render(QPainter & _painter) const
 	{
 		if (d->x_axis_visible && _x_axis && ((d->orientation & Qt::Horizontal) == Qt::Horizontal))
 		{
-			_x_axis->render(_painter, _rect, Qt::Horizontal, _zoom_rect.left(), _zoom_rect.right(), false);
+			_x_axis->render(_painter, _rect, Qt::Horizontal, _adjusted_zoom_rect.left(), _adjusted_zoom_rect.right(), false);
 		}
 		if (d->y_axis_visible && _y_axis && ((d->orientation & Qt::Vertical) == Qt::Vertical))
 		{
-			_y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top(), false);
+			_y_axis->render(_painter, _rect, Qt::Vertical, _adjusted_zoom_rect.bottom(), _adjusted_zoom_rect.top(), false);
 		}
 	}
 	foreach (jItem * _item, _items)
 	{
-		_item->renderPreview(_painter, _rect, _zoom_rect, _x_axis, _y_axis);
+		_item->renderPreview(_painter, _rect, _adjusted_zoom_rect, _x_axis, _y_axis);
 	}
 	foreach (jSelector * _selector, d->view->selectors())
 	{
-		_selector->renderPreview(_painter, _rect, _zoom_rect);
+		_selector->renderPreview(_painter, _rect, _adjusted_zoom_rect);
 	}
 	foreach (jMarker * _marker, d->view->markers())
 	{
-		_marker->renderPreview(_painter, _rect, _zoom_rect);
+		_marker->renderPreview(_painter, _rect, _adjusted_zoom_rect);
 	}
 	foreach (jLabel * _label, d->view->labels())
 	{
-		_label->renderPreview(_painter, _rect, _zoom_rect);
+		_label->renderPreview(_painter, _rect, _adjusted_zoom_rect);
 	}
 	if (_axes_plane == jView::AxesInForeplane)
 	{
 		if (d->x_axis_visible && _x_axis && ((d->orientation & Qt::Horizontal) == Qt::Horizontal))
 		{
-			_x_axis->render(_painter, _rect, Qt::Horizontal, _zoom_rect.left(), _zoom_rect.right(), false);
+			_x_axis->render(_painter, _rect, Qt::Horizontal, _adjusted_zoom_rect.left(), _adjusted_zoom_rect.right(), false);
 		}
 		if (d->y_axis_visible && _y_axis && ((d->orientation & Qt::Vertical) == Qt::Vertical))
 		{
-			_y_axis->render(_painter, _rect, Qt::Vertical, _zoom_rect.bottom(), _zoom_rect.top(), false);
+			_y_axis->render(_painter, _rect, Qt::Vertical, _adjusted_zoom_rect.bottom(), _adjusted_zoom_rect.top(), false);
 		}
 	}
-	d->updateSelector(_rect);
 	d->selector.render(_painter, _rect, _zoom_rect);
 }
 
@@ -3942,7 +3967,7 @@ QPointF jPreview::viewToPreviewScreen(const QPointF & _point) const
 
 jPreview & jPreview::setMinimumSelectorSize(int _min_dim)
 {
-	SAFE_SET(d->min_dim, _min_dim);
+	SAFE_SET(d->min_dim, qMax(_min_dim, 1));
 	return (* this);
 }
 
