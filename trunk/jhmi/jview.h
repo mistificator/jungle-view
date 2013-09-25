@@ -918,6 +918,10 @@ public:
 
 	jInputPattern & setEnabled(bool _state);
 	bool isEnabled() const;
+
+	static void setAccepted(QObject *, bool);
+	static void accepted(QObject *);
+	static void rejected(QObject *);
 signals:
 	void actionAccepted(int, int, int, int, QPointF, QWidget *);		// action, method, code, modifier, mouse position
 protected:
