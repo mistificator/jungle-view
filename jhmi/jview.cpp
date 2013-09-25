@@ -1678,7 +1678,7 @@ void jItemHandler::actionAccepted(int _action, int _method, int _buttons, int _m
 			return;
 		}
 	}
-	_pattern->setProperty("accepted", d->item->userCommand(_action, _method, _buttons, _modifier, _mpos, _w));
+	jInputPattern::setAccepted(_pattern, d->item->userCommand(_action, _method, _buttons, _modifier, _mpos, _w));
 }
 
 jItem * jItemHandler::item() const
@@ -2274,6 +2274,27 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 	return _object->eventFilter(_object, _event);
 }
 
+void jInputPattern::setAccepted(QObject * _obj, bool _state)
+{
+	jInputPattern * _pattern = dynamic_cast<jInputPattern *>(_obj);
+	if (_pattern == 0)
+	{
+		return;
+	}
+	_pattern->setProperty("accepted", _state);
+}
+
+void jInputPattern::accepted(QObject * _obj)
+{
+	setAccepted(_obj, true);
+}
+
+void jInputPattern::rejected(QObject * _obj)
+{
+	setAccepted(_obj, false);
+}
+
+
 // ------------------------------------------------------------------------
 
 struct jView::Data
@@ -2801,7 +2822,7 @@ void jView::actionAccepted(int _action, int _method, int _code, int _modifier, Q
 	{
 		return;
 	}
-	d->pattern.setProperty("accepted", userCommand(_action, _method, _code, _modifier, _mpos, _w));
+	jInputPattern::setAccepted(& d->pattern, userCommand(_action, _method, _code, _modifier, _mpos, _w));
 }
 
 bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, QPointF _mpos, QWidget * /*_w*/)
@@ -3860,7 +3881,7 @@ void jPreview::actionAccepted(int _action, int _method, int _code, int _modifier
 	{
 		return;
 	}
-	d->pattern.setProperty("accepted", userCommand(_action, _method, _code, _modifier, _mpos, _w));
+	jInputPattern::setAccepted(& d->pattern, userCommand(_action, _method, _code, _modifier, _mpos, _w));
 }
 
 bool jPreview::userCommand(int _action, int /*_method*/, int _code, int _modifier, QPointF _mpos, QWidget * /*_w*/)
