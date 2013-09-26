@@ -2401,6 +2401,22 @@ struct jView::Data
 		}
 		return false;
 	}
+	__inline static bool markerZSort(const jMarker * _marker1, const jMarker * _marker2)
+	{
+		if (_marker1 && _marker2)
+		{
+			return (_marker1->internalItem().z() < _marker2->internalItem().z());
+		}
+		return false;
+	}
+	__inline static bool selectorZSort(const jSelector * _selector1, const jSelector * _selector2)
+	{
+		if (_selector1 && _selector2)
+		{
+			return (_selector1->internalItem().z() < _selector2->internalItem().z());
+		}
+		return false;
+	}
 	__inline void adjustCoordinator(const QRectF & _screen_rect, const QPointF & _local_pt)
 	{
 		QPointF _axis_pt = screenToAxis(_screen_rect, _local_pt);
@@ -2725,13 +2741,16 @@ void jView::render(QPainter & _painter) const
 	d->viewport.d->rw_lock().setEnabled(d->renderer->isEnabled());
 	THREAD_SAFE(Read)
 	QVector<jItem *> _items = d->items;
+	::qSort(_items.begin(), _items.end(), &Data::itemZSort);
     QRectF _rect = d->widget_rect;
 	QRectF _viewport_rect = d->viewport.rect();
 	jAxis * _x_axis = d->x_axis;
 	jAxis * _y_axis = d->y_axis;
 	QVector<jMarker *> _markers = d->markers;
+	::qSort(_markers.begin(), _markers.end(), &Data::markerZSort);
 	QVector<jLabel *> _labels = d->labels;
 	QVector<jSelector *> _selectors = d->selectors;
+	::qSort(_selectors.begin(), _selectors.end(), &Data::selectorZSort);
 	if (d->background.style() != Qt::NoBrush)
 	{
 		_painter.fillRect(_rect, d->background);
@@ -3158,6 +3177,7 @@ jView & jView::addSelectors(const QVector<jSelector *> & _selectors)
 	{
 		installEventFilter(& _selectors[_idx]->internalItem().inputPattern());
 	}
+	::qSort(d->selectors.begin(), d->selectors.end(), &Data::selectorZSort);
 	THREAD_UNSAFE
 	return (* this);
 }
@@ -3184,6 +3204,7 @@ jView & jView::removeSelectors(const QVector<jSelector *> & _selectors)
 			d->selectors.erase(_it);
 		}
 	}
+	::qSort(d->selectors.begin(), d->selectors.end(), &Data::selectorZSort);
 	THREAD_UNSAFE
 	return * this;
 }
@@ -3196,6 +3217,7 @@ jView & jView::setSelectors(const QVector<jSelector *> & _selectors)
 	{
 		installEventFilter(& d->selectors[_idx]->internalItem().inputPattern());
 	}
+	::qSort(d->selectors.begin(), d->selectors.end(), &Data::selectorZSort);
 	THREAD_UNSAFE
 	return * this;
 }
@@ -3247,6 +3269,7 @@ jView & jView::setMarkers(const QVector<jMarker *> & _markers)
 	{
 		installEventFilter(& d->markers[_idx]->internalItem().inputPattern());
 	}
+	::qSort(d->markers.begin(), d->markers.end(), &Data::markerZSort);
 	THREAD_UNSAFE
 	return * this;
 }
