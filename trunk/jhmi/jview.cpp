@@ -2417,6 +2417,30 @@ struct jView::Data
 		}
 		return false;
 	}
+	__inline static bool itemZSortReversed(const jItem * _item1, const jItem * _item2)
+	{
+		if (_item1 && _item2)
+		{
+			return (_item1->z() > _item2->z());
+		}
+		return false;
+	}
+	__inline static bool markerZSortReversed(const jMarker * _marker1, const jMarker * _marker2)
+	{
+		if (_marker1 && _marker2)
+		{
+			return (_marker1->internalItem().z() > _marker2->internalItem().z());
+		}
+		return false;
+	}
+	__inline static bool selectorZSortReversed(const jSelector * _selector1, const jSelector * _selector2)
+	{
+		if (_selector1 && _selector2)
+		{
+			return (_selector1->internalItem().z() > _selector2->internalItem().z());
+		}
+		return false;
+	}
 	__inline void adjustCoordinator(const QRectF & _screen_rect, const QPointF & _local_pt)
 	{
 		QPointF _axis_pt = screenToAxis(_screen_rect, _local_pt);
@@ -3475,6 +3499,35 @@ QPointF jView::cursorPos() const
 	return screenToAxis(mapFromGlobal(QCursor::pos()));
 }
 
+bool jView::itemZSort(const jItem * _item1, const jItem * _item2)
+{
+	return Data::itemZSort(_item1, _item2);
+}
+
+bool jView::markerZSort(const jMarker * _marker1, const jMarker * _marker2)
+{
+	return Data::markerZSort(_marker1, _marker2);
+}
+
+bool jView::selectorZSort(const jSelector * _selector1, const jSelector * _selector2)
+{
+	return Data::selectorZSort(_selector1, _selector2);
+}
+
+bool jView::itemZSortReversed(const jItem * _item1, const jItem * _item2)
+{
+	return Data::itemZSortReversed(_item1, _item2);
+}
+
+bool jView::markerZSortReversed(const jMarker * _marker1, const jMarker * _marker2)
+{
+	return Data::markerZSortReversed(_marker1, _marker2);
+}
+
+bool jView::selectorZSortReversed(const jSelector * _selector1, const jSelector * _selector2)
+{
+	return Data::selectorZSortReversed(_selector1, _selector2);
+}
 // ------------------------------------------------------------------------
 
 struct jPreview::Data

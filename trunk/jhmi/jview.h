@@ -1023,6 +1023,13 @@ public:
 
 	QPointF cursorPos() const;
 	void restoreCursorBeforePan();
+
+	static bool itemZSort(const jItem * _item1, const jItem * _item2);  // _item1->z() < _item2->z()
+	static bool markerZSort(const jMarker * _marker1, const jMarker * _marker2);
+	static bool selectorZSort(const jSelector * _selector1, const jSelector * _selector2);
+	static bool itemZSortReversed(const jItem * _item1, const jItem * _item2);  // _item1->z() < _item2->z()
+	static bool markerZSortReversed(const jMarker * _marker1, const jMarker * _marker2);
+	static bool selectorZSortReversed(const jSelector * _selector1, const jSelector * _selector2);
 public slots:
 	void rebuild();
 	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
