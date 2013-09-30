@@ -160,7 +160,7 @@ jAxis & jAxis::operator = (const jAxis & _other)
 
 QString jAxis::default_range_convert(double _value, jAxis *)
 {
-	return QString::number(_value, '.', 1);
+	return QString::number(_value, 'f', 1);
 }
 
 jAxis & jAxis::setRange(double _lo, double _hi, jAxis::range_func _range_func)
@@ -1231,8 +1231,8 @@ jCoordinator::~jCoordinator()
 
 QString jCoordinator::default_format(double _x, double _y, jAxis * _x_axis, jAxis * _y_axis, jCoordinator *)
 {
-	QString _x_str = "x: " + (_x_axis ? _x_axis->rangeFunc()(_x, _x_axis) : QString::number(_x, '.', 1));
-	QString _y_str = "y: " + (_y_axis ? _y_axis->rangeFunc()(_y, _y_axis) : QString::number(_y, '.', 1));
+	QString _x_str = "x: " + (_x_axis ? _x_axis->rangeFunc()(_x, _x_axis) : QString::number(_x, 'f', 1));
+	QString _y_str = "y: " + (_y_axis ? _y_axis->rangeFunc()(_y, _y_axis) : QString::number(_y, 'f', 1));
 	return _x_str + "\n" + _y_str;
 }
 
