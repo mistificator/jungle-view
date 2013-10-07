@@ -4083,14 +4083,14 @@ public:
 	~jTimeSync() {}
 	__inline QTime registerInstance()
 	{
-		QMutexLocker _locker(&mutex);
+		RecursiveLocker::MutexLocker _locker(&mutex);
 		QTime _time = QTime::currentTime();
 		entries[_time] = true;
 		return _time;
 	}
 	__inline bool checkpoint(const QTime & _check_time)
 	{
-		QMutexLocker _locker(&mutex);
+		RecursiveLocker::MutexLocker _locker(&mutex);
 		if (entries[_check_time] == false)
 		{
 			return false;
@@ -4106,12 +4106,12 @@ public:
 	}
 	__inline void unregisterInstance(const QTime & _time)
 	{
-		QMutexLocker _locker(&mutex);
+		RecursiveLocker::MutexLocker _locker(&mutex);
 		entries.remove(_time);
 	}
 private:
 	QMap<QTime, bool> entries;
-	QMutex mutex;
+	RecursiveLocker::Mutex mutex;
 };
 
 struct jLazyRenderer::Data
