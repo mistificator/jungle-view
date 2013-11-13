@@ -1129,11 +1129,11 @@ void jLabel::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF 
 		double _x = 0, _y = 0;
 		if (_dst_rect.contains(_rect) == false)
 		{
-			if (_dst_rect.right() < _rect.right())
+			if (_dst_rect.right() < _rect.right() && _dst_rect.left() <= _rect.left() - _rect.width())
 			{
 				_x -= d->size.width();
 			}
-			if (_dst_rect.top() > _rect.top())
+			if (_dst_rect.top() > _rect.top() && _dst_rect.top() >= _rect.top() - _rect.height())
 			{
 				_y -= d->size.height();
 			}
