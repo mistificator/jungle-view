@@ -165,19 +165,15 @@ QString jAxis::default_range_convert(double _value, jAxis *)
 
 jAxis & jAxis::setRange(double _lo, double _hi, jAxis::range_func _range_func)
 {
-	THREAD_SAFE(Write);
 	d->lo = _lo;
 	d->hi = _hi;
 	d->range_func = _range_func ? _range_func : &jAxis::default_range_convert;
-	THREAD_UNSAFE
 	return * this;
 }
 
 jAxis & jAxis::setRangeFunc(range_func _range_func)
 {
-	THREAD_SAFE(Write);
 	d->range_func = _range_func ? _range_func : &jAxis::default_range_convert;
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -193,15 +189,13 @@ double jAxis::hi() const
 
 jAxis::range_func jAxis::rangeFunc() const
 {
-	return SAFE_GET(d->range_func);
+	return d->range_func;
 }
 
 jAxis & jAxis::setStep(unsigned int _count_hint, double _alignment)
 {
-	THREAD_SAFE(Write)
 	d->count_hint = _count_hint ? _count_hint : 1;
 	d->alignment = (_alignment > 0.0) ? _alignment : 1.0;
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -222,7 +216,7 @@ double jAxis::alignment() const
 
 jAxis & jAxis::setAlignmentOffset(double _offset)
 {
-	SAFE_SET(d->alignment_offset, _offset);
+	d->alignment_offset = _offset;
 	return (* this);
 }
 
@@ -233,7 +227,7 @@ double jAxis::alignmentOffset() const
 
 jAxis & jAxis::setTickLength(unsigned int _length)
 {
-	SAFE_SET(d->tick_length, _length);
+	d->tick_length = _length;
 	return * this;
 }
 
@@ -248,7 +242,6 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 	{
 		return;
 	}
-	THREAD_SAFE(Read)
 	QPen _pen = d->pen;
 	QBrush _background = d->background;
 	QPen _grid_pen = d->grid_pen;
@@ -259,7 +252,6 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 	range_func _range_func = d->range_func;
 	const QRect _lo_rect = _metrics.boundingRect(_range_func(_lo, this));
 	const QRect _hi_rect = _metrics.boundingRect(_range_func(_hi, this));
-	THREAD_SAFE(Write)
 	switch (_orientation)
 	{
 		case Qt::Vertical:
@@ -278,8 +270,6 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 			break;
 		}
 	}
-	THREAD_UNSAFE
-	THREAD_UNSAFE
 	QVector<double> _ticks = d->calcTicks(_lo, _hi);
 	if (_ticks.count() > 0)
 	{
@@ -291,7 +281,7 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 			}
 		}
 	}
-	d->count = SAFE_GET(_ticks.count());
+	d->count = _ticks.count();
 	const unsigned int _tick_length = 5;
 	switch (_orientation)
 	{
@@ -371,29 +361,29 @@ void jAxis::render(QPainter & _painter, const QRectF & _dst_rect, int _orientati
 
 jAxis & jAxis::setPen(const QPen & _pen)
 {
-	SAFE_SET(d->pen, _pen);
+	d->pen = _pen;
 	return * this;
 }
 
 QPen jAxis::pen() const
 {
-	return SAFE_GET(d->pen);
+	return d->pen;
 }
 
 jAxis & jAxis::setFont(const QFont & _font)
 {
-	SAFE_SET(d->font, _font);
+	d->font = _font;
 	return * this;
 }
 
 QFont jAxis::font() const
 {
-	return SAFE_GET(d->font);
+	return d->font;
 }
 
 jAxis & jAxis::setVisible(bool _state)
 {
-	SAFE_SET(d->visible, _state);
+	d->visible = _state;
 	return * this;
 }
 
@@ -404,29 +394,29 @@ bool jAxis::isVisible() const
 
 jAxis & jAxis::setBackground(const QBrush & _brush)
 {
-	SAFE_SET(d->background, _brush);
+	d->background = _brush;
 	return * this;
 }
 
 QBrush jAxis::background() const
 {
-	return SAFE_GET(d->background);
+	return d->background;
 }
 
 jAxis & jAxis::setGridPen(const QPen & _grid_pen)
 {
-	SAFE_SET(d->grid_pen, _grid_pen);
+	d->grid_pen = _grid_pen;
 	return * this;
 }
 
 QPen jAxis::gridPen() const
 {
-	return SAFE_GET(d->grid_pen);
+	return d->grid_pen;
 }
 
 jAxis & jAxis::setId(int _id)
 {
-	SAFE_SET(d->id, _id);
+	d->id = _id;
 	return * this;
 }
 
@@ -437,7 +427,7 @@ int jAxis::id() const
 
 jAxis & jAxis::setLog10ScaleEnabled(bool _state)
 {
-    SAFE_SET(d->log10_enabled, _state);
+    d->log10_enabled = _state;
 	return * this;
 }
 
@@ -448,7 +438,7 @@ bool jAxis::isLog10ScaleEnabled() const
 
 jAxis & jAxis::setLog10Multiplier(double _mpy)
 {
-    SAFE_SET(d->log10_mpy, _mpy);
+    d->log10_mpy = _mpy;
 	return * this;
 }
 
@@ -529,34 +519,30 @@ jSelector::~jSelector()
 
 jSelector & jSelector::setPen(const QPen & _pen)
 {
-	THREAD_SAFE(Write)
 	d->item.setPen(_pen);
-	THREAD_UNSAFE
 	return * this;
 }
 
 QPen jSelector::pen() const
 {
-	return SAFE_GET(d->item.pen());
+	return d->item.pen();
 }
 
 jSelector & jSelector::setRect(const QRectF & _rect)
 {
-	THREAD_SAFE(Write)
 	d->rect = _rect;
 	d->item.setData(_rect);
-	THREAD_UNSAFE
 	return * this;
 }
 
 QRectF jSelector::rect() const
 {
-	return SAFE_GET(d->rect);
+	return d->rect;
 }
 
 jSelector & jSelector::setVisible(bool _state)
 {
-	SAFE_SET(d->visible, _state);
+	d->visible = _state;
 	return * this;
 }
 
@@ -571,7 +557,6 @@ void jSelector::render(QPainter & _painter, const QRectF & _dst_rect, const QRec
 	{
 		return;
 	}
-	THREAD_SAFE(Read)
 	QTransform _transform;
 	const QRectF _rect = d->rect;
 	const QBrush _brush = d->background;
@@ -587,7 +572,6 @@ void jSelector::render(QPainter & _painter, const QRectF & _dst_rect, const QRec
 			_brush);
 	}
 	d->item.render(_painter, _dst_rect, _src_rect);
-	THREAD_UNSAFE
 }
 
 void jSelector::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect)
@@ -600,18 +584,18 @@ void jSelector::renderPreview(QPainter & _painter, const QRectF & _dst_rect, con
 
 jSelector & jSelector::setBackground(const QBrush & _brush)
 {
-	SAFE_SET(d->background, _brush);
+	d->background = _brush;
 	return * this;
 }
 
 QBrush jSelector::background() const
 {
-	return SAFE_GET(d->background);
+	return d->background;
 }
 
 jSelector & jSelector::setPreviewEnabled(bool _state)
 {
-	SAFE_SET(d->preview_enabled, _state);
+	d->preview_enabled = _state;
 	return * this;
 }
 
@@ -634,8 +618,7 @@ struct jViewport::Data
 	jSelector selector;
 	int orientation;
 	QSizeF minimum_size, maximum_size;
-	RecursiveLocker * rw_lock_instance;
-	Data(RecursiveLocker * _instance): rw_lock_instance(_instance)
+	Data()
 	{
 		history << QRectF();
 		selector.setVisible(false);
@@ -646,7 +629,6 @@ struct jViewport::Data
 	{
 
 	}
-	RecursiveLocker & rw_lock() const { return * rw_lock_instance; }
 	__inline QRectF minmaxRect0(QRectF _rect) const
 	{
 		_rect = minmaxRect(_rect);
@@ -745,7 +727,7 @@ struct jViewport::Data
 	}
 };
 
-jViewport::jViewport(): QObject(), d(new Data(& rw_lock))
+jViewport::jViewport(): QObject(), d(new Data())
 {
 	setZoomOrientation(Qt::Vertical | Qt::Horizontal);
 }
@@ -757,9 +739,7 @@ jViewport::~jViewport()
 
 void jViewport::clearHistory()
 {
-	THREAD_SAFE(Write)
 	d->history.clear();
-	THREAD_UNSAFE
 }
 
 jViewport & jViewport::setZoomFullView(const QRectF & _rect)
@@ -768,7 +748,6 @@ jViewport & jViewport::setZoomFullView(const QRectF & _rect)
 	{
 		return * this;
 	}
-	THREAD_SAFE(Write)
 	clearHistory();
 	if (d->maximum_size == QSizeF(-1, -1))
 	{
@@ -777,7 +756,6 @@ jViewport & jViewport::setZoomFullView(const QRectF & _rect)
 	d->base = _rect;
 	d->history << d->minmaxRect(_rect);
 	QRectF _history_back = d->history.back();
-	THREAD_UNSAFE
 	emit zoomedFullView(_history_back);
 	return * this;
 }
@@ -789,7 +767,7 @@ jViewport & jViewport::setZoomFullView(const jAxis & _x_axis, const jAxis & _y_a
 
 QRectF jViewport::rectBase() const
 {
-	return SAFE_GET(d->base);
+	return d->base;
 }
 
 void jViewport::adjustZoomFullView(const QRectF & _rect)
@@ -798,18 +776,16 @@ void jViewport::adjustZoomFullView(const QRectF & _rect)
 	{
 		return;
 	}
-	if (_rect == SAFE_GET(d->base))
+	if (_rect == d->base)
 	{
 		return;
 	}
-	THREAD_SAFE(Write)
 	d->base = _rect;
 	d->history[0] = d->minmaxRect(_rect);
 	for (int _idx = 1; _idx < d->history.count(); _idx++)
 	{
 		d->history[_idx] = d->adjustRect(d->history[_idx]);
 	}
-	THREAD_UNSAFE
 }
 
 void jViewport::adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis)
@@ -823,21 +799,18 @@ void jViewport::zoomIn(const QRectF & _rect)
 	{
 		return;
 	}
-	THREAD_SAFE(Write)
 	QRectF _adj_rect = d->adjustRect(_rect);
 	QVector<QRectF>::iterator _it = qFind(d->history.begin(), d->history.end(), _adj_rect);
 	if (_it == (d->history.end() - 2))
 	{
 		d->history.erase(d->history.end() - 1);
 		QRectF _history_back = d->history.back();
-		THREAD_UNSAFE
 		emit zoomedOut(_history_back);
 	}
 	else if (_it == d->history.end())
 	{
 		d->history << _adj_rect;
 		QRectF _history_back = d->history.back();
-		THREAD_UNSAFE
 		emit zoomedIn(_history_back);
 	}
 	else if (_it == d->history.begin())
@@ -845,48 +818,35 @@ void jViewport::zoomIn(const QRectF & _rect)
 		clearHistory();
 		d->history << _adj_rect;
 		QRectF _history_back = d->history.back();
-		THREAD_UNSAFE
 		emit zoomedFullView(_history_back);
-	}
-	else
-	{
-		THREAD_UNSAFE
 	}
 }
 
 void jViewport::zoomOut()
 {
-	THREAD_SAFE(Write)
 	if (d->history.count() > 1)
 	{
 		d->history.erase(d->history.end() - 1);
 		QRectF _history_back = d->history.back();
-		THREAD_UNSAFE
 		emit zoomedOut(_history_back);
-	}
-	else
-	{
-		THREAD_UNSAFE
 	}
 }
 
 void jViewport::zoomFullView()
 {
-	THREAD_SAFE(Write)
 	d->history.erase(d->history.begin() + 1, d->history.end());
 	QRectF _history_back = d->history.back();
-	THREAD_UNSAFE
 	emit zoomedFullView(_history_back);
 }
 
 QRectF jViewport::rect() const
 {
-	return SAFE_GET(d->history.back());
+	return d->history.back();
 }
 
 QVector<QRectF> jViewport::history() const
 {
-	return SAFE_GET(d->history);
+	return d->history;
 }
 
 jSelector & jViewport::selector() const
@@ -900,7 +860,6 @@ void jViewport::pan(double _dx, double _dy)
 	{
 		return;
 	}
-	THREAD_SAFE(Write)
 	QRectF _rect = d->history.back();
 	if (_rect.left() + _dx < d->base.left())
 	{
@@ -918,16 +877,14 @@ void jViewport::pan(double _dx, double _dy)
 	{
 		_dy = d->base.bottom() - _rect.bottom();
 	}
-//	d->history.back() = d->adjustRect(QRectF(QPointF(_rect.left() + _dx, _rect.top() + _dy), _rect.size()));
 	d->moveHistory(_dx, _dy);
 	QRectF _history_back = d->history.back();
-	THREAD_UNSAFE
 	emit panned(_history_back);
 }
 
 jViewport & jViewport::setZoomOrientation(int _orientation)
 {
-	SAFE_SET(d->orientation, _orientation);
+	d->orientation = _orientation;
 	return * this;
 }
 
@@ -938,35 +895,31 @@ int jViewport::zoomOrientation() const
 
 QRectF jViewport::adjustRect(const QRectF & _rect, bool _to_orientation_only) const
 {
-	return SAFE_GET(d->adjustRect(_rect, _to_orientation_only));
+	return d->adjustRect(_rect, _to_orientation_only);
 }
 
 jViewport & jViewport::setMinimumSize(const QSizeF & _size)
 {
-	THREAD_SAFE(Write)
 	d->minimum_size = _size;
 	d->adjustHistory();
-	THREAD_UNSAFE
 	return * this;
 }
 
 QSizeF jViewport::minimumSize() const
 {
-	return SAFE_GET(d->minimum_size);
+	return d->minimum_size;
 }
 
 jViewport & jViewport::setMaximumSize(const QSizeF & _size)
 {
-	THREAD_SAFE(Write)
 	d->maximum_size = _size;
 	d->adjustHistory();
-	THREAD_UNSAFE
 	return * this;
 }
 
 QSizeF jViewport::maximumSize() const
 {
-	return SAFE_GET(d->maximum_size);
+	return d->maximum_size;
 }
 
 
@@ -1008,7 +961,7 @@ jLabel::~jLabel()
 
 jLabel & jLabel::setText(const QString & _text)
 {
-	SAFE_SET(d->text, _text);
+	d->text = _text;
 	if (d->auto_size)
 	{
 		setSize(sizeHint());
@@ -1018,56 +971,56 @@ jLabel & jLabel::setText(const QString & _text)
 
 QString jLabel::text() const
 {
-	return SAFE_GET(d->text);
+	return d->text;
 }
 
 jLabel & jLabel::setPen(const QPen & _pen)
 {
-	SAFE_SET(d->pen, _pen);
+	d->pen = _pen;
 	return * this;
 }
 
 QPen jLabel::pen() const
 {
-	return SAFE_GET(d->pen);
+	return d->pen;
 }
 
 jLabel & jLabel::setFont(const QFont & _font)
 {
-	SAFE_SET(d->font, _font);
+	d->font = _font;
 	return * this;
 }
 
 QFont jLabel::font() const
 {
-	return SAFE_GET(d->font);
+	return d->font;
 }
 
 jLabel & jLabel::setPos(const QPointF & _pos)
 {
-	SAFE_SET(d->pos, _pos);
+	d->pos = _pos;
 	return * this;
 }
 
 QPointF jLabel::pos() const
 {
-	return SAFE_GET(d->pos);
+	return d->pos;
 }
 
 jLabel & jLabel::setSize(const QSizeF & _size)
 {
-	SAFE_SET(d->size, _size);
+	d->size = _size;
 	return * this;
 }
 
 QSizeF jLabel::size() const
 {
-	return SAFE_GET(d->size);
+	return d->size;
 }
 
 jLabel & jLabel::setVisible(bool _state)
 {
-	SAFE_SET(d->visible, _state);
+	d->visible = _state;
 	return * this;
 }
 
@@ -1078,24 +1031,24 @@ bool jLabel::isVisible() const
 
 jLabel & jLabel::setOptions(const QTextOption & _options)
 {
-	SAFE_SET(d->options, _options);
+	d->options = _options;
 	return * this;
 }
 
 QTextOption jLabel::options() const
 {
-	return SAFE_GET(d->options);
+	return d->options;
 }
 
 jLabel & jLabel::setBackground(const QBrush & _brush)
 {
-	SAFE_SET(d->background, _brush);
+	d->background = _brush;
 	return * this;
 }
 
 QBrush jLabel::background() const
 {
-	return SAFE_GET(d->background);
+	return d->background;
 }
 
 jLabel & jLabel::setAutoSize(bool _state)
@@ -1119,7 +1072,6 @@ void jLabel::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF 
 		return;
 	}
 
-	THREAD_SAFE(Read)
 	QTransform _transform;
 	if (::jQuadToQuad(_src_rect, _dst_rect, _transform))
 	{
@@ -1159,7 +1111,6 @@ void jLabel::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF 
 			_painter.drawText(_rect, d->text, d->options);
 		}
 	}
-	THREAD_UNSAFE
 }
 
 void jLabel::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect)
@@ -1172,11 +1123,9 @@ void jLabel::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const 
 
 QSizeF jLabel::sizeHint() const
 {
-	THREAD_SAFE(Read)
 	double _w = 0, _h = 0;
 	const QFontMetricsF _fm(d->font);
 	const QString _text = d->text;
-	THREAD_UNSAFE
 	foreach (const QString & _str, _text.split("\n"))
 	{
 		_w = qMax<double>(_w, _fm.width(_str)) + 8;
@@ -1188,7 +1137,7 @@ QSizeF jLabel::sizeHint() const
 
 jLabel & jLabel::setPreviewEnabled(bool _state)
 {
-	SAFE_SET(d->preview_enabled, _state);
+	d->preview_enabled = _state;
 	return * this;
 }
 
@@ -1238,15 +1187,13 @@ QString jCoordinator::default_format(double _x, double _y, jAxis * _x_axis, jAxi
 
 jCoordinator & jCoordinator::setFormat(jCoordinator::format_func _format_func)
 {
-	THREAD_SAFE(Write)
 	d->format_func = _format_func ? _format_func : &jCoordinator::default_format;
-	THREAD_UNSAFE
 	return * this;
 }
 
 jCoordinator::format_func jCoordinator::formatFunc() const
 {
-	return SAFE_GET(d->format_func);
+	return d->format_func;
 }
 
 jLabel & jCoordinator::label() const
@@ -1256,37 +1203,34 @@ jLabel & jCoordinator::label() const
 
 jCoordinator & jCoordinator::setPos(const QPointF & _pos)
 {
-	SAFE_SET(d->pos, _pos);
+	d->pos = _pos;
 	return * this;
 }
 
 QPointF jCoordinator::pos() const
 {
-	return SAFE_GET(d->pos);
+	return d->pos;
 }
 
 jCoordinator & jCoordinator::setOffset(const QPointF & _offset)
 {
-	SAFE_SET(d->offset, _offset);
+	d->offset = _offset;
 	return * this;
 }
 
 QPointF jCoordinator::offset() const
 {
-	return SAFE_GET(d->offset);
+	return d->offset;
 }
 
 void jCoordinator::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
 {
-	THREAD_SAFE(Read)
 	QPointF _pos = d->pos;
 	QPointF _offset = d->offset;
 	format_func _format_func = d->format_func;
 	d->label.
 		setText(_format_func(_pos.x(), _pos.y(), const_cast<jAxis *>(_x_axis), const_cast<jAxis *>(_y_axis), this)).
 		setPos(_pos);
-
-	THREAD_UNSAFE
 
 	d->label.
 		render(_painter, _dst_rect, _src_rect);
@@ -1356,20 +1300,18 @@ jItem::~jItem()
 
 jItem & jItem::setBytesPerItem(unsigned int _bytes_per_item)
 {
-	SAFE_SET(d->bytes_per_item, _bytes_per_item);
+	d->bytes_per_item = _bytes_per_item;
 	return * this;
 }
 
 jItem & jItem::setData(void * _data, unsigned int _width, unsigned int _height, bool _deep_copy)
 {
-	THREAD_SAFE(Write)
 	if (_data == 0 || _width == 0 || _height == 0)
 	{
 		d->clear();
 		d->deep_copy = false;
 		d->width = 0;
 		d->height = 0;
-		THREAD_UNSAFE
 		return * this;
 	}
 	if (!_deep_copy)
@@ -1388,12 +1330,11 @@ jItem & jItem::setData(void * _data, unsigned int _width, unsigned int _height, 
 			d->clear();
 			d->data = new char [_data_size];
 		}
-		mrMemCopy(d->data, _data, _data_size);
+		::memcpy(d->data, _data, _data_size);
 	}
 	d->width = _width;
 	d->height = _height;
 	d->deep_copy = _deep_copy;
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -1419,18 +1360,18 @@ bool jItem::isDeepCopy() const
 
 jItem & jItem::setPen(const QPen & _pen)
 {
-	SAFE_SET(d->pen, _pen);
+	d->pen = _pen;
 	return * this;
 }
 
 QPen jItem::pen() const
 {
-	return SAFE_GET(d->pen);
+	return d->pen;
 }
 
 jItem & jItem::setVisible(bool _state)
 {
-	SAFE_SET(d->visible, _state);
+	d->visible = _state;
 	return * this;
 }
 
@@ -1441,29 +1382,29 @@ bool jItem::isVisible() const
 
 jItem & jItem::setBrush(const QBrush & _brush)
 {
-	SAFE_SET(d->brush, _brush);
+	d->brush = _brush;
 	return * this;
 }
 
 QBrush jItem::brush() const
 {
-	return SAFE_GET(d->brush);
+	return d->brush;
 }
 
 jItem & jItem::setOrigin(const QPointF & _origin)
 {
-	SAFE_SET(d->origin, _origin);
+	d->origin = _origin;
 	return * this;
 }
 
 QPointF jItem::origin() const
 {
-	return SAFE_GET(d->origin);
+	return d->origin;
 }
 
 jItem & jItem::setZ(double _z)
 {
-	SAFE_SET(d->z, _z);
+	d->z = _z;
 	return * this;
 }
 
@@ -1479,13 +1420,13 @@ bool jItem::intersects(const QRectF & _rect, const jAxis * _x_axis, const jAxis 
 
 jItem & jItem::setToolTip(const QString & _text)
 {
-	SAFE_SET(d->tooltip, _text);
+	d->tooltip = _text;
 	return * this;
 }
 
 QString jItem::toolTip() const
 {
-	return SAFE_GET(d->tooltip);
+	return d->tooltip;
 }
 
 void jItem::updateViewport(const QRectF &)
@@ -1523,7 +1464,7 @@ quint64 jItem::counter() const
 
 void jItem::addCounter(quint64 _count)
 {
-	SAFE_SET(d->counter, d->counter + _count);
+	d->counter = d->counter + _count;
 }
 
 QRectF jItem::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
@@ -1534,7 +1475,7 @@ QRectF jItem::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 
 jItem & jItem::setInputPattern(const jInputPattern & _pattern)
 {
-	SAFE_SET(d->pattern, _pattern);
+	d->pattern = _pattern;
 	return * this;
 }
 
@@ -1585,18 +1526,18 @@ bool jItem::userCommand(int _action, int _method, int, int, QPointF _mpos, QWidg
 
 jItem & jItem::setSymbol(const QImage & _img)
 {
-	SAFE_SET(d->symbol_img, _img);
+	d->symbol_img = _img;
 	return * this;
 }
 
 QImage jItem::symbol() const
 {
-	return SAFE_GET(d->symbol_img);
+	return d->symbol_img;
 }
 
 jItem & jItem::setPreviewEnabled(bool _state)
 {
-	SAFE_SET(d->preview_enabled, _state);
+	d->preview_enabled = _state;
 	return * this;
 }
 
@@ -1750,12 +1691,12 @@ jMarker & jMarker::setPen(const QPen & _pen)
 
 QPen jMarker::pen() const
 {
-	return SAFE_GET(d->item.pen());
+	return d->item.pen();
 }
 
 jMarker & jMarker::setValue(double _value)
 {
-	SAFE_SET(d->value, _value);
+	d->value = _value;
 	return * this;
 }
 
@@ -1777,7 +1718,7 @@ bool jMarker::isVisible() const
 
 jMarker & jMarker::setOrientation(int _orientation)
 {
-	SAFE_SET(d->orientation, _orientation);
+	d->orientation = _orientation;
 	return * this;
 }
 
@@ -1819,7 +1760,7 @@ void jMarker::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const
 
 jMarker & jMarker::setPreviewEnabled(bool _state)
 {
-	SAFE_SET(d->preview_enabled, _state);
+	d->preview_enabled = _state;
 	return * this;
 }
 
@@ -2314,7 +2255,7 @@ struct jView::Data
 	QPointF press_point, release_point, move_point;
     bool in_zoom, draw_grid;
 	QCursor default_cursor;
-	jLazyRenderer * renderer;
+	jRenderer * renderer;
 	jInputPattern pattern;
     QRect widget_rect;
 	int axes_plane;
@@ -2477,10 +2418,7 @@ struct jView::Data
 		QObject::connect(&viewport, SIGNAL(zoomedFullView(QRectF)), _instance, SIGNAL(viewportChanged(QRectF)));
 		QObject::connect(&viewport, SIGNAL(panned(QRectF)), _instance, SIGNAL(viewportChanged(QRectF)));
 
-		renderer = new jLazyRenderer(_instance, &Data::render_func);
-		renderer->
-			setMaxThreads(2).
-			setEnabled(false);
+		renderer = new jRenderer(_instance, &Data::render_func);
 		_instance->installEventFilter(renderer);
 
 		_instance->setMouseTracking(true);
@@ -2535,7 +2473,6 @@ jView::~jView()
 
 jView & jView::setXAxis(jAxis * _axis)
 {
-	THREAD_SAFE(Write)
 	if (d->x_axis != _axis)
 	{
 		if (d->internal_x_axis)
@@ -2554,7 +2491,6 @@ jView & jView::setXAxis(jAxis * _axis)
 		}
 	}
 	d->setZoomFullView();
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -2565,7 +2501,6 @@ jAxis * jView::xAxis() const
 
 jView & jView::setYAxis(jAxis * _axis)
 {
-	THREAD_SAFE(Write)
 	if (d->y_axis != _axis)
 	{
 		if (d->internal_y_axis)
@@ -2584,7 +2519,6 @@ jView & jView::setYAxis(jAxis * _axis)
 		}
 	}
 	d->setZoomFullView();
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -2595,50 +2529,50 @@ jAxis * jView::yAxis() const
 
 jView & jView::setXAxisVisibleOverride(bool _state)
 {
-	SAFE_SET(d->x_axis_vis_ovr, _state);
+	d->x_axis_vis_ovr = _state;
 	return * this;
 }
 
 jView & jView::setYAxisVisibleOverride(bool _state)
 {
-	SAFE_SET(d->y_axis_vis_ovr, _state);
+	d->y_axis_vis_ovr = _state;
 	return * this;
 }
 
 bool jView::isXAxisVisibleOverride() const
 {
-	return SAFE_GET(d->x_axis_vis_ovr);
+	return d->x_axis_vis_ovr;
 }
 
 bool jView::isYAxisVisibleOverride() const
 {
-	return SAFE_GET(d->y_axis_vis_ovr);
+	return d->y_axis_vis_ovr;
 }
 
 bool jView::isXAxisVisible() const
 {
-	return SAFE_GET(d->x_axis_vis_ovr) && d->x_axis->isVisible();
+	return (d->x_axis_vis_ovr) && d->x_axis->isVisible();
 }
 
 bool jView::isYAxisVisible() const
 {
-	return SAFE_GET(d->y_axis_vis_ovr) && d->y_axis->isVisible();
+	return (d->y_axis_vis_ovr) && d->y_axis->isVisible();
 }
 
 jView & jView::setGridEnabled(bool _draw_grid)
 {
-	SAFE_SET(d->draw_grid, _draw_grid);
+	d->draw_grid = _draw_grid;
 	return * this;
 }
 
 bool jView::gridEnabled() const
 {
-    return SAFE_GET(d->draw_grid);
+    return d->draw_grid;
 }
 
 jView & jView::setAxesPlane(int _plane)
 {
-	SAFE_SET(d->axes_plane, _plane);
+	d->axes_plane = _plane;
 	return * this;
 }
 
@@ -2654,53 +2588,44 @@ inline jViewport & jView::viewport() const
 
 jView & jView::addItem(jItem * _item)
 {
-	THREAD_SAFE(Write)
 	d->items << _item;
 	installEventFilter(& d->items.back()->inputPattern());
 	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
-	THREAD_UNSAFE
 	return * this;
 }
 
 jView & jView::addItems(const QVector<jItem *> & _items)
 {
-	THREAD_SAFE(Write)
 	d->items << _items;
 	foreach (jItem * _item, _items)
 	{
 		installEventFilter(& _item->inputPattern());
 	}
 	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
-	THREAD_UNSAFE
 	return * this;
 }
 
 jView & jView::setItem(jItem * _item)
 {
-	THREAD_SAFE(Write)
 	d->items = QVector<jItem *>() << _item;
 	installEventFilter(& d->items.back()->inputPattern());
 	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
-	THREAD_UNSAFE
 	return * this;
 }
 
 jView & jView::setItems(const QVector<jItem *> & _items)
 {
-	THREAD_SAFE(Write)
 	d->items = _items;
 	foreach (jItem * _item, _items)
 	{
 		installEventFilter(& _item->inputPattern());
 	}
 	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
-	THREAD_UNSAFE
 	return * this;
 }
 
 jView & jView::removeItem(jItem * _item)
 {
-	THREAD_SAFE(Write)
 	QVector<jItem *>::iterator _it = ::qFind(d->items.begin(), d->items.end(), _item);
 	if (_it != d->items.end())
 	{
@@ -2708,13 +2633,11 @@ jView & jView::removeItem(jItem * _item)
 		d->items.erase(_it);
 	}
 	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
-	THREAD_UNSAFE
 	return * this;
 }
 
 jView & jView::removeItems(const QVector<jItem *> & _items)
 {
-	THREAD_SAFE(Write)
 	foreach (jItem * _item, _items)
 	{
 		QVector<jItem *>::iterator _it = ::qFind(d->items.begin(), d->items.end(), _item);
@@ -2725,13 +2648,11 @@ jView & jView::removeItems(const QVector<jItem *> & _items)
 		}
 	}
 	::qSort(d->items.begin(), d->items.end(), &Data::itemZSort);
-	THREAD_UNSAFE
 	return * this;
 }
 
 void jView::clear()
 {
-	THREAD_SAFE(Write)
 	for (int _idx = 0; _idx < d->items.count(); _idx++)
 	{
 		removeEventFilter(& d->items[_idx]->inputPattern());
@@ -2740,30 +2661,26 @@ void jView::clear()
 	d->labels.clear();
 	d->selectors.clear();
 	d->markers.clear();
-	THREAD_UNSAFE
 }
 
 QVector<jItem *> jView::items() const
 {
-	return SAFE_GET(d->items);
+	return d->items;
 }
 
 jView & jView::setBackground(const QBrush & _brush)
 {
-	SAFE_SET(d->background, _brush);
+	d->background = _brush;
 	return * this;
 }
 
 QBrush jView::background() const
 {
-	return SAFE_GET(d->background);
+	return d->background;
 }
 
 void jView::render(QPainter & _painter) const
 {
-	rw_lock.setEnabled(d->renderer->isEnabled());
-	d->viewport.d->rw_lock().setEnabled(d->renderer->isEnabled());
-	THREAD_SAFE(Read)
 	QVector<jItem *> _items = d->items;
 	::qSort(_items.begin(), _items.end(), &Data::itemZSort);
     QRectF _rect = d->widget_rect;
@@ -2852,7 +2769,6 @@ void jView::render(QPainter & _painter) const
 		d->viewport.selector().render(_painter, _rect, _viewport_rect);
 	}
 	d->coordinator.render(_painter, _rect, _viewport_rect, d->x_axis, d->y_axis);
-	THREAD_UNSAFE
 }
 
 void jView::actionAccepted(int _action, int _method, int _code, int _modifier, QPointF _mpos, QWidget * _w)
@@ -3146,9 +3062,7 @@ jView & jView::addLabel(jLabel * _label)
 
 jView & jView::addLabels(const QVector<jLabel *> & _labels)
 {
-	THREAD_SAFE(Write)
 	d->labels << _labels;
-	THREAD_UNSAFE
 	return (* this);
 }
 
@@ -3164,7 +3078,6 @@ jView & jView::removeLabel(jLabel * _label)
 
 jView & jView::removeLabels(const QVector<jLabel *> & _labels)
 {
-	THREAD_SAFE(Write)
 	foreach (jLabel * _label, _labels)
 	{
 		QVector<jLabel *>::iterator _it = ::qFind(d->labels.begin(), d->labels.end(), _label);
@@ -3173,19 +3086,18 @@ jView & jView::removeLabels(const QVector<jLabel *> & _labels)
 			d->labels.erase(_it);
 		}
 	}
-	THREAD_UNSAFE
 	return * this;
 }
 
 jView & jView::setLabels(const QVector<jLabel *> & _labels)
 {
-	SAFE_SET(d->labels, _labels);
+	d->labels = _labels;
 	return * this;
 }
 
 QVector<jLabel *> jView::labels() const
 {
-	return SAFE_GET(d->labels);
+	return d->labels;
 }
 
 jView & jView::addSelector(jSelector * _selector)
@@ -3195,14 +3107,12 @@ jView & jView::addSelector(jSelector * _selector)
 
 jView & jView::addSelectors(const QVector<jSelector *> & _selectors)
 {
-	THREAD_SAFE(Write)
 	d->selectors << _selectors;
 	for (int _idx = 0; _idx < _selectors.count(); _idx++)
 	{
 		installEventFilter(& _selectors[_idx]->internalItem().inputPattern());
 	}
 	::qSort(d->selectors.begin(), d->selectors.end(), &Data::selectorZSort);
-	THREAD_UNSAFE
 	return (* this);
 }
 
@@ -3218,7 +3128,6 @@ jView & jView::removeSelector(jSelector * _selector)
 
 jView & jView::removeSelectors(const QVector<jSelector *> & _selectors)
 {
-	THREAD_SAFE(Write)
 	foreach (jSelector * _selector, _selectors)
 	{
 		QVector<jSelector *>::iterator _it = ::qFind(d->selectors.begin(), d->selectors.end(), _selector);
@@ -3229,26 +3138,23 @@ jView & jView::removeSelectors(const QVector<jSelector *> & _selectors)
 		}
 	}
 	::qSort(d->selectors.begin(), d->selectors.end(), &Data::selectorZSort);
-	THREAD_UNSAFE
 	return * this;
 }
 
 jView & jView::setSelectors(const QVector<jSelector *> & _selectors)
 {
-	THREAD_SAFE(Write)
 	d->selectors = _selectors;
 	for (int _idx = 0; _idx < d->selectors.count(); _idx++)
 	{
 		installEventFilter(& d->selectors[_idx]->internalItem().inputPattern());
 	}
 	::qSort(d->selectors.begin(), d->selectors.end(), &Data::selectorZSort);
-	THREAD_UNSAFE
 	return * this;
 }
 
 QVector<jSelector *> jView::selectors() const
 {
-	return SAFE_GET(d->selectors);
+	return d->selectors;
 }
 
 jCoordinator & jView::coordinator() const
@@ -3280,27 +3186,25 @@ void jView::resizeEvent(QResizeEvent *)
 {
     if (d->widget_rect.isValid())
     {
-        d->renderer->flush(false);
+        d->renderer->rebuild();
     }
     d->widget_rect = rect();
 }
 
 jView & jView::setMarkers(const QVector<jMarker *> & _markers)
 {
-	THREAD_SAFE(Write)
 	d->markers = _markers;
 	for (int _idx = 0; _idx < d->markers.count(); _idx++)
 	{
 		installEventFilter(& d->markers[_idx]->internalItem().inputPattern());
 	}
 	::qSort(d->markers.begin(), d->markers.end(), &Data::markerZSort);
-	THREAD_UNSAFE
 	return * this;
 }
 
 QVector<jMarker *> jView::markers() const
 {
-	return SAFE_GET(d->markers);
+	return d->markers;
 }
 
 jMarker & jView::horizontalMarker() const
@@ -3313,7 +3217,7 @@ jMarker & jView::verticalMarker() const
 	return d->vmarker;
 }
 
-jLazyRenderer & jView::lazyRenderer() const
+jRenderer & jView::lazyRenderer() const
 {
 	return * d->renderer;
 }
@@ -3351,7 +3255,6 @@ QPointF jView::axisToScreen(const QPointF & _src_point) const
 
 QVector<jItem *> jView::itemsAt(const QPointF & _point, bool _exclude_invisible) const
 {
-	THREAD_SAFE(Read)
 	QVector<jItem *> _items;
 	foreach (jItem * _item, d->items)
 	{
@@ -3364,16 +3267,13 @@ QVector<jItem *> jView::itemsAt(const QPointF & _point, bool _exclude_invisible)
 			_items << _item;
 		}
 	}
-	THREAD_UNSAFE
 	return _items;
 }
 
 QVector<jItem *> jView::showToolTip(const QPointF & _point)
 {
-	THREAD_SAFE(Read)
 	if (rect().contains(_point.toPoint()) == false)
 	{
-		THREAD_UNSAFE
 		return QVector<jItem *>();
 	}
 	QVector<jItem *> _items = itemsAt(_point);
@@ -3393,21 +3293,17 @@ QVector<jItem *> jView::showToolTip(const QPointF & _point)
 			QToolTip::showText(mapToGlobal(_point.toPoint()), _tooltip, this);
 		}
 	}
-	THREAD_UNSAFE
 	return _items;
 }
 
 void jView::rebuild()
 {
-	THREAD_SAFE(Read)
 	d->updateViewports(d->viewport.rect());
 	d->renderer->rebuild();
-	THREAD_UNSAFE
 }
 
 QRectF jView::itemsBoundingRect(bool _exclude_invisible) const
 {
-	THREAD_SAFE(Read)
 	QRectF _united;
 	QVector<jItem *> _items;
 	foreach (jItem * _item, d->items)
@@ -3432,7 +3328,6 @@ QRectF jView::itemsBoundingRect(bool _exclude_invisible) const
 			_united = _rect;
 		}
 	}
-	THREAD_UNSAFE
 	return _united;
 }
 
@@ -3537,7 +3432,7 @@ struct jPreview::Data
 	QBrush background;
 	int orientation;
 	QPoint prev_point, press_point;
-	jLazyRenderer * renderer;
+	jRenderer * renderer;
 	jInputPattern pattern;
 	bool x_axis_visible, y_axis_visible;
 	QCursor saved_cursor, pan_cursor;
@@ -3769,10 +3664,7 @@ struct jPreview::Data
 jPreview::jPreview(QWidget * _parent)
 	: JUNGLE_WIDGET_CLASS(_parent), d(new Data())
 {
-	d->renderer = new jLazyRenderer(this, &Data::render_func);
-	d->renderer->
-		setMaxThreads(1).
-		setEnabled(false);
+	d->renderer = new jRenderer(this, &Data::render_func);
 	installEventFilter(d->renderer);
 	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF, QWidget *)), this, SLOT(actionAccepted(int, int, int, int, QPointF, QWidget *)), Qt::DirectConnection);
 	installEventFilter(&d->pattern);
@@ -3782,10 +3674,7 @@ jPreview::jPreview(QWidget * _parent)
 jPreview::jPreview(jView * _view, QWidget * _parent)
 	: JUNGLE_WIDGET_CLASS(_parent), d(new Data())
 {
-	d->renderer = new jLazyRenderer(this, &Data::render_func);
-	d->renderer->
-		setMaxThreads(1).
-		setEnabled(false);
+	d->renderer = new jRenderer(this, &Data::render_func);
 	installEventFilter(d->renderer);
 
 	connect(&d->pattern, SIGNAL(actionAccepted(int, int, int, int, QPointF, QWidget *)), this, SLOT(actionAccepted(int, int, int, int, QPointF, QWidget *)), Qt::DirectConnection);
@@ -3810,7 +3699,6 @@ jPreview::~jPreview()
 
 jPreview & jPreview::setView(jView * _view)
 {
-	THREAD_SAFE(Write)
 	if (d->view)
 	{
 		disconnect(d->view, SIGNAL(viewportChanged(QRectF)), d->renderer, SLOT(rebuild()));
@@ -3821,7 +3709,6 @@ jPreview & jPreview::setView(jView * _view)
 		connect(d->view, SIGNAL(viewportChanged(QRectF)), d->renderer, SLOT(rebuild()));
 		setInputPattern(d->view->inputPattern());
 	}
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -3835,7 +3722,7 @@ jSelector & jPreview::selector() const
 	return d->selector;
 }
 
-jLazyRenderer & jPreview::lazyRenderer() const
+jRenderer & jPreview::lazyRenderer() const
 {
 	return * d->renderer;
 }
@@ -3846,7 +3733,6 @@ void jPreview::render(QPainter & _painter) const
 	{
 		return;
 	}
-	rw_lock.setEnabled(d->renderer->isEnabled());
     QRectF _rect = d->widget_rect;
 	if (d->background.style() != Qt::NoBrush)
 	{
@@ -3904,7 +3790,7 @@ void jPreview::resizeEvent(QResizeEvent *)
 {
     if (d->widget_rect.isValid())
     {
-        d->renderer->flush(false);
+        d->renderer->rebuild();
     }
     d->widget_rect = rect();
 }
@@ -3916,18 +3802,18 @@ QSize jPreview::minimumSizeHint() const
 
 jPreview & jPreview::setBackground(const QBrush & _brush)
 {
-	SAFE_SET(d->background, _brush);
+	d->background = _brush;
 	return * this;
 }
 
 QBrush jPreview::background() const
 {
-	return SAFE_GET(d->background);
+	return d->background;
 }
 
 jPreview & jPreview::setOrientation(int _orientation)
 {
-	SAFE_SET(d->orientation, _orientation);
+	d->orientation = _orientation;
 	return * this;
 }
 
@@ -4021,7 +3907,7 @@ void jPreview::rebuild()
 
 jPreview & jPreview::setXAxisVisible(bool _state)
 {
-	SAFE_SET(d->x_axis_visible, _state);
+	d->x_axis_visible = _state;
 	return * this;
 }
 
@@ -4032,7 +3918,7 @@ bool jPreview::isXAxisVisible() const
 
 jPreview & jPreview::setYAxisVisible(bool _state)
 {
-	SAFE_SET(d->y_axis_visible, _state);
+	d->y_axis_visible = _state;
 	return * this;
 }
 
@@ -4043,28 +3929,28 @@ bool jPreview::isYAxisVisible() const
 
 jPreview & jPreview::setPanCursor(const QCursor & _pan_cursor)
 {
-	SAFE_SET(d->pan_cursor, _pan_cursor);
+	d->pan_cursor = _pan_cursor;
 	return * this;
 }
 
 QCursor jPreview::panCursor() const
 {
-	return SAFE_GET(d->pan_cursor);
+	return d->pan_cursor;
 }
 
 QPointF jPreview::previewToViewScreen(const QPointF & _point) const
 {
-	return SAFE_GET(d->previewToViewScreen(rect(), _point));
+	return d->previewToViewScreen(rect(), _point);
 }
 
 QPointF jPreview::viewToPreviewScreen(const QPointF & _point) const
 {
-	return SAFE_GET(d->viewToPreviewScreen(rect(), _point));
+	return d->viewToPreviewScreen(rect(), _point);
 }
 
 jPreview & jPreview::setMinimumSelectorSize(int _min_dim)
 {
-	SAFE_SET(d->min_dim, qMax(_min_dim, 1));
+	d->min_dim = qMax(_min_dim, 1);
 	return (* this);
 }
 
@@ -4075,139 +3961,21 @@ int jPreview::minimumSelectorSize() const
 
 // ------------------------------------------------------------------------
 
-class jTimeSync
-{
-	COPY_FBD(jTimeSync)
-public:
-	jTimeSync() {}
-	~jTimeSync() {}
-	__inline QTime registerInstance()
-	{
-		RecursiveLocker::MutexLocker _locker(&mutex);
-		QTime _time = QTime::currentTime();
-		entries[_time] = true;
-		return _time;
-	}
-	__inline bool checkpoint(const QTime & _check_time)
-	{
-		RecursiveLocker::MutexLocker _locker(&mutex);
-		if (entries[_check_time] == false)
-		{
-			return false;
-		}
-		foreach (const QTime & _time, entries.keys())
-		{
-			if (_time < _check_time)
-			{
-				entries[_time] = false;
-			}
-		}
-		return true;
-	}
-	__inline void unregisterInstance(const QTime & _time)
-	{
-		RecursiveLocker::MutexLocker _locker(&mutex);
-		entries.remove(_time);
-	}
-private:
-	QMap<QTime, bool> entries;
-	RecursiveLocker::Mutex mutex;
-};
-
-struct jLazyRenderer::Data
+struct jRenderer::Data
 {
 	QWidget * widget;
     QSize widget_size;
-    quint64 counter, threads_started;
-	bool enabled;
-	QThreadPool * thread_pool;
-	QImage cached_viewport;
+    quint64 counter;
 	bool force_update;
-	int priority;
-	jTimeSync time_sync;
-	jLazyRenderer::render_func render_func;
-	RecursiveLocker * rw_lock;
+	jRenderer::render_func render_func;
 	Data()
 	{
-		thread_pool = 0;
-		recreateThreadPool(1);
 		force_update = false;
-		enabled = true;
 		counter = 0;
-		threads_started = 0;
 		widget = 0;
-		priority = QThread::NormalPriority;
 	}
 	~Data()
 	{
-		delete thread_pool;
-	}
-	__inline void recreateThreadPool(int _max_threads, int _exp_time = 60000)
-	{
-		if (thread_pool)
-		{
-			delete thread_pool;
-		}
-		thread_pool = new QThreadPool();
-		thread_pool->setMaxThreadCount(_max_threads);
-		thread_pool->setExpiryTimeout(_exp_time);
-	}
-	__inline void rebuild(QRunnable * _instance)
-	{
-		if (!force_update)
-		{
-            widget_size = widget->rect().size();
-            thread_pool->tryStart(_instance);
-		}
-	}
-	__inline void start(QRunnable * _instance)
-	{
-		if (!widget->updatesEnabled())
-		{
-			return;
-		}
-        QPainter _painter(widget);
-		_painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing, false);
-		if (enabled)
-		{
-			rw_lock->lockForWrite();
-			rebuild(_instance);
-			force_update = false;
-			rw_lock->unlock();
-			_painter.drawImage(0, 0, cached_viewport, 0, 0, -1, -1, Qt::ThresholdDither);
-		}
-		else
-		{
-			render_func(widget, _painter);
-		}
-	}
-    __inline void flush(bool _process_events)
-	{
-		rw_lock->lockForWrite();
-		bool _state = enabled;
-		enabled = false;
-		rw_lock->unlock();
-		do 
-		{
-            if (_process_events)
-            {
-                QApplication::processEvents(QEventLoop::AllEvents);
-            }
-		} 
-		while (threads_started > counter);
-		rw_lock->lockForWrite();
-		enabled = _state;
-		rw_lock->unlock();
-	}
-	__inline void accepted(const QImage & _image)
-	{
-		rw_lock->lockForWrite();
-		if (enabled)
-		{
-			cached_viewport = _image;
-		}
-		force_update = true;
-		rw_lock->unlock();
 	}
 	__inline void render(QPaintDevice & _device)
 	{
@@ -4217,109 +3985,25 @@ struct jLazyRenderer::Data
 	}
 };
 
-jLazyRenderer::jLazyRenderer(QWidget * _widget, jLazyRenderer::render_func _render_func)
-	: QObject(), QRunnable(), d(new Data())
+jRenderer::jRenderer(QWidget * _widget, jRenderer::render_func _render_func)
+	: QObject(), d(new Data())
 {
 	d->widget = _widget;
 	d->render_func = _render_func;
-	d->rw_lock = & rw_lock;
-	setAutoDelete(false);
-	connect(this, SIGNAL(accepted(QImage)), this, SLOT(onAccepted(QImage)));
 	connect(this, SIGNAL(update()), d->widget, SLOT(update()));
 }
 
-jLazyRenderer::~jLazyRenderer()
+jRenderer::~jRenderer()
 {
 	delete d;
 }
 
-void jLazyRenderer::run()
-{
-	d->threads_started++;
-	QThread::currentThread()->setPriority((QThread::Priority)d->priority);
-	if (d->enabled)
-	{
-		QTime _time = d->time_sync.registerInstance();
-        QImage _image(d->widget_size, QImage::Format_RGB32);
-        d->render(_image);
-		if (d->time_sync.checkpoint(_time))
-		{
-			emit accepted(_image);
-		}
-		d->time_sync.unregisterInstance(_time);
-	}
-	d->counter++;
-	QThread::currentThread()->setPriority(QThread::LowestPriority);
-}
-
-quint64 jLazyRenderer::counter() const
+quint64 jRenderer::counter() const
 {
 	return d->counter;
 }
 
-jLazyRenderer & jLazyRenderer::setEnabled(bool _state)
-{
-	rw_lock.setEnabled(_state);
-	if (_state == false)
-	{
-		SAFE_SET(d->enabled, false);
-        d->flush(true);
-	}
-	else
-	{
-		THREAD_SAFE(Write)
-		d->enabled = true;
-		d->force_update = false;
-		d->rebuild(this);
-		THREAD_UNSAFE
-	}
-	return * this;
-}
-
-bool jLazyRenderer::isEnabled() const
-{
-	return d->enabled;
-}
-
-jLazyRenderer & jLazyRenderer::setMaxThreads(unsigned int _count)
-{
-	THREAD_SAFE(Write)
-	bool _enabled = d->enabled;
-	setEnabled(false);
-	d->recreateThreadPool(_count);
-	setEnabled(_enabled);
-	THREAD_UNSAFE
-	return * this;
-}
-
-unsigned int jLazyRenderer::maxThreads() const
-{
-	return SAFE_GET(d->thread_pool->maxThreadCount());
-}
-
-void jLazyRenderer::flush(bool _process_events)
-{
-    d->flush(_process_events);
-}
-
-void jLazyRenderer::onAccepted(const QImage & _image)
-{
-	d->accepted(_image);
-	emit update();
-}
-
-jLazyRenderer & jLazyRenderer::setPriority(int _priority)
-{
-	SAFE_SET(d->priority, _priority);
-	return * this;
-}
-
-int jLazyRenderer::priority() const
-{
-	return d->priority;
-}
-
-bool jLazyRenderer::eventFilter(QObject * _object, QEvent * _event)
+bool jRenderer::eventFilter(QObject * _object, QEvent * _event)
 {
 	if (qobject_cast<QWidget *>(_object) == d->widget)
 	{
@@ -4327,35 +4011,20 @@ bool jLazyRenderer::eventFilter(QObject * _object, QEvent * _event)
 		{
 		case QEvent::Paint:
 			{
-				d->start(this);
-				_event->accept();
-				return true;
-			}
-		case QEvent::Hide:
-			{
-				flush();
+				d->render(* d->widget);
+				d->counter++;
 				_event->accept();
 				return true;
 			}
 		}
 	}
-	_event->ignore();
+//	_event->ignore();
 	return false;
 }
 
-void jLazyRenderer::rebuild()
+void jRenderer::rebuild()
 {
-	THREAD_SAFE(Write)
-	if (d->enabled)
-	{
-		d->rebuild(this);
-		THREAD_UNSAFE
-	}
-	else
-	{
-		THREAD_UNSAFE
-		d->widget->update();
-	}
+	d->widget->update();
 }
 
 // ------------------------------------------------------------------------
@@ -4491,19 +4160,6 @@ void jSync::reset()
 	d->disconnectAll(this);
 	d->views.clear();
 	d->previews.clear();
-}
-
-jSync & jSync::setLazyRendererEnabled(bool _state, int _max_threads_count)
-{
-	foreach (jView * _view, d->views)
-	{
-		_view->lazyRenderer().setMaxThreads(_max_threads_count).setEnabled(_state);
-	}
-	foreach (jPreview * _preview, d->previews)
-	{
-		_preview->lazyRenderer().setMaxThreads(_max_threads_count).setEnabled(_state);
-	}
-	return (* this);
 }
 
 void jSync::onPanned(const QRectF & _rect)

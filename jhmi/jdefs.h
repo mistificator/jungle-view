@@ -4,14 +4,24 @@
 #include <QtCore>
 #include <QtGui>
 #include <QtOpenGL/QtOpenGL>
-#include "./../thread_utils/recursive_locker.h"
-#include "./../thread_utils/memory_routines.h"
 
 #ifdef JUNGLE_USES_OPENGL
 	#define JUNGLE_WIDGET_CLASS QGLWidget
 #else
 	#define JUNGLE_WIDGET_CLASS QWidget
 #endif
+
+#define DECL_PROPERTIES(CLASS_NAME) private: QHash<QString, QVariant> properties_p; \
+    public: inline CLASS_NAME & setProperty(const char * _name, const QVariant & _value) { properties_p[_name] = _value; return * this; }  \
+    inline QVariant property(const char * _name) const { return properties_p[_name]; } \
+	inline CLASS_NAME & setProperties(const QHash<QString, QVariant> & _properties) { properties_p = _properties; return * this; } \
+    inline QHash<QString, QVariant> properties() const { return properties_p; }
+
+#ifndef _CRT_SECURE_DEPRECATE_MEMORY
+	#define _CRT_SECURE_DEPRECATE_MEMORY
+#endif
+#include <string.h>
+
 
 #define CTOR_FBD(CLASS_NAME) private: CLASS_NAME(const CLASS_NAME &) {}
 #define ASSIGN_FBD(CLASS_NAME) private: CLASS_NAME & operator = (const CLASS_NAME &) { return * this; }

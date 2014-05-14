@@ -14,7 +14,6 @@ bool jQuadToQuad(const QRectF & _from, const QRectF & _to, QTransform & _transfo
 class jAxis
 {
 	PDATA
-	DECL_MUTEX
 	DECL_PROPERTIES(jAxis)
 public:
 	//!
@@ -312,7 +311,6 @@ class jSelector
 {
 	PDATA
 	COPY_FBD(jSelector)
-	DECL_MUTEX
 	DECL_PROPERTIES(jSelector)
 public:
 	jSelector();
@@ -343,7 +341,6 @@ class jViewport: public QObject
 {
 	Q_OBJECT
 	PDATA
-	DECL_MUTEX
 	friend class jView;
 public:
 	jViewport();
@@ -387,7 +384,6 @@ class jLabel
 {
 	PDATA
 	COPY_FBD(jLabel)
-	DECL_MUTEX
 	DECL_PROPERTIES(jLabel)
 public:
 	jLabel(const QString & _text = QString());
@@ -438,7 +434,6 @@ class jCoordinator
 {
 	PDATA
 	COPY_FBD(jCoordinator)
-	DECL_MUTEX
 	DECL_PROPERTIES(jCoordinator)
 public:
 	//!
@@ -549,7 +544,6 @@ class jItem
 {
 	PDATA
 	COPY_FBD(jItem)
-	DECL_MUTEX
 	DECL_PROPERTIES(jItem)
 public:
 	//! 
@@ -802,7 +796,6 @@ class jMarker
 {
 	PDATA
 	COPY_FBD(jMarker)
-	DECL_MUTEX
 	DECL_PROPERTIES(jMarker)
 public:
 	jMarker();
@@ -928,13 +921,12 @@ protected:
 	bool eventFilter(QObject * _object, QEvent * _event);
 };
 
-class jLazyRenderer;
+class jRenderer;
 
 class jView : public JUNGLE_WIDGET_CLASS
 {
 	Q_OBJECT
 	PDATA
-	DECL_MUTEX
 public:
 	jView(QWidget * _parent = 0);
 	jView(jAxis * _x_axis, jAxis * _y_axis, QWidget * _parent = 0);
@@ -965,7 +957,7 @@ public:
 	jCoordinator & coordinator() const;
 	jMarker & horizontalMarker() const;
 	jMarker & verticalMarker() const;
-	jLazyRenderer & lazyRenderer() const;
+	jRenderer & lazyRenderer() const;
 
 	jView & addItem(jItem * _item);
 	jView & addItems(const QVector<jItem *> & _items);
@@ -1047,7 +1039,6 @@ class jPreview: public JUNGLE_WIDGET_CLASS
 {
 	Q_OBJECT
 	PDATA
-	DECL_MUTEX
 public:
 	jPreview(QWidget * _parent = 0);
 	jPreview(jView * _view, QWidget * _parent = 0);
@@ -1063,7 +1054,7 @@ public:
 	int orientation() const;
 
 	jSelector & selector() const;
-	jLazyRenderer & lazyRenderer() const;
+	jRenderer & lazyRenderer() const;
 
 	virtual void render(QPainter & _painter) const;
 
@@ -1093,7 +1084,7 @@ protected:
     void resizeEvent(QResizeEvent *);
 };
 
-//! Class jLazyRenderer is a 2-D rendering engine.
+//! Class jRenderer is a 2-D rendering engine.
 /*!
  Lazy renderer is automatically integrated to jView and jPreview. Renderer has two states. 
  The first state - disabled - is for classic one-threaded direct rendering in main GUI thread.
@@ -1101,16 +1092,15 @@ protected:
  All methods of this class are reentrant and thread safe.
  \sa setEnabled(), jView, jPreview
 */
-class jLazyRenderer: public QObject, public QRunnable
+class jRenderer: public QObject
 {
 	Q_OBJECT
 	PDATA
-	DECL_MUTEX
 public:
 	//! Prototype for rendering function.
 	/*!
 	Rendering function should have two parameters: pointer to widget that will render image and reference to painter which should be used for rendering.
-	\sa jLazyRenderer()
+	\sa jRenderer()
 	*/
 	typedef void (* render_func)(QWidget *, QPainter &);
 	//! Constructor.
@@ -1119,12 +1109,12 @@ public:
 	\param _render_func pointer to function for rendering on widget
 	\sa render_func
 	*/
-	jLazyRenderer(QWidget * _widget, render_func _render_func);
+	jRenderer(QWidget * _widget, render_func _render_func);
 	//!
 	/*!
 	Destructor.
 	*/
-	~jLazyRenderer();
+	~jRenderer();
 
 	//! Counter of rendered frames.
 	/*!
@@ -1132,69 +1122,12 @@ public:
 	*/
     quint64 counter() const;
 
-	//! Enables/disables multi-threaded mode.
-	/*!
-	\param _state mode of rendering
-	\return reference
-	\sa isEnabled()
-	*/
-	jLazyRenderer & setEnabled(bool _state);
-	//! Returns mode of rendering.
-	/*!
-	\return mode of rendering
-	\sa setEnabled()
-	*/
-	bool isEnabled() const;
-
-	//! Sets maximum threads number available in a thread pool for multi-threaded rendering.
-	/*!
-	\param _count number of threads
-	\return reference
-	\sa maxThreads()
-	*/
-	jLazyRenderer & setMaxThreads(unsigned int _count);
-	//! Returns maximum threads number available for multi-threaded rendering.
-	/*!
-	\return number of threads
-	\sa setMaxThreads()
-	*/
-	unsigned int maxThreads() const;
-
-	//! Sets priority for rendering threads.
-	/*!
-	Valid priority values defined by QThread::Priority enum.
-	\param _priority threads priority
-	\return reference
-	\sa priority()
-	*/
-	jLazyRenderer & setPriority(int _priority);
-	//! Returns threads priority.
-	/*!
-	\return priority
-	\sa setPriority()
-	*/
-	int priority() const;
-signals:
-	//! Signal is thrown when new image is rendered.
-	/*!
-	\param image
-	*/
-	void accepted(QImage);
-	void update();
 public slots:
-	//! Waits until any of rendering threads finishes the job.
-	/*!
-    \param _process_events flag of events processing during the wait
-	*/
-    void flush(bool _process_events = true);
 	//! Initiates rendering and QWidget::update().
 	/*!
 	*/
 	void rebuild();
-private slots:
-	void onAccepted(const QImage &);
 protected:
-	void run();
 	bool eventFilter(QObject *, QEvent *);
 };
 
@@ -1213,8 +1146,6 @@ public:
 	const QVector<jPreview *> & previews() const;
 
 	void reset();
-
-	jSync & setLazyRendererEnabled(bool _state, int _max_threads_count = 1);
 public slots:
 	void rebuild();
 private slots:
