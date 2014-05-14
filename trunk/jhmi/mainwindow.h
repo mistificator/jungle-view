@@ -44,9 +44,7 @@ private:
 private slots:
 	void on_view_contextMenuRequested(QPoint _pos);
 	void on_fullview();
-	void on_mt_render_clicked();
 	void on_timer_interval_valueChanged(int);
-	void on_threads_per_view_valueChanged(int);
 	void on_stairway_visible_clicked();
 	void on_cos_visible_clicked();
 	void on_dots_visible_clicked();

@@ -8,7 +8,6 @@
 
 class jStorageInterface
 {
-	DECL_MUTEX
 	COPY_FBD(jStorageInterface)
 	DECL_PROPERTIES(jStorageInterface)
 public:

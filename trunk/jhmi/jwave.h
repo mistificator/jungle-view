@@ -15,7 +15,6 @@ class jStorageHandler;
 class jDataFileInterface
 {
 	COPY_FBD(jDataFileInterface)
-    DECL_MUTEX
     DECL_PROPERTIES(jDataFileInterface)
 public:
 	jDataFileInterface() {}

@@ -39,10 +39,8 @@ jHRulerItem::~jHRulerItem()
 
 jHRulerItem & jHRulerItem::setRange(const qreal & _x1, const qreal & _x2)
 {
-	THREAD_SAFE(Write)
 	d->x1_val = _x1;
 	d->x2_val = _x2;
-	THREAD_UNSAFE
 	d->update();
 	return * this;
 }
@@ -59,13 +57,13 @@ qreal jHRulerItem::x2() const
 
 qreal jHRulerItem::dx() const
 {
-	return SAFE_GET(d->x2_val - d->x1_val);
+	return (d->x2_val - d->x1_val);
 }
 
 
 jHRulerItem & jHRulerItem::setY(const qreal & _y)
 {
-	SAFE_SET(d->y_val, _y);
+	d->y_val = _y;
 	d->update();
 	return * this;
 }
@@ -77,39 +75,31 @@ qreal jHRulerItem::y() const
 
 void jHRulerItem::moveHorizontal(const qreal & dx)
 {
-	THREAD_SAFE(Write)
 	d->x1_val += dx;
 	d->x2_val += dx;
-	THREAD_UNSAFE
 	d->update();
 }
 
 void jHRulerItem::moveVertical(const qreal & dy)
 {
-	THREAD_SAFE(Write)
 	d->y_val += dy;
-	THREAD_UNSAFE
 	d->update();
 }
 
 void jHRulerItem::moveTo(jHRulerItem::Point _pt)
 {
-	THREAD_SAFE(Write)
 	qreal _dx = d->x2_val - d->x1_val;
 	d->x1_val = _pt.x;
 	d->x2_val = d->x1_val + _dx;
 	d->y_val = _pt.y;
-	THREAD_UNSAFE
 	d->update();
 }
 
 QRectF jHRulerItem::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 {
-	THREAD_SAFE(Read)
 	const unsigned int _width = size().width();
 	if (_width == 0)
 	{
-		THREAD_UNSAFE
 		return QRectF();
 	}
 	const qreal _offset_x = origin().x();
@@ -153,14 +143,12 @@ QRectF jHRulerItem::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) c
 	{
 		::qSwap(_top, _bottom);
 	}
-	THREAD_UNSAFE
 	return QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
 }
 
 bool jHRulerItem::intersects(const QRectF & _rect, const jAxis * _x_axis, const jAxis * _y_axis) const
 {
 	QRectF _br = boundingRect(_x_axis, _y_axis);
-	THREAD_SAFE(Read)
 	const unsigned int _width = size().width();
 	const qreal _offset_x = origin().x();
 	const qreal _offset_y = origin().y();
@@ -175,7 +163,6 @@ bool jHRulerItem::intersects(const QRectF & _rect, const jAxis * _x_axis, const 
 		_adj_rect.setTop(_y_axis->fromLog10(_adj_rect.top()));
 		_adj_rect.setBottom(_y_axis->fromLog10(_adj_rect.bottom()));
 	}
-	THREAD_UNSAFE
 	return _adj_rect.intersects(_br);
 }
 

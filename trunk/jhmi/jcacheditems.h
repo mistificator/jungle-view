@@ -28,7 +28,6 @@ private:
 	QVector<T> items;
 	QVector<TX> x_data;
 	int ch;
-    RecursiveLocker local_mtx;
 protected:
 	jItem1D<T, TX> & setData(typename jItem1D<T, TX>::Flat *, unsigned int, bool)			{ return * this; }
 	jItem1D<T, TX> & setData(typename jItem1D<T, TX>::Flat *, TX *, unsigned int, bool)		{ return * this; }
@@ -62,7 +61,7 @@ jCachedItem1D<T, TX> & jCachedItem1D<T, TX>::setChannel(int _channel)
 	{
 		_channel = strg->channels() - 1;
 	}
-	SAFE_SET(ch, _channel);
+	ch = _channel;
 	return * this;
 }
 
@@ -75,9 +74,7 @@ int jCachedItem1D<T, TX>::channel() const
 template <class T, class TX>
 jCachedItem1D<T, TX> & jCachedItem1D<T, TX>::setStorage(jStorageInterface * _storage)
 {
-	THREAD_SAFE(Write)
 	strg = dynamic_cast<jStorage<T, TX> *>(_storage);
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -90,14 +87,12 @@ void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 		return;
 	}
 	QPointF _origin = origin();
-	THREAD_SAFE(Write)
 	quint64 _lo = qMax<qreal>(_rect.left() + _origin.x(), 0);
 //	quint64 _hi = qMax<qreal>(_rect.right() + _origin.x(), 0);
 	quint64 _hi = qMax<qreal>(::ceil(_rect.right() + _origin.x() + 1.0), 0);
 	if ((_lo == _hi) || (_hi == 0))
 	{
 		items.clear();
-		THREAD_UNSAFE;
 		return;
 	}
 
@@ -118,13 +113,10 @@ void jCachedItem1D<T, TX>::updateViewport(const QRectF & _rect)
 		x_data[_idx + 1] = _vx[_idx / 2];
 	}
 
-	THREAD_UNSAFE
 
 //	JTIME_DIFF("reshape arrays")
 
-	local_mtx.lockForWrite();
 	jItem1D<T, TX>::setData(items.data(), x_data.data(), items.count());
-	local_mtx.unlock();
 
 //	JTIME_DIFF("setting data")
 //	JTIME_ELAPSED("total")
@@ -140,8 +132,6 @@ jStorage<T, TX> * jCachedItem1D<T, TX>::storage() const
 template <class T, class TX>
 QRectF jCachedItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 {
-	THREAD_SAFE(Read)
-
 	const qreal _offset_x = origin().x();
 	const qreal _offset_y = origin().y();
 	TX _left, _right;
@@ -226,16 +216,13 @@ QRectF jCachedItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _
 	{
 		::qSwap(_top, _bottom);
 	}
-	THREAD_UNSAFE
 	return (_top == _bottom) ? QRectF(QPointF(_left, _top > 0 ? _offset_y : _top), QPointF(_right, _top > 0 ? _top : _offset_y)) : QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
 }
 
 template <class T, class TX>
 void jCachedItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0)
 {
-	local_mtx.lockForWrite();
 	jItem1D<T, TX>::render(_painter, _dst_rect, _src_rect, _x_axis, _y_axis);
-	local_mtx.unlock();
 }
 
 template <class T, class TX>
@@ -258,12 +245,10 @@ void jCachedItem1D<T, TX>::renderPreview(QPainter & _painter, const QRectF & _ds
 		_pv_x_data[_idx + 1] = _vx[_idx / 2];
 	}
 
-	local_mtx.lockForWrite();
 	jItem1D<T, TX>::setData(_pv_items.data(), _pv_x_data.data(), _pv_items.count());
 	jItem1D<T, TX>::renderPreview(_painter, _dst_rect, _src_rect, _x_axis, _y_axis);
 	// return back data
 	jItem1D<T, TX>::setData(items.data(), x_data.data(), items.count());
-	local_mtx.unlock();
 }
 
 #endif
