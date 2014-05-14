@@ -957,7 +957,7 @@ public:
 	jCoordinator & coordinator() const;
 	jMarker & horizontalMarker() const;
 	jMarker & verticalMarker() const;
-	jRenderer & lazyRenderer() const;
+	jRenderer & renderer() const;
 
 	jView & addItem(jItem * _item);
 	jView & addItems(const QVector<jItem *> & _items);
@@ -1054,7 +1054,7 @@ public:
 	int orientation() const;
 
 	jSelector & selector() const;
-	jRenderer & lazyRenderer() const;
+	jRenderer & renderer() const;
 
 	virtual void render(QPainter & _painter) const;
 

@@ -198,15 +198,6 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		setViews(QVector<jView *>() << view << another_view).
 		setPreviews(QVector<jPreview *>() << preview);
 
-	view->lazyRenderer().
-		setEnabled(ui.mt_render->isChecked()).
-		setMaxThreads(ui.threads_per_view->value());
-	preview->lazyRenderer().
-		setEnabled(ui.mt_render->isChecked());
-	another_view->lazyRenderer().
-		setEnabled(ui.mt_render->isChecked()).
-		setMaxThreads(ui.threads_per_view->value());
-
 	view_legend = new jLegend(view);
 	view_legend->
 		setItems(QVector<jItem *>() << &item_dots << &item_cos << &item1d).
@@ -288,11 +279,11 @@ void Mainwindow::timerEvent(QTimerEvent * _te)
 	}
 	if (_te->timerId() == slow_timer)
 	{
-		int _counter = view->lazyRenderer().counter(); 
+		int _counter = view->renderer().counter(); 
 		quint64 _rendered_counter = item1d.counter() + item2d.counter() + item_cos.counter() + item_dots.counter();
 		ui.statusBar->showMessage(
 			QString::number(
-				view->lazyRenderer().isEnabled() ? _counter - prev_count : frames_count
+				_counter - prev_count /*frames_count*/
 				) + " frames per second, " + 
 			QString::number(
 				((double)_rendered_counter - (double)prev_rendered_count) / (double)1000000.0, '.', 1
@@ -330,37 +321,14 @@ bool Mainwindow::event(QEvent * _ev)
 
 void Mainwindow::closeEvent(QCloseEvent *)
 {
-	view->lazyRenderer().
-		setEnabled(false);
-	preview->lazyRenderer().
-		setEnabled(false);
-	another_view->lazyRenderer().
-		setEnabled(false);
-
 	sync.reset();
 	delete another_view;
-}
-
-void Mainwindow::on_mt_render_clicked()
-{
-	view->lazyRenderer().
-		setEnabled(ui.mt_render->isChecked());
-	preview->lazyRenderer().
-		setEnabled(ui.mt_render->isChecked());
-	another_view->lazyRenderer().
-		setEnabled(ui.mt_render->isChecked());
 }
 
 void Mainwindow::on_timer_interval_valueChanged(int _value)
 {
 	killTimer(fast_timer);
 	fast_timer = startTimer(_value);
-}
-
-void Mainwindow::on_threads_per_view_valueChanged(int _value)
-{
-	view->lazyRenderer().setMaxThreads(_value);
-	another_view->lazyRenderer().setMaxThreads(_value);
 }
 
 void Mainwindow::on_stairway_visible_clicked()

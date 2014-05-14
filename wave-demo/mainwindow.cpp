@@ -72,9 +72,6 @@ MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
 	connect(& ui.view->viewport(), SIGNAL(zoomedFullView(QRectF)), this, SLOT(onViewportChanged(QRectF)));
 
 	ui.view->setBackground(Qt::lightGray);
-	ui.view->lazyRenderer().
-			setMaxThreads(2).
-			setEnabled(false);
 	ui.view->setXAxis(
 		&x_axis.
 		setGridPen(QPen(Qt::black, 1, Qt::DotLine)).
@@ -99,8 +96,6 @@ MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
 	ui.view->coordinator().
 		setFormat(&coordinator_format);
 
-	ui.preview->lazyRenderer().
-		setEnabled(false);
 	ui.preview->selector().
 		setPen(QPen(Qt::yellow, 2, Qt::DotLine)).
 		setBackground(QColor(0, 255, 0, 100));

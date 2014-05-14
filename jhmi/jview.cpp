@@ -3217,7 +3217,7 @@ jMarker & jView::verticalMarker() const
 	return d->vmarker;
 }
 
-jRenderer & jView::lazyRenderer() const
+jRenderer & jView::renderer() const
 {
 	return * d->renderer;
 }
@@ -3722,7 +3722,7 @@ jSelector & jPreview::selector() const
 	return d->selector;
 }
 
-jRenderer & jPreview::lazyRenderer() const
+jRenderer & jPreview::renderer() const
 {
 	return * d->renderer;
 }
@@ -4101,12 +4101,12 @@ struct jSync::Data
 	}
 	__inline void update(jView * _view)
 	{
-		_view->lazyRenderer().rebuild();
+		_view->renderer().rebuild();
 		foreach (jPreview * _preview, previews)
 		{
 			if (_preview && (_preview->view() == _view))
 			{
-				_preview->lazyRenderer().rebuild();
+				_preview->renderer().rebuild();
 			}
 		}
 	}

@@ -94,7 +94,6 @@ jWaveFile::~jWaveFile()
 
 jDataFileInterface & jWaveFile::setIODevice(QIODevice * _io_device, bool _start_loading)
 {
-	THREAD_SAFE(Write)
 	if (d->helper)
 	{
 		delete d->helper;
@@ -109,7 +108,6 @@ jDataFileInterface & jWaveFile::setIODevice(QIODevice * _io_device, bool _start_
 	d->io_device = _io_device;
 	if (d->io_device == 0)
 	{
-		THREAD_UNSAFE
 		return * this;
 	}
 	d->io_device->open(QIODevice::ReadOnly);
@@ -139,7 +137,6 @@ jDataFileInterface & jWaveFile::setIODevice(QIODevice * _io_device, bool _start_
 	{
 		d->helper->storage()->startProcessing();
 	}
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -165,7 +162,7 @@ jItem * jWaveFile::createItem(int _channel) const
 	{
 		return 0;
 	}
-	return SAFE_GET(d->helper->createItem(_channel));
+	return d->helper->createItem(_channel);
 }
 
 jStorageInterface * jWaveFile::storage() const
@@ -174,7 +171,7 @@ jStorageInterface * jWaveFile::storage() const
 	{
 		return 0;
 	}
-	return SAFE_GET(d->helper->storage());
+	return d->helper->storage();
 }
 
 jStorageHandler * jWaveFile::storageControl() const
@@ -183,7 +180,7 @@ jStorageHandler * jWaveFile::storageControl() const
 	{
 		return 0;
 	}
-	return SAFE_GET(d->helper->storage()->storageControl());
+	return d->helper->storage()->storageControl();
 }
 
 qint64 jWaveFile::item(quint64 _item_index, int _channel) const
@@ -294,7 +291,6 @@ jFdFile::~jFdFile()
 
 jDataFileInterface & jFdFile::setIODevice(QIODevice * _io_device, Format _fmt, bool _start_loading)
 {
-	THREAD_SAFE(Write)
 	if (d->helper)
 	{
 		delete d->helper;
@@ -312,7 +308,6 @@ jDataFileInterface & jFdFile::setIODevice(QIODevice * _io_device, Format _fmt, b
 	d->actual_format = No_Format;
 	if (d->io_device == 0)
 	{
-		THREAD_UNSAFE
 		return * this;
 	}
 	d->set_format = _fmt;
@@ -374,7 +369,6 @@ jDataFileInterface & jFdFile::setIODevice(QIODevice * _io_device, Format _fmt, b
 	{
 		d->helper->storage()->startProcessing();
 	}
-	THREAD_UNSAFE
 	return * this;
 }
 
@@ -404,7 +398,7 @@ jItem * jFdFile::createItem(int _channel) const
 	{
 		return 0;
 	}
-	return SAFE_GET(d->helper->createItem(_channel));
+	return d->helper->createItem(_channel);
 }
 
 jStorageInterface * jFdFile::storage() const
@@ -413,7 +407,7 @@ jStorageInterface * jFdFile::storage() const
 	{
 		return 0;
 	}
-	return SAFE_GET(d->helper->storage());
+	return d->helper->storage();
 }
 
 jStorageHandler * jFdFile::storageControl() const
@@ -422,7 +416,7 @@ jStorageHandler * jFdFile::storageControl() const
 	{
 		return 0;
 	}
-	return SAFE_GET(d->helper->storage()->storageControl());
+	return d->helper->storage()->storageControl();
 }
 
 qint64 jFdFile::item(quint64 _item_index, int _channel) const
