@@ -205,7 +205,7 @@ jItem1D<T, TX>::~jItem1D()
 template <class T, class TX>
 jItem1D<T, TX> & jItem1D<T, TX>::setLineStyle(int _style)
 {
-    SAFE_SET(line_style, _style);
+    line_style = _style;
     return * this;
 }
 
@@ -218,7 +218,7 @@ int jItem1D<T, TX>::lineStyle() const
 template <class T, class TX>
 jItem1D<T, TX> & jItem1D<T, TX>::setBarWidth(double _width)
 {
-    SAFE_SET(bar_width, _width);
+    bar_width = _width;
     return * this;
 }
 
@@ -231,7 +231,7 @@ double jItem1D<T, TX>::barWidth() const
 template <class T, class TX>
 jItem1D<T, TX> & jItem1D<T, TX>::setDataModel(int _model)
 {
-    SAFE_SET(data_model, _model);
+    data_model = _model;
     switch (data_model)
     {
     case FlatData:
@@ -251,7 +251,7 @@ jItem1D<T, TX> & jItem1D<T, TX>::setDataModel(int _model)
     }
     default:
     {
-        SAFE_SET(data_model, (int)FlatData);
+        data_model = (int)FlatData;
         setBytesPerItem(sizeof(typename jItem1D<T>::Flat));
         break;
     }
@@ -273,15 +273,12 @@ static inline bool radialSort(const QPointF & _p1, const QPointF & _p2)
 template <class T, class TX>
 void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
 {
-    THREAD_SAFE(Read)
     if (isVisible() == false)
     {
-		THREAD_UNSAFE
         return;
     }
     if (data() == 0)
     {
-        THREAD_UNSAFE
         return;
     }
     QPolygonF _points;
@@ -332,7 +329,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 						_points.resize((_right - _left) * 2 / _i_ratio);
 						for (int _x = _left, _j = 0; _x <= _right - _i_ratio; _x+= _i_ratio)
 						{
-							mrMemCopy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
+							::memcpy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
 							T _ys_max = _ys[0];
 							for (int _i = 1; _i < _i_ratio; _i++)
 							{
@@ -366,7 +363,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 						_rects.resize((_right - _left) / _i_ratio);
 						for (int _x = _left, _j = 0; _x <= _right - _i_ratio; _x+= _i_ratio)
 						{
-							mrMemCopy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
+							::memcpy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
 							T _ys_max = _ys[0];
 							for (int _i = 1; _i < _i_ratio; _i++)
 							{
@@ -548,7 +545,6 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 			}
 		}
     }
-    THREAD_UNSAFE
 
     QTransform _transform;
     QRectF _adj_src_rect = QRectF(QPointF(_src_rect.left() - _offset_x, _src_rect.top() - _offset_y), _src_rect.size());
@@ -598,7 +594,6 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 template <class T, class TX>
 bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, const jAxis * _y_axis) const
 {
-    THREAD_SAFE(Read)
     const unsigned int _width = size().width();
     const double _offset_x = origin().x();
     const double _offset_y = origin().y();
@@ -663,18 +658,15 @@ bool jItem1D<T, TX>::intersects(const QRectF & _rect, const jAxis * _x_axis, con
 			break;
 		}
     }
-    THREAD_UNSAFE
     return _pp.intersects(_adj_rect);
 }
 
 template <class T, class TX>
 QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis) const
 {
-    THREAD_SAFE(Read)
     const unsigned int _width = size().width();
     if (_width == 0)
     {
-        THREAD_UNSAFE
         return QRectF();
     }
     const double _offset_x = origin().x();
@@ -822,7 +814,6 @@ QRectF jItem1D<T, TX>::boundingRect(const jAxis * _x_axis, const jAxis * _y_axis
     {
         ::qSwap(_top, _bottom);
     }
-    THREAD_UNSAFE
     return (_top == _bottom) ? QRectF(QPointF(_left, _top > 0 ? _offset_y : _top), QPointF(_right, _top > 0 ? _top : _offset_y)) : QRectF(QPointF(_left, _top), QPointF(_right, _bottom));
 }
 
@@ -915,7 +906,7 @@ jItem1D<T, TX> & jItem1D<T, TX>::setData(typename jItem1D<T, TX>::Flat * _data, 
     if (_deep_copy)
     {
         x_data = new TX[_width];
-        mrMemCopy(x_data, _x, _width * sizeof(TX));
+        ::memcpy(x_data, _x, _width * sizeof(TX));
     }
     else
     {
@@ -1022,7 +1013,7 @@ jFigureItem<T, TX>::~jFigureItem()
 template <class T, class TX>
 QPainter * jFigureItem<T, TX>::createPainter(const QRectF & _rectangle)
 {
-    SAFE_SET(symbol_img, QImage(QSize(_rectangle.width() + 1, _rectangle.height() + 1), QImage::Format_ARGB32));
+    symbol_img = QImage(QSize(_rectangle.width() + 1, _rectangle.height() + 1), QImage::Format_ARGB32);
     symbol_img.fill(0x000000ff);
     QPainter * _painter = new QPainter(& symbol_img);
     _painter->setPen(pen());
@@ -1114,15 +1105,12 @@ jItem2D<T>::~jItem2D()
 template <class T>
 void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
 {
-    THREAD_SAFE(Read)
     if (isVisible() == false)
     {
-        THREAD_UNSAFE
         return;
     }
     if (data() == 0)
     {
-        THREAD_UNSAFE
         return;
     }
     const QSize _size = size();
@@ -1207,7 +1195,6 @@ void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
     {
         delete [] _buf_i32;
     }
-    THREAD_UNSAFE
 	addCounter(_w * _h);
 }
 
@@ -1263,7 +1250,7 @@ qint32 * jItem2D<T>::convertToI32(void * _data_ptr, const QSize & _size)
 template <class T>
 jItem2D<T> & jItem2D<T>::setImageConversionFlags(int _conversion)
 {
-    SAFE_SET(conversion_flags, _conversion);
+    conversion_flags = _conversion;
     return * this;
 }
 
@@ -1276,7 +1263,7 @@ int jItem2D<T>::imageConversionFlags() const
 template <class T>
 jItem2D<T> & jItem2D<T>::setImageFormat(int _format)
 {
-    SAFE_SET(format, _format);
+    format = _format;
     return * this;
 }
 
@@ -1289,14 +1276,14 @@ int jItem2D<T>::imageFormat() const
 template <class T>
 jItem2D<T> & jItem2D<T>::setConverter(typename jItem2D<T>::converter_func _convert_func)
 {
-    SAFE_SET(converter, _convert_func);
+    converter = _convert_func;
     return * this;
 }
 
 template <class T>
 typename jItem2D<T>::converter_func jItem2D<T>::converterFunc() const
 {
-    return SAFE_GET(converter);
+    return converter;
 }
 
 template <class T>
@@ -1319,14 +1306,14 @@ jItem2D<T> & jItem2D<T>::setData(T * _data, unsigned int _width, unsigned int _h
 template <class T>
 jItem2D<T> & jItem2D<T>::setScaler(typename jItem2D<T>::scale_func _scale_func)
 {
-    SAFE_SET(scaler, _scale_func);
+    scaler = _scale_func;
     return * this;
 }
 
 template <class T>
 typename jItem2D<T>::scale_func jItem2D<T>::scaleFunc() const
 {
-    return SAFE_GET(scaler);
+    return scaler;
 }
 
 #endif
