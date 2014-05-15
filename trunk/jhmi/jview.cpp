@@ -449,12 +449,12 @@ double jAxis::log10Multiplier() const
 
 double jAxis::toLog10(double _value, double _minimum) const
 {
-	return (_value > 0.0) ? d->log10_mpy * ::log10f(_value) : _minimum;
+	return (_value > 0.0) ? d->log10_mpy * ::log10(_value) : _minimum;
 }
 
 double jAxis::fromLog10(double _value) const
 {
-	return (d->log10_mpy != 0.0) ? ::powf(10.0, _value / d->log10_mpy) : 0.0;
+	return (d->log10_mpy != 0.0) ? ::pow(10.0, _value / d->log10_mpy) : 0.0;
 }
 
 double jAxis::mapToAxis(double _value, const jAxis & _dst) const

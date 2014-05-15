@@ -11,11 +11,11 @@
 	#define JUNGLE_WIDGET_CLASS QWidget
 #endif
 
-#define DECL_PROPERTIES(CLASS_NAME) private: QHash<QString, QVariant> properties_p; \
+#define DECL_PROPERTIES(CLASS_NAME) private: QMap<QString, QVariant> properties_p; \
     public: inline CLASS_NAME & setProperty(const char * _name, const QVariant & _value) { properties_p[_name] = _value; return * this; }  \
     inline QVariant property(const char * _name) const { return properties_p[_name]; } \
-	inline CLASS_NAME & setProperties(const QHash<QString, QVariant> & _properties) { properties_p = _properties; return * this; } \
-    inline QHash<QString, QVariant> properties() const { return properties_p; }
+	inline CLASS_NAME & setProperties(const QMap<QString, QVariant> & _properties) { properties_p = _properties; return * this; } \
+    inline QMap<QString, QVariant> properties() const { return properties_p; }
 
 #ifndef _CRT_SECURE_DEPRECATE_MEMORY
 	#define _CRT_SECURE_DEPRECATE_MEMORY
