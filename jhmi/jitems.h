@@ -484,7 +484,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 					{
 						_points << QPointF(_data[_idx].v, _data[_idx].t);
 					}
-					::qSort(_points.begin(), _points.end(), &radialSort);
+					//::qSort(_points.begin(), _points.end(), &radialSort);
 					_points << _points[0];
 					for (unsigned int _idx = 0; _idx < _width + 1; _idx++)
 					{
