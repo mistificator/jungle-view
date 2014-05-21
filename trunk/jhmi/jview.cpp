@@ -3990,7 +3990,7 @@ jRenderer::jRenderer(QWidget * _widget, jRenderer::render_func _render_func)
 {
 	d->widget = _widget;
 	d->render_func = _render_func;
-	connect(this, SIGNAL(update()), d->widget, SLOT(update()));
+//	connect(this, SIGNAL(update()), d->widget, SLOT(update()));
 }
 
 jRenderer::~jRenderer()
