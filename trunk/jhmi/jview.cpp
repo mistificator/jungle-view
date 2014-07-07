@@ -82,6 +82,11 @@ struct jAxis::Data
 		}
 
 		const double _diff = _hi - _lo;
+		if (_diff <= 0)
+		{
+			return QVector<double>();
+		}
+
 		const int _n_diff = ::log10(qMax<double>(qAbs<double>(_diff), 1.0));
 		const int _n = qMax<int>(_n_diff, 1);
 
@@ -618,12 +623,13 @@ struct jViewport::Data
 	jSelector selector;
 	int orientation;
 	QSizeF minimum_size, maximum_size;
-	Data()
+	const float maxfloat;
+	Data(): maxfloat(1e+38)
 	{
 		history << QRectF();
 		selector.setVisible(false);
 		minimum_size = QSizeF(0, 0);
-		maximum_size = QSizeF(1e+38, 1e+38);
+		maximum_size = QSizeF(maxfloat, maxfloat);
 	}
 	~Data()
 	{
@@ -632,13 +638,13 @@ struct jViewport::Data
 	__inline QRectF minmaxRect0(QRectF _rect) const
 	{
 		_rect = minmaxRect(_rect);
-		if (_rect.size().width() < maximum_size.width())
+		if (_rect.size().width() < maximum_size.width() && maximum_size.width() != maxfloat)
 		{
 			const double _dx = maximum_size.width() - _rect.size().width();
 			_rect.setLeft(_rect.left() - _dx / 2.0);			
 			_rect.setRight(_rect.right() + _dx / 2.0);			
 		}
-		if (_rect.size().height() < maximum_size.height())
+		if (_rect.size().height() < maximum_size.height() && maximum_size.height() != maxfloat)
 		{
 			const double _dy = maximum_size.height() - _rect.size().height();
 			_rect.setTop(_rect.top() - _dy / 2.0);			
@@ -905,6 +911,20 @@ jViewport & jViewport::setMinimumSize(const QSizeF & _size)
 	return * this;
 }
 
+jViewport & jViewport::setMinimumWidth(float _width)
+{
+	d->minimum_size.setWidth(_width);
+	d->adjustHistory();
+	return * this;
+}
+
+jViewport & jViewport::setMinimumHeight(float _height)
+{
+	d->minimum_size.setHeight(_height);
+	d->adjustHistory();
+	return * this;
+}
+
 QSizeF jViewport::minimumSize() const
 {
 	return d->minimum_size;
@@ -913,6 +933,20 @@ QSizeF jViewport::minimumSize() const
 jViewport & jViewport::setMaximumSize(const QSizeF & _size)
 {
 	d->maximum_size = _size;
+	d->adjustHistory();
+	return * this;
+}
+
+jViewport & jViewport::setMaximumWidth(float _width)
+{
+	d->maximum_size.setWidth(_width);
+	d->adjustHistory();
+	return * this;
+}
+
+jViewport & jViewport::setMaximumHeight(float _height)
+{
+	d->maximum_size.setHeight(_height);
 	d->adjustHistory();
 	return * this;
 }
