@@ -623,13 +623,12 @@ struct jViewport::Data
 	jSelector selector;
 	int orientation;
 	QSizeF minimum_size, maximum_size;
-	const float maxfloat;
-	Data(): maxfloat(1e+38)
+	Data()
 	{
 		history << QRectF();
 		selector.setVisible(false);
 		minimum_size = QSizeF(0, 0);
-		maximum_size = QSizeF(maxfloat, maxfloat);
+		maximum_size = QSizeF(0, 0);
 	}
 	~Data()
 	{
@@ -638,13 +637,13 @@ struct jViewport::Data
 	__inline QRectF minmaxRect0(QRectF _rect) const
 	{
 		_rect = minmaxRect(_rect);
-		if (_rect.size().width() < maximum_size.width() && maximum_size.width() != maxfloat)
+		if (_rect.size().width() < maximum_size.width() && maximum_size.width() > 0)
 		{
 			const double _dx = maximum_size.width() - _rect.size().width();
 			_rect.setLeft(_rect.left() - _dx / 2.0);			
 			_rect.setRight(_rect.right() + _dx / 2.0);			
 		}
-		if (_rect.size().height() < maximum_size.height() && maximum_size.height() != maxfloat)
+		if (_rect.size().height() < maximum_size.height() && maximum_size.height() > 0)
 		{
 			const double _dy = maximum_size.height() - _rect.size().height();
 			_rect.setTop(_rect.top() - _dy / 2.0);			
@@ -655,25 +654,25 @@ struct jViewport::Data
 	}
 	__inline QRectF minmaxRect(QRectF _rect) const
 	{
-		if (_rect.size().width() < minimum_size.width())
+		if (_rect.size().width() < minimum_size.width() && minimum_size.width() >= 0)
 		{
 			const double _dx = minimum_size.width() - _rect.size().width();
 			_rect.setLeft(_rect.left() - _dx / 2.0);			
 			_rect.setRight(_rect.right() + _dx / 2.0);			
 		}
-		if (_rect.size().width() > maximum_size.width())
+		if (_rect.size().width() > maximum_size.width() && maximum_size.width() > 0)
 		{
 			const double _dx = _rect.size().width() - maximum_size.width();
 			_rect.setLeft(_rect.left() + _dx / 2.0);			
 			_rect.setRight(_rect.right() - _dx / 2.0);			
 		}
-		if (_rect.size().height() < minimum_size.height())
+		if (_rect.size().height() < minimum_size.height() && minimum_size.height() >= 0)
 		{
 			const double _dy = minimum_size.height() - _rect.size().height();
 			_rect.setTop(_rect.top() - _dy / 2.0);			
 			_rect.setBottom(_rect.bottom() + _dy / 2.0);			
 		}
-		if (_rect.size().height() > maximum_size.height())
+		if (_rect.size().height() > maximum_size.height() && maximum_size.height() > 0)
 		{
 			const double _dy = _rect.size().height() - maximum_size.height();
 			_rect.setTop(_rect.top() + _dy / 2.0);			
@@ -755,7 +754,7 @@ jViewport & jViewport::setZoomFullView(const QRectF & _rect)
 		return * this;
 	}
 	clearHistory();
-	if (d->maximum_size == QSizeF(-1, -1))
+	if (d->maximum_size.width() <= 0 && d->maximum_size.height() <= 0)
 	{
 		setMaximumSize(_rect.size());
 	}
@@ -805,6 +804,10 @@ void jViewport::zoomIn(const QRectF & _rect)
 	{
 		return;
 	}
+	if (d->history.isEmpty())
+	{
+		return;
+	}
 	QRectF _adj_rect = d->adjustRect(_rect);
 	QVector<QRectF>::iterator _it = qFind(d->history.begin(), d->history.end(), _adj_rect);
 	if (_it == (d->history.end() - 2))
@@ -813,7 +816,7 @@ void jViewport::zoomIn(const QRectF & _rect)
 		QRectF _history_back = d->history.back();
 		emit zoomedOut(_history_back);
 	}
-	else if (_it == d->history.end())
+	else if (_it == d->history.end() && _adj_rect.size() != d->history.front().size())
 	{
 		d->history << _adj_rect;
 		QRectF _history_back = d->history.back();
