@@ -11,8 +11,19 @@ __inline bool jQuadToQuad(const QRectF & _from, const QRectF & _to, QTransform &
 
 __inline bool intEqual(double _op1, double _op2)
 {
-	static const double _precision = 1000000;
-	return ((qint64)(_op1 * _precision + (double)0.5) == (qint64)(_op2 * _precision + (double)0.5));
+//	static const double _precision = 1000000;
+//	return ((qint64)(_op1 * _precision + (double)0.5) == (qint64)(_op2 * _precision + (double)0.5));
+	return qFuzzyCompare(_op1, _op2);
+}
+
+__inline bool fuzzyRectFCompare(const QRectF & r1, const QRectF & r2)
+{
+	return qFuzzyCompare(r1.left(), r2.left()) && qFuzzyCompare(r1.right(), r2.right()) && qFuzzyCompare(r1.top(), r2.top()) && qFuzzyCompare(r1.bottom(), r2.bottom());
+}
+
+__inline bool fuzzySizeFCompare(const QSizeF & s1, const QSizeF & s2)
+{
+	return qFuzzyCompare(s1.width(), s2.width()) && qFuzzyCompare(s1.height(), s2.height());
 }
 
 // ------------------------------------------------------------------------
@@ -618,6 +629,7 @@ jItem & jSelector::internalItem() const
 
 struct jViewport::Data
 {	
+	friend class jSync;
 	QRectF base;
 	QVector<QRectF> history;
 	jSelector selector;
@@ -747,7 +759,7 @@ void jViewport::clearHistory()
 	d->history.clear();
 }
 
-jViewport & jViewport::setZoomFullView(const QRectF & _rect)
+jViewport & jViewport::setBase(const QRectF & _rect)
 {
 	if (_rect.isValid() == false)
 	{
@@ -765,9 +777,9 @@ jViewport & jViewport::setZoomFullView(const QRectF & _rect)
 	return * this;
 }
 
-jViewport & jViewport::setZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis)
+jViewport & jViewport::setBase(const jAxis & _x_axis, const jAxis & _y_axis)
 {
-	return setZoomFullView(QRectF(QPointF(_x_axis.lo(), _y_axis.lo()), QPointF(_x_axis.hi(), _y_axis.hi())));
+	return setBase(QRectF(QPointF(_x_axis.lo(), _y_axis.lo()), QPointF(_x_axis.hi(), _y_axis.hi())));
 }
 
 QRectF jViewport::rectBase() const
@@ -775,7 +787,7 @@ QRectF jViewport::rectBase() const
 	return d->base;
 }
 
-void jViewport::adjustZoomFullView(const QRectF & _rect)
+void jViewport::adjustBase(const QRectF & _rect)
 {
 	if (_rect.isValid() == false)
 	{
@@ -793,9 +805,9 @@ void jViewport::adjustZoomFullView(const QRectF & _rect)
 	}
 }
 
-void jViewport::adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis)
+void jViewport::adjustBase(const jAxis & _x_axis, const jAxis & _y_axis)
 {
-	adjustZoomFullView(QRectF(QPointF(_x_axis.lo(), _y_axis.lo()), QPointF(_x_axis.hi(), _y_axis.hi())));
+	adjustBase(QRectF(QPointF(_x_axis.lo(), _y_axis.lo()), QPointF(_x_axis.hi(), _y_axis.hi())));
 }
 
 void jViewport::zoomIn(const QRectF & _rect)
@@ -809,25 +821,36 @@ void jViewport::zoomIn(const QRectF & _rect)
 		return;
 	}
 	QRectF _adj_rect = d->adjustRect(_rect);
-	QVector<QRectF>::iterator _it = qFind(d->history.begin(), d->history.end(), _adj_rect);
-	if (_it == (d->history.end() - 2))
+	QVector<QRectF>::iterator _it = d->history.begin();
+	for (; _it !=  d->history.end(); _it++)
+	{
+		if (fuzzyRectFCompare(* _it, _adj_rect))
+		{
+			break;
+		}
+	}
+	if (d->history.count() >= 2 && fuzzyRectFCompare(* _it, * (d->history.end() - 2)))
 	{
 		d->history.erase(d->history.end() - 1);
 		QRectF _history_back = d->history.back();
 		emit zoomedOut(_history_back);
 	}
-	else if (_it == d->history.end() && _adj_rect.size() != d->history.front().size())
+	else if (_it == d->history.end() && !fuzzySizeFCompare(_adj_rect.size(), d->history.front().size()))
 	{
 		d->history << _adj_rect;
 		QRectF _history_back = d->history.back();
 		emit zoomedIn(_history_back);
 	}
-	else if (_it == d->history.begin())
+	else if (d->history.count() >= 2 && fuzzySizeFCompare(_adj_rect.size(), d->history.front().size()))
 	{
 		clearHistory();
 		d->history << _adj_rect;
 		QRectF _history_back = d->history.back();
 		emit zoomedFullView(_history_back);
+	}
+	else
+	{
+		qDebug() << "zoomIn - what we gonna do?";
 	}
 }
 
@@ -2367,9 +2390,9 @@ struct jView::Data
 	{
 		return axisToScreenTransform(_screen_rect).map(_src_point);
 	}
-	__inline void setZoomFullView()
+	__inline void setBase()
 	{
-		viewport.setZoomFullView(* x_axis, * y_axis);
+		viewport.setBase(* x_axis, * y_axis);
 	}
 	__inline static bool itemZSort(const jItem * _item1, const jItem * _item2)
 	{
@@ -2527,7 +2550,7 @@ jView & jView::setXAxis(jAxis * _axis)
 			d->x_axis = new jAxis();
 		}
 	}
-	d->setZoomFullView();
+	d->setBase();
 	return * this;
 }
 
@@ -2555,7 +2578,7 @@ jView & jView::setYAxis(jAxis * _axis)
 			d->y_axis = new jAxis();
 		}
 	}
-	d->setZoomFullView();
+	d->setBase();
 	return * this;
 }
 
@@ -2933,7 +2956,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		{
 			const double _axis_point_x = d->screenToAxis(rect(), QPointF(_mpos.x(), 0)).x();
 			QRectF _rect;
-			const QRectF & _zoom_rect = d->viewport.rect();
+			QRectF _zoom_rect = d->viewport.rect();
 			double _k = (_axis_point_x - _zoom_rect.left()) / _zoom_rect.width();
 			if ((qint16)(_modifier & 0x0000ffff) > 0)
 			{
@@ -2944,14 +2967,13 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			{
 				if (_zoom_rect.width() * 2.0 > d->viewport.maximumSize().width())
 				{
-					_rect = QRectF(QPointF(d->viewport.rectBase().left(), _zoom_rect.top()), 
-						QSize(d->viewport.rectBase().width(), _zoom_rect.height()));
+					QPointF _zc = _zoom_rect.center();
+					_zoom_rect.setLeft(_zc.x() - d->viewport.maximumSize().width() / 4);
+					_zoom_rect.setRight(_zc.x() + d->viewport.maximumSize().width() / 4);
+					double _k = (_axis_point_x - _zoom_rect.left()) / _zoom_rect.width();
 				}
-				else
-				{
-					_rect =	QRectF(QPointF(_axis_point_x - (_zoom_rect.width() * _k) * 2.0, _zoom_rect.top()) , 
-						QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
-				}
+				_rect =	QRectF(QPointF(_axis_point_x - (_zoom_rect.width() * _k) * 2.0, _zoom_rect.top()) , 
+					QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
 			}
 			if (_rect.isValid())
 			{
@@ -2966,7 +2988,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 		{
 			const double _axis_point_y = d->screenToAxis(rect(), QPointF(0, _mpos.y())).y();
 			QRectF _rect;
-			const QRectF & _zoom_rect = d->viewport.rect();
+			QRectF _zoom_rect = d->viewport.rect();
 			double _k = (_axis_point_y - _zoom_rect.top()) / _zoom_rect.height();
 			if ((qint16)(_modifier & 0x0000ffff) > 0)
 			{
@@ -2977,14 +2999,13 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			{
 				if (_zoom_rect.height() * 2.0 > d->viewport.maximumSize().height())
 				{
-					_rect = QRectF(QPointF(_zoom_rect.left(), d->viewport.rect().top()), 
-						QSize(_zoom_rect.width(), d->viewport.rectBase().height()));
+					QPointF _zc = _zoom_rect.center();
+					_zoom_rect.setTop(_zc.y() - d->viewport.maximumSize().height() / 4);
+					_zoom_rect.setBottom(_zc.y() + d->viewport.maximumSize().height() / 4);
+					double _k = (_axis_point_y - _zoom_rect.top()) / _zoom_rect.height();
 				}
-				else
-				{
-					_rect = QRectF(QPointF(_zoom_rect.left(), _axis_point_y - (_zoom_rect.height() * _k) * 2.0) , 
-						QSizeF(_zoom_rect.width(), _zoom_rect.height() * 2.0));
-				}
+				_rect = QRectF(QPointF(_zoom_rect.left(), _axis_point_y - (_zoom_rect.height() * _k) * 2.0) , 
+					QSizeF(_zoom_rect.width(), _zoom_rect.height() * 2.0));
 			}
 			if (_rect.isValid())
 			{
@@ -3378,7 +3399,7 @@ void jView::autoScaleX(double _margin_x)
 	_bounding_rect.setRight(_bounding_rect.right() + 2 * _offset_x);
 
 	d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
-	d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
+	d->viewport.adjustBase(* d->x_axis, * d->y_axis);
 	d->updateViewports(d->viewport.rect());
 }
 
@@ -3392,7 +3413,7 @@ void jView::autoScaleY(double _margin_y)
 	_bounding_rect.setBottom(_bounding_rect.bottom() + 2 * _offset_y);
 
 	d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
-	d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
+	d->viewport.adjustBase(* d->x_axis, * d->y_axis);
 	d->updateViewports(d->viewport.rect());
 }
 
@@ -3411,7 +3432,7 @@ void jView::autoScale(double _margin_x, double _margin_y)
 
 	d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
 	d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
-	d->viewport.adjustZoomFullView(* d->x_axis, * d->y_axis);
+	d->viewport.adjustBase(* d->x_axis, * d->y_axis);
 	d->updateViewports(d->viewport.rect());
 }
 
@@ -4264,7 +4285,7 @@ void jSync::onZoomedOut(const QRectF & _rect)
 			continue;
 		}
 		const QRectF _zoom_rect = d->mapRect(_sender, _rect, _view);
-		if (_zoom_rect == _view->viewport().rect())
+		if (fuzzyRectFCompare(_zoom_rect, _view->viewport().rect()))
 		{
 			continue;
 		}
@@ -4293,13 +4314,12 @@ void jSync::onZoomedFullView(const QRectF & _rect)
 			continue;
 		}
 		const QRectF _zoom_rect = d->mapRect(_sender, _rect, _view);
-		if (_zoom_rect == _view->viewport().rect())
+		if (fuzzyRectFCompare(_zoom_rect, _view->viewport().rect()))
 		{
 			continue;
 		}
-		d->blockSignals(&_view->viewport());
-		_view->viewport().zoomFullView();
-		d->unblockSignals(&_view->viewport());
+		_view->viewport().clearHistory();
+		_view->viewport().d->history << _zoom_rect;
 		d->update(_view);
 	}
 }
