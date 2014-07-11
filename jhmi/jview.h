@@ -341,16 +341,23 @@ class jViewport: public QObject
 {
 	Q_OBJECT
 	PDATA
-	friend class jView;
+	friend class jSync;
 public:
 	jViewport();
 	virtual ~jViewport();
 
-	jViewport & setZoomFullView(const QRectF & _rect);
-	jViewport & setZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis);
+	jViewport & setBase(const QRectF & _rect);
+	jViewport & setBase(const jAxis & _x_axis, const jAxis & _y_axis);
 	QRectF rectBase() const;
-	void adjustZoomFullView(const QRectF & _rect);
-	void adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis);
+	void adjustBase(const QRectF & _rect);
+	void adjustBase(const jAxis & _x_axis, const jAxis & _y_axis);
+
+// deprecated
+	__inline jViewport & setZoomFullView(const QRectF & _rect) { return setBase(_rect); }
+	__inline jViewport & setZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis) { return setBase(_x_axis, _y_axis); }
+	__inline void adjustZoomFullView(const QRectF & _rect) {return adjustBase(_rect); }
+	__inline void adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis) { return adjustBase(_x_axis, _y_axis); }
+// --------
 
 	QRectF rect() const;
 
