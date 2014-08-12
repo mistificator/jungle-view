@@ -2970,7 +2970,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 					QPointF _zc = _zoom_rect.center();
 					_zoom_rect.setLeft(_zc.x() - d->viewport.maximumSize().width() / 4);
 					_zoom_rect.setRight(_zc.x() + d->viewport.maximumSize().width() / 4);
-					double _k = (_axis_point_x - _zoom_rect.left()) / _zoom_rect.width();
+//					_k = (_axis_point_x - _zoom_rect.left()) / _zoom_rect.width();
 				}
 				_rect =	QRectF(QPointF(_axis_point_x - (_zoom_rect.width() * _k) * 2.0, _zoom_rect.top()) , 
 					QSizeF(_zoom_rect.width() * 2.0, _zoom_rect.height()));
@@ -3002,7 +3002,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 					QPointF _zc = _zoom_rect.center();
 					_zoom_rect.setTop(_zc.y() - d->viewport.maximumSize().height() / 4);
 					_zoom_rect.setBottom(_zc.y() + d->viewport.maximumSize().height() / 4);
-					double _k = (_axis_point_y - _zoom_rect.top()) / _zoom_rect.height();
+//					_k = (_axis_point_y - _zoom_rect.top()) / _zoom_rect.height();
 				}
 				_rect = QRectF(QPointF(_zoom_rect.left(), _axis_point_y - (_zoom_rect.height() * _k) * 2.0) , 
 					QSizeF(_zoom_rect.width(), _zoom_rect.height() * 2.0));
