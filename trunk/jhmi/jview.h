@@ -557,6 +557,9 @@ class jItem
 	COPY_FBD(jItem)
 	DECL_PROPERTIES(jItem)
 public:
+    enum LineStyle {Lines = 1, Ticks = 2, Bars = 3, Dots = 4};
+    enum DataType {FlatData = 1, PointData = 2, RadialData = 3};
+
 	//! 
 	/*!
 	Constructor.

@@ -28,8 +28,6 @@ class jItem1D: public jItem
 {
     COPY_FBD(jItem1D)
 public:
-    enum {Lines = 1, Ticks = 2, Bars = 3, Dots = 4};
-    enum {FlatData = 1, PointData = 2, RadialData = 3};
     struct Point
     {
 		Point(): x(0), y(0) {}
