@@ -443,11 +443,12 @@ QVector<T> jIODeviceStorage<T, TX>::readItems(quint64 _items_count)
 	{
 		_pos_start = _pos_end;
 	}
+	const qint64 _count = _pos_end - _pos_start;
 	QVector<T> _result;
-	_result.resize((_pos_end - _pos_start) / itemSize());
-	if (!_result.isEmpty())
+	_result.resize(_count / itemSize());
+	if (!_result.isEmpty() && items.count() >= (_pos_start - cache_start) + _count)
 	{
-		::qMemCopy(_result.data(), items.constData() + (_pos_start - cache_start), _pos_end - _pos_start);
+		::qMemCopy(_result.data(), items.constData() + (_pos_start - cache_start), _count);
 	}
 	return _result;
 }

@@ -3526,13 +3526,15 @@ struct jPreview::Data
 			return QRectF();
 		}
 		QRectF _viewport_rect_base = view->viewport().rectBase();
+		QRectF _viewport_rect = view->viewport().rect();
+
 		const int _min_dim = min_dim;
 		if (_min_dim == 1)
 		{
+			selector.setRect(_viewport_rect);
 			return _viewport_rect_base;
 		}
 
-		QRectF _viewport_rect = view->viewport().rect();
 		QRectF _rect_adjusted = _rect;
 
 		float _dx = 0, _dy = 0;
@@ -3553,6 +3555,7 @@ struct jPreview::Data
 
 		if (::jQuadToQuad(_rect_adjusted, _viewport_rect_base, _transform) == false)
 		{
+			selector.setRect(_viewport_rect);
 			return _viewport_rect_base;
 		}
 
