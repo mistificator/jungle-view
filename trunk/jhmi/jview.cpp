@@ -2965,7 +2965,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			}
 			if ((qint16)(_modifier & 0x0000ffff) < 0)
 			{
-				if (_zoom_rect.width() * 2.0 > d->viewport.maximumSize().width())
+				if (_zoom_rect.width() * 2.0 > d->viewport.maximumSize().width() && !d->viewport.maximumSize().isEmpty())
 				{
 					QPointF _zc = _zoom_rect.center();
 					_zoom_rect.setLeft(_zc.x() - d->viewport.maximumSize().width() / 4);
@@ -2997,7 +2997,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			}
 			if ((qint16)(_modifier & 0x0000ffff) < 0)
 			{
-				if (_zoom_rect.height() * 2.0 > d->viewport.maximumSize().height())
+				if (_zoom_rect.height() * 2.0 > d->viewport.maximumSize().height() && !d->viewport.maximumSize().isEmpty())
 				{
 					QPointF _zc = _zoom_rect.center();
 					_zoom_rect.setTop(_zc.y() - d->viewport.maximumSize().height() / 4);

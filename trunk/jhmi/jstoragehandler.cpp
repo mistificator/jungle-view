@@ -9,21 +9,6 @@ jStorageHandler::~jStorageHandler()
 {
 }
 
-void jStorageHandler::emitFinished(quint64 _msecs)	
-{ 
-	emit finished(_msecs); 
-}
-
-void jStorageHandler::emitLayersAdjusted()			
-{ 
-	emit layersAdjusted(); 
-}
-
-void jStorageHandler::emitStopped()			
-{ 
-	emit stopped(); 
-}
-
 void jStorageHandler::startProcessing(int _priority)	
 { 
 	storage->startProcessing(_priority); 

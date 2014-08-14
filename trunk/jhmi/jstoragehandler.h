@@ -14,9 +14,6 @@ class jStorageHandler : public QObject
 public:
 	jStorageHandler(jStorageInterface * _storage);
 	~jStorageHandler();
-	void emitFinished(quint64 _msecs);
-	void emitLayersAdjusted();
-	void emitStopped();
 signals:
 	void finished(quint64);
 	void layersAdjusted();

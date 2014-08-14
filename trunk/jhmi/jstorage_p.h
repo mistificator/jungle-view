@@ -445,7 +445,10 @@ QVector<T> jIODeviceStorage<T, TX>::readItems(quint64 _items_count)
 	}
 	QVector<T> _result;
 	_result.resize((_pos_end - _pos_start) / itemSize());
-	::qMemCopy(_result.data(), items.constData() + (_pos_start - cache_start), _pos_end - _pos_start);
+	if (!_result.isEmpty())
+	{
+		::qMemCopy(_result.data(), items.constData() + (_pos_start - cache_start), _pos_end - _pos_start);
+	}
 	return _result;
 }
 
@@ -573,7 +576,7 @@ void jStorage<T, TX>::jStorageThread::run()
 	while ((!stop_thread) && (!finished))
 	{
 		adjustLayers();
-		storage->storageControl()->emitLayersAdjusted();
+		QMetaObject::invokeMethod(storage->storageControl(), "layersAdjusted", Qt::BlockingQueuedConnection);
 		msleep(1);
 	}
 	quint64 _msecs = _time_stamp.msecsTo(QDateTime::currentDateTime());
@@ -582,11 +585,11 @@ void jStorage<T, TX>::jStorageThread::run()
 	if (finished)
 	{
 		items_processed = storage->storageSize();
-		storage->storageControl()->emitFinished(_msecs);
+		QMetaObject::invokeMethod(storage->storageControl(), "finished", Qt::QueuedConnection, Q_ARG(quint64, _msecs));
 	}
 	if (stop_thread)
 	{
-		storage->storageControl()->emitStopped();
+		QMetaObject::invokeMethod(storage->storageControl(), "stopped", Qt::QueuedConnection);
 	}
 
 	stop_thread = false;
@@ -1056,8 +1059,8 @@ bool jStorage<T, TX>::jStorageThread::importLayers(const QByteArray & _saved_lay
 	storage->setProcessedItemsHint(_hint);
 	quint64 _msecs = _time_stamp.msecsTo(QDateTime::currentDateTime());
 	JDEBUG("import finished" << _msecs);
-	storage->storageControl()->emitLayersAdjusted();
-	storage->storageControl()->emitFinished(_msecs);
+	QMetaObject::invokeMethod(storage->storageControl(), "layersAdjusted", Qt::QueuedConnection);
+	QMetaObject::invokeMethod(storage->storageControl(), "finished", Qt::QueuedConnection, Q_ARG(quint64, _msecs));
 	return true;
 }
 
