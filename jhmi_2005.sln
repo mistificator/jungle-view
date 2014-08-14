@@ -1,9 +1,9 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jhmi", "jhmi\jhmi.vcxproj", "{E7D196D1-F7B3-44DC-9E5A-2F85A1BA7F2D}"
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jhmi", "jhmi\jhmi_2005.vcproj", "{E7D196D1-F7B3-44DC-9E5A-2F85A1BA7F2D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wave-demo", "wave-demo\wave-demo.vcxproj", "{74A2D8F4-B9AD-4AA1-9EC5-2E1E51023C99}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wave-demo", "wave-demo\wave-demo_2005.vcproj", "{74A2D8F4-B9AD-4AA1-9EC5-2E1E51023C99}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +24,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		QtVersion = $(DefaultQtVersion)
+		QtVersion = 4.8.0
 	EndGlobalSection
 EndGlobal
