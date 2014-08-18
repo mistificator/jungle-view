@@ -1096,6 +1096,8 @@ public slots:
 	void actionAccepted(int, int, int, int, QPointF, QWidget *); // jInputPattern::Action, jInputPattern::Method, buttons or key, modifiers or delta, mouse position
 protected:
     void resizeEvent(QResizeEvent *);
+protected slots:
+	void viewDestroyed(QObject *);
 };
 
 //! Class jRenderer is a 2-D rendering engine.
