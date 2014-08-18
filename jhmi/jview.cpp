@@ -3396,7 +3396,7 @@ void jView::autoScaleX(double _margin_x)
 	const double _width = _bounding_rect.width();
 	const double _offset_x = _width * _margin_x;
 	_bounding_rect.setLeft(_bounding_rect.left() - _offset_x);
-	_bounding_rect.setRight(_bounding_rect.right() + 2 * _offset_x);
+	_bounding_rect.setRight(_bounding_rect.right() + _offset_x);
 
 	d->x_axis->setRange(_bounding_rect.left(), _bounding_rect.right(), d->x_axis->rangeFunc());
 	d->viewport.adjustBase(* d->x_axis, * d->y_axis);
@@ -3410,7 +3410,7 @@ void jView::autoScaleY(double _margin_y)
 	const double _height = _bounding_rect.height();
 	const double _offset_y = _height * _margin_y;
 	_bounding_rect.setTop(_bounding_rect.top() - _offset_y);
-	_bounding_rect.setBottom(_bounding_rect.bottom() + 2 * _offset_y);
+	_bounding_rect.setBottom(_bounding_rect.bottom() + _offset_y);
 
 	d->y_axis->setRange(_bounding_rect.top(), _bounding_rect.bottom(), d->y_axis->rangeFunc());
 	d->viewport.adjustBase(* d->x_axis, * d->y_axis);
@@ -3747,11 +3747,6 @@ jPreview::jPreview(jView * _view, QWidget * _parent)
 
 jPreview::~jPreview()
 {
-	if (d->view)
-	{
-		disconnect(d->view, SIGNAL(viewportChanged(QRectF)), d->renderer, SLOT(rebuild()));
-	}
-	setVisible(false);
 	setView(0);
 	removeEventFilter(d->renderer);
 	delete d->renderer;
@@ -3763,11 +3758,13 @@ jPreview & jPreview::setView(jView * _view)
 	if (d->view)
 	{
 		disconnect(d->view, SIGNAL(viewportChanged(QRectF)), d->renderer, SLOT(rebuild()));
+		disconnect(d->view, SIGNAL(destroyed(QObject *)), this, SLOT(viewDestroyed(QObject *)));
 	}
 	d->view = _view;
 	if (d->view)
 	{
 		connect(d->view, SIGNAL(viewportChanged(QRectF)), d->renderer, SLOT(rebuild()));
+		connect(d->view, SIGNAL(destroyed(QObject *)), this, SLOT(viewDestroyed(QObject *)));
 		setInputPattern(d->view->inputPattern());
 	}
 	return * this;
@@ -3776,6 +3773,11 @@ jPreview & jPreview::setView(jView * _view)
 const jView * jPreview::view() const
 {
 	return d->view;
+}
+
+void jPreview::viewDestroyed(QObject *)
+{
+	d->view = 0;
 }
 
 jSelector & jPreview::selector() const

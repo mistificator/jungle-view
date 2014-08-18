@@ -35,7 +35,8 @@ perf_test::perf_test(QWidget *parent, Qt::WFlags flags)
 	ui.view1d->xAxis()->setId(1);
 	ui.view2d->setXAxis(ui.view1d->xAxis());
 	ui.view2d->yAxis()->setRange(0, ui.heightValue->currentText().toInt());
-	ui.view2d->viewport().setBase(* ui.view2d->xAxis(), * ui.view2d->yAxis());
+
+	item2d.setOrigin(QPointF(-100, -200));
 
 	sync.setViews(QVector<jView *>() << ui.view1d << ui.view2d);
 
@@ -46,7 +47,7 @@ perf_test::perf_test(QWidget *parent, Qt::WFlags flags)
 
 perf_test::~perf_test()
 {
-	ui.preview1d->setView(0);
+
 }
 
 void perf_test::timerEvent(QTimerEvent *)
@@ -56,6 +57,7 @@ void perf_test::timerEvent(QTimerEvent *)
 	ui.view1d->update();
 
 	item2d.setData(data2d[current_data].data(), ui.widthValue->currentText().toInt(), ui.heightValue->currentText().toInt());
+	ui.view2d->autoScale();
 	ui.view2d->update();
 
 	current_data = (current_data + 1) % data_count;
