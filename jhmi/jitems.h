@@ -1154,13 +1154,12 @@ void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
     QTransform _transform;
     if (::jQuadToQuad(_src_rect, _dst_rect, _transform))
     {
-		const QRectF _out_rect = _dst_rect.united(_transform.mapRect(QRectF(_origin, _size))).intersected(_dst_rect);
-		const QRectF _i_rect = _transform.inverted().mapRect(_out_rect);
-		const QRectF _src_img_rect = QRectF(_i_rect.left() - _origin.x(), _h - _i_rect.bottom() + _origin.y(), _i_rect.width(), _i_rect.height());
 
-//		const QRectF _src_img_rect = QRectF(QPointF(), _size).intersected(QRectF(_i_rect.left() - _origin.x(), _h - _i_rect.bottom() + _origin.y(), _i_rect.width(), _i_rect.height()));
-	//	const QRectF _i_rect2 = QRectF(_origin, _size).intersected(_i_rect);
-		//const QRectF _out_rect = _transform.mapRect(_i_rect2);
+		QRectF _adj_rect = _src_rect.intersected(QRectF(_origin, _size));
+		QRectF _out_rect = _transform.mapRect(_adj_rect);
+		_out_rect.moveTop(_dst_rect.height() - _out_rect.bottom());
+		QRectF _src_img_rect = QRectF(_adj_rect.left() - _origin.x(), _adj_rect.top() - _origin.y(), _adj_rect.width(), _adj_rect.height());
+		_src_img_rect.moveTop(_h - _src_img_rect.bottom());
 
 		if (scaler)
 		{
@@ -1170,59 +1169,6 @@ void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
 		{
 			_painter.drawImage(_out_rect, _image, _src_img_rect, (Qt::ImageConversionFlags)conversion_flags);
 		}
-
-/*
-		const QRectF _src_img_rect = QRectF(
-			_src_rect.left(),
-			_h - _src_rect.bottom(),
-			_src_rect.width(),
-			_src_rect.height()
-			);
-
-		if (scaler)
-		{
-			_painter.drawImage(_transform.map(QPointF(_src_rect.left() + _origin.x(), _src_rect.top() + _origin.y())), scaler(_image, _src_img_rect, _transform.mapRect(_src_rect).size(), this));
-		}
-		else
-		{
-			_painter.drawImage(QRectF(_transform.map(QPointF(_src_rect.left() + _origin.x(), _src_rect.top() + _origin.y())), _transform.mapRect(_src_rect).size()), _image, _src_img_rect, (Qt::ImageConversionFlags)conversion_flags);
-		}
-*/
-/*
-	    QRectF _adj_src_rect = QRectF(QPointF(_src_rect.left() - _origin.x(), _src_rect.top() - _origin.y()), _src_rect.size());
-		if (_adj_src_rect.left() < 0)
-		{
-			_adj_src_rect.setLeft(0);
-		}
-		if (_adj_src_rect.top() < 0)
-		{
-			_adj_src_rect.setTop(0);
-		}
-		if (_adj_src_rect.right() > _w)
-		{
-			_adj_src_rect.setRight(_w);
-		}
-		if (_adj_src_rect.bottom() > _h)
-		{
-			_adj_src_rect.setBottom(_h);
-		}
-
-		const QRectF _src_img_rect = QRectF(
-			_adj_src_rect.left(),
-			_h - (_adj_src_rect.bottom()),
-			_adj_src_rect.width(),
-			_adj_src_rect.height()
-			);
-
-		if (scaler)
-		{
-			_painter.drawImage(QPointF(), scaler(_image, _src_img_rect, _transform.mapRect(_adj_src_rect).size(), this));
-		}
-		else
-		{
-			_painter.drawImage(QRectF(QPointF(), _transform.mapRect(_adj_src_rect).size()), _image, _src_img_rect, (Qt::ImageConversionFlags)conversion_flags);
-		}
-*/
 	}
 
 	if (_need_to_delete)

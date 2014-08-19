@@ -60,6 +60,8 @@ void perf_test::timerEvent(QTimerEvent *)
 	ui.view2d->autoScale();
 	ui.view2d->update();
 
+	ui.preview1d->update();
+
 	current_data = (current_data + 1) % data_count;
 	frames_count++;
 
@@ -68,7 +70,6 @@ void perf_test::timerEvent(QTimerEvent *)
 	{
 		fps->setText(QString::number(frames_count * 1000.0 / (elapsed + 1), 'f', 1) + " fps");
 		frames_count = 0;
-		ui.preview1d->update();
 		t.start();
 	}
 }
