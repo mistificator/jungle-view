@@ -841,7 +841,7 @@ void jViewport::zoomIn(const QRectF & _rect)
 		QRectF _history_back = d->history.back();
 		emit zoomedIn(_history_back);
 	}
-	else if (d->history.count() >= 2 && fuzzySizeFCompare(_adj_rect.size(), d->history.front().size()))
+	else if (d->history.count() >= 1 && fuzzySizeFCompare(_adj_rect.size(), d->history.front().size()))
 	{
 		clearHistory();
 		d->history << _adj_rect;
