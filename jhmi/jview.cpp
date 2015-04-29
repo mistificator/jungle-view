@@ -799,6 +799,11 @@ void jViewport::adjustBase(const QRectF & _rect)
 		return;
 	}
 	d->base = _rect;
+	if (d->history.isEmpty())
+	{
+		d->history.push_back(_rect);
+		return;
+	}
 	d->history[0] = d->minmaxRect(_rect);
 	for (int _idx = 1; _idx < d->history.count(); _idx++)
 	{
