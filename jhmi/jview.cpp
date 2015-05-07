@@ -3369,7 +3369,7 @@ void jView::rebuild()
 QRectF jView::itemsBoundingRect(bool _exclude_invisible) const
 {
 	QRectF _united;
-	QVector<jItem *> _items;
+//	QVector<jItem *> _items;
 	foreach (jItem * _item, d->items)
 	{
 		if (_exclude_invisible && (_item->isVisible() == false))
