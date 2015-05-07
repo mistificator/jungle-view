@@ -1124,10 +1124,10 @@ void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
     {
         const unsigned int _log_w = _x_axis->toLog10(_w);
         QImage _result(_log_w, _h, (QImage::Format)format);
-        QPainter _painter(&_result);
+        QPainter _painter1(&_result);
         for (unsigned int _x = 0; _x < _log_w - 1; _x++)
         {
-            _painter.drawImage(
+            _painter1.drawImage(
                         QRectF(QPointF(_x, 0), QPointF(_x + 1, _h)),
                         _image,
                         QRectF(QPointF(_x_axis->fromLog10(_x), 0), QPointF(_x_axis->fromLog10(_x + 1), _h)));
@@ -1139,10 +1139,10 @@ void jItem2D<T>::render(QPainter & _painter, const QRectF & _dst_rect, const QRe
     {
         const unsigned int _log_h = _y_axis->toLog10(_h);
         QImage _result(_w, _log_h, (QImage::Format)format);
-        QPainter _painter(&_result);
+        QPainter _painter1(&_result);
         for (unsigned int _y = 0; _y < _log_h - 1; _y++)
         {
-            _painter.drawImage(
+            _painter1.drawImage(
                         QRectF(QPointF(0, _y), QPointF(_w, _y + 1)),
                         _image,
                         QRectF(QPointF(0, _h - _y_axis->fromLog10(_log_h - _y - 1)), QPointF(_w, _h - _y_axis->fromLog10(_log_h - _y))));
