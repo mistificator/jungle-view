@@ -794,17 +794,21 @@ void jViewport::adjustBase(const QRectF & _rect)
 	{
 		return;
 	}
-	if (_rect == d->base)
+	if (fuzzyRectFCompare(_rect, d->base))
 	{
 		return;
 	}
+	const QRectF old_base = d->base;
 	d->base = _rect;
 	if (d->history.isEmpty())
 	{
 		d->history.push_back(_rect);
 		return;
 	}
+	const double px = d->history[0].center().x() / old_base.center().x();
+	const double py = d->history[0].center().y() / old_base.center().y();
 	d->history[0] = d->minmaxRect(_rect);
+	d->history[0].moveCenter(QPointF(d->base.center().x() * px, d->base.center().y() * py));
 	for (int _idx = 1; _idx < d->history.count(); _idx++)
 	{
 		d->history[_idx] = d->adjustRect(d->history[_idx]);
@@ -2983,10 +2987,14 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			}
 			if (_rect.isValid())
 			{
-				d->viewport.zoomIn(d->viewport.adjustRect(_rect));
-				d->updateViewports(d->viewport.rect());
-				d->adjustCoordinator(rect(), _mpos);
-				d->renderer->rebuild();
+				_rect = d->viewport.adjustRect(_rect);
+				if (!fuzzySizeFCompare(_rect.size(), d->viewport.history().back().size()))
+				{
+					d->viewport.zoomIn(_rect);
+					d->updateViewports(d->viewport.rect());
+					d->adjustCoordinator(rect(), _mpos);
+					d->renderer->rebuild();
+				}
 			}
 		}
 		break;
@@ -3015,10 +3023,14 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			}
 			if (_rect.isValid())
 			{
-				d->viewport.zoomIn(d->viewport.adjustRect(_rect));
-				d->updateViewports(d->viewport.rect());
-				d->adjustCoordinator(rect(), _mpos);
-				d->renderer->rebuild();
+				_rect = d->viewport.adjustRect(_rect);
+				if (!fuzzySizeFCompare(_rect.size(),d->viewport.history().back().size()))
+				{
+					d->viewport.zoomIn(_rect);
+					d->updateViewports(d->viewport.rect());
+					d->adjustCoordinator(rect(), _mpos);
+					d->renderer->rebuild();
+				}
 			}
 		}
 		break;
