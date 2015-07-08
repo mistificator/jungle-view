@@ -59,8 +59,8 @@ QString MainWindow::coordinator_format(double _x, double _y, jAxis * _x_axis, jA
 	return _x_str + "\n" + _y_str;
 }
 
-MainWindow::MainWindow(QWidget *parent, Qt::WFlags flags)
-	: QMainWindow(parent, flags), sample_rate(8000)
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent), sample_rate(8000)
 {
 	ui.setupUi(this);
 	ui.statusBar->addWidget(pb = new QProgressBar());

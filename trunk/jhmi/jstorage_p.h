@@ -309,7 +309,7 @@ QVector<T> jMemoryStorage<T, TX>::readItems(quint64 _items_count)
 	}
 	QVector<T> _result;
 	_result.resize(_items_count);
-	::qMemCopy(_result.data(), _items, _items_count * itemSize());
+    ::memcpy(_result.data(), _items, _items_count * itemSize());
 	return _result;
 }
 
@@ -332,7 +332,7 @@ jMemoryStorage<T, TX> & jMemoryStorage<T, TX>::setStorageBuffer(T * _items, quin
 	if (deep_copy)
 	{
 		items = new T[items_count];
-		::qMemCopy(items, _items, items_count * itemSize());
+        ::memcpy(items, _items, items_count * itemSize());
 	}
 	else
 	{
@@ -448,7 +448,7 @@ QVector<T> jIODeviceStorage<T, TX>::readItems(quint64 _items_count)
 	_result.resize(_count / itemSize());
 	if (!_result.isEmpty() && items.count() >= (_pos_start - cache_start) + _count)
 	{
-		::qMemCopy(_result.data(), items.constData() + (_pos_start - cache_start), _count);
+        ::memcpy(_result.data(), items.constData() + (_pos_start - cache_start), _count);
 	}
 	return _result;
 }

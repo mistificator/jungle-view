@@ -12,7 +12,7 @@ class perf_test : public QMainWindow
 	Q_OBJECT
 
 public:
-	perf_test(QWidget *parent = 0, Qt::WFlags flags = 0);
+    perf_test(QWidget *parent = 0);
 	~perf_test();
 
 private:
