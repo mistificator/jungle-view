@@ -5,6 +5,10 @@
 #include <QtGui>
 #include <QtOpenGL/QtOpenGL>
 
+#if QT_VERSION >= 0x050000
+    #include <QtWidgets>
+#endif
+
 #ifdef JUNGLE_USES_OPENGL
 	#define JUNGLE_WIDGET_CLASS QGLWidget
 #else

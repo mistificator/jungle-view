@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "jcustomtypes.h"
 
 QString customRangeFunc(double _value, jAxis * _axis)
 {
@@ -14,11 +15,8 @@ QString customRangeFunc(double _value, jAxis * _axis)
 	return QString::number(_value, '.', 0);
 }
 
-#include "jcustomtypes.h"
-#include <windows.h>
-
-Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
-	: QMainWindow(_parent, _flags)
+Mainwindow::Mainwindow(QWidget * _parent)
+    : QMainWindow(_parent)
 {
 	ui.setupUi(this);
 
@@ -65,7 +63,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		setToolTip("<b>item2d</b>");
 	delete [] _gfx2d;
 
-	short _gfx1d[4096];
+    short _gfx1d[4096];
 	for (unsigned int _idx = 0; _idx < sizeof(_gfx1d) / sizeof(_gfx1d[0]); _idx++)
 	{
 		_gfx1d[_idx] = (_idx / 8) - 16;
@@ -77,7 +75,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		_gfx_cos[_idx] = 100.0*::cosf(_idx/500.0);
 	}
 
-	::memset(gfx_dots, 0, sizeof(gfx_dots));
+    ::memset(gfx_dots, 0, sizeof(gfx_dots));
 
 	item1d.
 		setData(_gfx1d, sizeof(_gfx1d) / sizeof(_gfx1d[0]), true).
@@ -163,7 +161,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 	view->viewport().
 		setZoomOrientation(Qt::Horizontal | Qt::Vertical).
 		setMinimumSize(QSizeF(0.5, 0.5)).
-		setMaximumSize(QSizeF(1e38, 1e38));
+        setMaximumSize(QSizeF(1e8, 1e8));
 	view->viewport().selector().
 		setPen(QPen(Qt::green, 3, Qt::DotLine)).
 		setBackground(QColor(255, 255, 255, 40));
@@ -179,7 +177,7 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
 		setBackground(QColor(0, 255, 0, 200));
 
 	menu.addAction("Full view", this, SLOT(on_fullview()));
-	connect(view, SIGNAL(contextMenuRequested(QPoint)), this, SLOT(on_view_contextMenuRequested(QPoint)));
+    connect(view, SIGNAL(contextMenuRequested(QPoint)), this, SLOT(view_contextMenuRequested(QPoint)));
 
 	another_view->
 		setXAxis(&x_axis).
@@ -209,33 +207,33 @@ Mainwindow::Mainwindow(QWidget * _parent, Qt::WFlags _flags)
                 addAction(jInputPattern::ZoomDelta, jInputPattern::MousePress, Qt::MidButton, Qt::ShiftModifier).
 				addAction(jInputPattern::ContextMenuRequested, jInputPattern::KeyPress, Qt::Key_Menu);
 
-	const quint64 _arr_sz = 100000000;
+    const quint64 _arr_sz = 100000000;
 	qint32 * _arr = new qint32[_arr_sz];
 	for (quint64 _idx = 0; _idx < _arr_sz; _idx++)
 	{
 		_arr[_idx] = _idx;
 	}
-	storage = new jMemoryStorage<qint32>(_arr, _arr_sz);
+    storage = new jMemoryStorage<qint32>(_arr, _arr_sz);
 //	storage = new jFileStorage<qint16>("c:/temp/compress_test.random");
 
-	connect(storage->storageControl(), SIGNAL(finished(quint64)), this, SLOT(on_storage_finished(quint64)));
+    connect(storage->storageControl(), SIGNAL(finished(quint64)), this, SLOT(storage_finished(quint64)));
 	storage->setSegmentSize();
 	storage->setProcessedItemsHint();
 	storage->setChannels(2);
-	storage->startProcessing();
-
+    storage->startProcessing();
 	cached_item1d.
 			setStorage(storage).
 			setVisible(ui.hugedata_visible->isChecked()).
 			setToolTip("item_huge_data");
 	view->addItem(&cached_item1d);
 
+
 	step = 10;
 	frames_count = 0;
 	prev_count = 0;
 	prev_rendered_count = 0;
-	fast_timer = startTimer(ui.timer_interval->value());
-	slow_timer = startTimer(1000);
+    fast_timer = startTimer(ui.timer_interval->value());
+    slow_timer = startTimer(1000);
 }
 
 Mainwindow::~Mainwindow()
@@ -244,7 +242,7 @@ Mainwindow::~Mainwindow()
 	delete storage;
 }
 
-void Mainwindow::on_view_contextMenuRequested(QPoint _pos)
+void Mainwindow::view_contextMenuRequested(QPoint _pos)
 {
 	menu.popup(_pos);
 }
@@ -301,6 +299,7 @@ void Mainwindow::timerEvent(QTimerEvent * _te)
 
 bool Mainwindow::event(QEvent * _ev)
 {
+
 	if (_ev->type() == QEvent::ToolTip)
 	{
 		QVector<jItem *> _items = view->showToolTip(view->mapFromGlobal(reinterpret_cast<QHelpEvent *>(_ev)->globalPos()));
@@ -316,6 +315,7 @@ bool Mainwindow::event(QEvent * _ev)
 		sync.rebuild();
 		return true;
 	}
+
 	return QWidget::event(_ev);
 }
 
@@ -379,7 +379,7 @@ void Mainwindow::on_show_legend_clicked()
 	view_legend->raise();
 }
 
-void Mainwindow::on_storage_finished(quint64 _msecs)
+void Mainwindow::storage_finished(quint64 _msecs)
 {
 	QMessageBox::information(this, "Storage info", "Layers building finished at " +
 				 QString::number(_msecs / 1000.0, '.', 1) + "s, " +

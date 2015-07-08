@@ -1,7 +1,7 @@
 #include "perf_test.h"
 
-perf_test::perf_test(QWidget *parent, Qt::WFlags flags)
-	: QMainWindow(parent, flags)
+perf_test::perf_test(QWidget *parent)
+    : QMainWindow(parent)
 {
 	ui.setupUi(this);
 	ui.statusBar->addWidget(fps = new QLabel());

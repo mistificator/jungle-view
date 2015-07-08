@@ -1874,6 +1874,14 @@ struct jInputPattern::Data
 	~Data()
 	{
 	}
+    QPointF posF(QMouseEvent * me) const
+    {
+#if QT_VERSION >= 0x050000
+        return me->localPos();
+#else
+        return me->posF();
+#endif
+    }
 	__inline void setDefaultPattern(jInputPattern * _pattern)
 	{
 		if (_pattern == 0)
@@ -2205,7 +2213,7 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 			_code = _me->button();
 		}
 		_modifier = _me->modifiers();
-		_mpos = _me->posF();
+        _mpos = d->posF(_me);
 		_actions = d->checkAction(_method, _code, _modifier);
 		break;
 	case QEvent::MouseButtonRelease:
@@ -2217,7 +2225,7 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 			_code = _me->button();
 		}
 		_modifier = _me->modifiers();
-		_mpos = _me->posF();
+        _mpos = d->posF(_me);
 		_actions = d->checkAction(_method, _code, _modifier);
 		break;
 	case QEvent::MouseButtonDblClick:
@@ -2225,7 +2233,7 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 		_method = MouseDoubleClick;
 		_code = _me->buttons();
 		_modifier = _me->modifiers();
-		_mpos = _me->posF();
+        _mpos = d->posF(_me);
 		_actions = d->checkAction(_method, _code, _modifier);
 		break;
 	case QEvent::KeyPress:
@@ -2259,7 +2267,7 @@ bool jInputPattern::eventFilter(QObject * _object, QEvent * _event)
 		_method = MouseMove;
 		_code = _me->buttons();
 		_modifier = _me->modifiers();
-		_mpos = _me->posF();
+        _mpos = d->posF(_me);
 		_actions = d->checkAction(_method, _code, _modifier);
 		break;
 	}
@@ -2361,6 +2369,14 @@ struct jView::Data
 			delete y_axis;
 		}
 	}
+    QPointF posF(QMouseEvent * me) const
+    {
+#if QT_VERSION >= 0x050000
+        return me->localPos();
+#else
+        return me->posF();
+#endif
+    }
 	__inline QTransform screenToAxisTransform(const QRectF & _screen_rect) const
 	{
 		QTransform _transform;
@@ -3125,7 +3141,7 @@ void jView::restoreCursorBeforePan()
 
 void jView::mouseMoveEvent(QMouseEvent * _me)
 {
-	QPointF _move_point = _me->posF();
+    QPointF _move_point = d->posF(_me);
 	d->adjustCoordinator(rect(), _move_point);
 	d->renderer->rebuild();
 }

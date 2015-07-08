@@ -13,7 +13,7 @@ class Mainwindow : public QMainWindow
 	Q_OBJECT
 
 public:
-	Mainwindow(QWidget * _parent = 0, Qt::WFlags _flags = 0);
+    Mainwindow(QWidget * _parent = 0);
 	~Mainwindow();
 
 private:
@@ -42,7 +42,6 @@ private:
 	void closeEvent(QCloseEvent *);
 
 private slots:
-	void on_view_contextMenuRequested(QPoint _pos);
 	void on_fullview();
 	void on_timer_interval_valueChanged(int);
 	void on_stairway_visible_clicked();
@@ -54,7 +53,8 @@ private slots:
 	void on_y_log_clicked();
 	void on_show_legend_clicked();
 
-	void on_storage_finished(quint64);
+    void view_contextMenuRequested(QPoint _pos);
+    void storage_finished(quint64);
 };
 
 #endif // MAINWINDOW_H
