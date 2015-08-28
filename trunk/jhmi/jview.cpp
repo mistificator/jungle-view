@@ -2349,8 +2349,9 @@ struct jView::Data
         draw_grid = false;
 		x_axis_vis_ovr = true;
 		y_axis_vis_ovr = true;
+		coordinator_visibility = false;
 		coordinator.label().
-			setVisible(coordinator_visibility = true);
+			setVisible(true);
 		hmarker.
 			setVisible(hmarker_visibility = false).
 			setOrientation(Qt::Horizontal);

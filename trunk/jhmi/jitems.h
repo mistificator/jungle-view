@@ -49,6 +49,7 @@ public:
     ~jItem1D();
 
     void render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
+	void renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0);
 
     int dataModel() const;
 
@@ -587,6 +588,18 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
         }
     }
     addCounter(_points.count() + _rects.count());
+}
+
+template <class T, class TX>
+void jItem1D<T, TX>::renderPreview(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
+{
+	const int saved_line_style = line_style;
+	if (line_style == Bars)
+	{
+		line_style = Ticks;
+	}
+	jItem::renderPreview(_painter, _dst_rect, _src_rect, _x_axis, _y_axis);
+	line_style = saved_line_style;
 }
 
 template <class T, class TX>
