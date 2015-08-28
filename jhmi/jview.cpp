@@ -3672,7 +3672,7 @@ struct jPreview::Data
 			_viewport_rect.setLeft(_viewport_rect_base.left());
 			_viewport_rect.setRight(_viewport_rect_base.right());
 		}
-		QPointF _axis_pt = _transform.map(_me->pos());
+		QPointF _axis_pt = _transform.map(QPointF(_me->pos()));
 		_axis_pt.setY(_viewport_rect_base.top() + _viewport_rect_base.bottom() - _axis_pt.y());
 		if (_viewport_rect.contains(_axis_pt))
 		{
@@ -3714,9 +3714,9 @@ struct jPreview::Data
 			_viewport_rect.setLeft(_viewport_rect_base.left());
 			_viewport_rect.setRight(_viewport_rect_base.right());
 		}
-		QPointF _axis_pt = _transform.map(_me->pos());
+		QPointF _axis_pt = _transform.map(QPointF(_me->pos()));
 		_axis_pt.setY(_viewport_rect_base.top() + _viewport_rect_base.bottom() - _axis_pt.y());
-		QPointF _axis_prev_pt = _transform.map(prev_point);
+		QPointF _axis_prev_pt = _transform.map(QPointF(prev_point));
 		_axis_prev_pt.setY(_viewport_rect_base.top() + _viewport_rect_base.bottom() - _axis_prev_pt.y());
 		double _delta_x = _axis_pt.x() - _axis_prev_pt.x();
 		double _delta_y = _axis_pt.y() - _axis_prev_pt.y();
