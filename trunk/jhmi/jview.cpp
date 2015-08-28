@@ -2324,7 +2324,7 @@ struct jView::Data
 	jViewport viewport;
 	jCoordinator coordinator;
 	jMarker hmarker, vmarker;
-	jStack<bool> coordinator_visibility, hmarker_visibility, vmarker_visibility;
+	bool coordinator_visibility, hmarker_visibility, vmarker_visibility;
 	QVector<jItem *> items;
 	QVector<jLabel *> labels;
 	QVector<jMarker *> markers;
@@ -2350,12 +2350,12 @@ struct jView::Data
 		x_axis_vis_ovr = true;
 		y_axis_vis_ovr = true;
 		coordinator.label().
-			setVisible(true);
+			setVisible(coordinator_visibility = true);
 		hmarker.
-			setVisible(false).
+			setVisible(hmarker_visibility = false).
 			setOrientation(Qt::Horizontal);
 		vmarker.
-			setVisible(false).
+			setVisible(vmarker_visibility = false).
 			setOrientation(Qt::Vertical);
 	}
 	~Data()
@@ -2844,8 +2844,14 @@ void jView::render(QPainter & _painter) const
 	{
 		_marker->render(_painter, _rect, _viewport_rect);
 	}
-	d->hmarker.render(_painter, _rect, _viewport_rect);
-	d->vmarker.render(_painter, _rect, _viewport_rect);
+	if (d->hmarker_visibility)
+	{
+		d->hmarker.render(_painter, _rect, _viewport_rect);
+	}
+	if (d->vmarker_visibility)
+	{
+		d->vmarker.render(_painter, _rect, _viewport_rect);
+	}
 	foreach (jLabel * _label, _labels)
 	{
 		_label->render(_painter, _rect, _viewport_rect);
@@ -2854,7 +2860,10 @@ void jView::render(QPainter & _painter) const
 	{
 		d->viewport.selector().render(_painter, _rect, _viewport_rect);
 	}
-	d->coordinator.render(_painter, _rect, _viewport_rect, d->x_axis, d->y_axis);
+	if (d->coordinator_visibility)
+	{
+		d->coordinator.render(_painter, _rect, _viewport_rect, d->x_axis, d->y_axis);
+	}
 }
 
 void jView::actionAccepted(int _action, int _method, int _code, int _modifier, QPointF _mpos, QWidget * _w)
@@ -3257,20 +3266,17 @@ jCoordinator & jView::coordinator() const
 void jView::enterEvent(QEvent *)
 {
     setFocus(Qt::MouseFocusReason);
-	d->coordinator.label().setVisible(d->coordinator_visibility.pop(d->coordinator.label().isVisible()));
-	d->hmarker.setVisible(d->hmarker_visibility.pop(d->hmarker.isVisible()));
-	d->vmarker.setVisible(d->vmarker_visibility.pop(d->vmarker.isVisible()));
+	d->coordinator_visibility = true;
+	d->hmarker_visibility = true;
+	d->vmarker_visibility = true;
 	d->renderer->rebuild();
 }
 
 void jView::leaveEvent(QEvent *)
 {
-	d->coordinator_visibility.push(d->coordinator.label().isVisible());
-	d->hmarker_visibility.push(d->hmarker.isVisible());
-	d->vmarker_visibility.push(d->vmarker.isVisible());
-	d->coordinator.label().setVisible(false);
-	d->hmarker.setVisible(false);
-	d->vmarker.setVisible(false);
+	d->coordinator_visibility = false;
+	d->hmarker_visibility = false;
+	d->vmarker_visibility = false;
 	d->renderer->rebuild();
 }
 
