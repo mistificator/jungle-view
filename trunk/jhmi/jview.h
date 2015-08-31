@@ -349,15 +349,13 @@ public:
 	jViewport & setBase(const QRectF & _rect);
 	jViewport & setBase(const jAxis & _x_axis, const jAxis & _y_axis);
 	QRectF rectBase() const;
-	void adjustBase(const QRectF & _rect);
-	void adjustBase(const jAxis & _x_axis, const jAxis & _y_axis);
+	jViewport & adjustBase(const QRectF & _rect);
+	jViewport & adjustBase(const jAxis & _x_axis, const jAxis & _y_axis);
 
-// deprecated
-	__inline jViewport & setZoomFullView(const QRectF & _rect) { return setBase(_rect); }
-	__inline jViewport & setZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis) { return setBase(_x_axis, _y_axis); }
-	__inline void adjustZoomFullView(const QRectF & _rect) {return adjustBase(_rect); }
-	__inline void adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis) { return adjustBase(_x_axis, _y_axis); }
-// --------
+	jViewport & setZoomFullView(const QRectF & _rect);
+	jViewport & setZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis);
+	jViewport & adjustZoomFullView(const QRectF & _rect);
+	jViewport & adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis);
 
 	QRectF rect() const;
 
@@ -952,6 +950,9 @@ public:
 
 	jView & setYAxis(jAxis * _axis);
 	jAxis * yAxis() const;
+
+	jView & setZoomFullViewMaximized(bool _state);
+	bool isZoomFullViewMaximized() const;
 
 	jView & setXAxisVisibleOverride(bool _state);
 	jView & setYAxisVisibleOverride(bool _state);
