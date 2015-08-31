@@ -766,7 +766,7 @@ jViewport & jViewport::setBase(const QRectF & _rect)
 	{
 		return * this;
 	}
-	clearHistory();
+	d->history.clear();
 	if (d->maximum_size.width() <= 0 && d->maximum_size.height() <= 0)
 	{
 		setMaximumSize(_rect.size());
@@ -788,22 +788,22 @@ QRectF jViewport::rectBase() const
 	return d->base;
 }
 
-void jViewport::adjustBase(const QRectF & _rect)
+jViewport &  jViewport::adjustBase(const QRectF & _rect)
 {
 	if (_rect.isValid() == false)
 	{
-		return;
+		return * this;
 	}
 	if (fuzzyRectFCompare(_rect, d->base))
 	{
-		return;
+		return * this;
 	}
 	const QRectF old_base = d->base;
 	d->base = _rect;
 	if (d->history.isEmpty())
 	{
 		d->history.push_back(_rect);
-		return;
+		return * this;
 	}
 	const double px = d->history[0].center().x() / old_base.center().x();
 	const double py = d->history[0].center().y() / old_base.center().y();
@@ -813,11 +813,40 @@ void jViewport::adjustBase(const QRectF & _rect)
 	{
 		d->history[_idx] = d->adjustRect(d->history[_idx]);
 	}
+	return * this;
 }
 
-void jViewport::adjustBase(const jAxis & _x_axis, const jAxis & _y_axis)
+jViewport & jViewport::adjustBase(const jAxis & _x_axis, const jAxis & _y_axis)
 {
-	adjustBase(QRectF(QPointF(_x_axis.lo(), _y_axis.lo()), QPointF(_x_axis.hi(), _y_axis.hi())));
+	return adjustBase(QRectF(QPointF(_x_axis.lo(), _y_axis.lo()), QPointF(_x_axis.hi(), _y_axis.hi())));
+}
+
+jViewport & jViewport::setZoomFullView(const QRectF & _rect) 
+{ 
+	setBase(_rect);
+	setMaximumSize(d->base.size());
+	return * this;
+}
+
+jViewport & jViewport::setZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis) 
+{ 
+	setBase(_x_axis, _y_axis); 
+	setMaximumSize(d->base.size());
+	return * this;
+}
+
+jViewport & jViewport::adjustZoomFullView(const QRectF & _rect) 
+{
+	adjustBase(_rect);
+	setMaximumSize(d->base.size());
+	return * this;
+}
+
+jViewport & jViewport::adjustZoomFullView(const jAxis & _x_axis, const jAxis & _y_axis) 
+{ 
+	adjustBase(_x_axis, _y_axis); 
+	setMaximumSize(d->base.size());
+	return * this;
 }
 
 void jViewport::zoomIn(const QRectF & _rect)
@@ -853,7 +882,7 @@ void jViewport::zoomIn(const QRectF & _rect)
 	}
 	else if (d->history.count() >= 1 && fuzzySizeFCompare(_adj_rect.size(), d->history.front().size()))
 	{
-		clearHistory();
+		d->history.clear();
 		d->history << _adj_rect;
 		QRectF _history_back = d->history.back();
 		emit zoomedFullView(_history_back);
@@ -876,13 +905,20 @@ void jViewport::zoomOut()
 
 void jViewport::zoomFullView()
 {
-	d->history.erase(d->history.begin() + 1, d->history.end());
-	QRectF _history_back = d->history.back();
-	emit zoomedFullView(_history_back);
+	if (!d->history.isEmpty())
+	{
+		d->history.erase(d->history.begin() + 1, d->history.end());
+		QRectF _history_back = d->history.back();
+		emit zoomedFullView(_history_back);
+	}
 }
 
 QRectF jViewport::rect() const
 {
+	if (d->history.isEmpty())
+	{
+		return QRectF();
+	}
 	return d->history.back();
 }
 
@@ -899,6 +935,10 @@ jSelector & jViewport::selector() const
 void jViewport::pan(double _dx, double _dy)
 {
 	if (_dx == 0.0 && _dy == 0.0)
+	{
+		return;
+	}
+	if (d->history.isEmpty())
 	{
 		return;
 	}
@@ -2319,7 +2359,7 @@ void jInputPattern::rejected(QObject * _obj)
 struct jView::Data
 {
 	jAxis * x_axis, * y_axis;
-	bool x_axis_vis_ovr, y_axis_vis_ovr;
+	bool x_axis_vis_ovr, y_axis_vis_ovr, zoom_full_to_axes;
 	bool internal_x_axis, internal_y_axis;
 	jViewport viewport;
 	jCoordinator coordinator;
@@ -2349,6 +2389,7 @@ struct jView::Data
         draw_grid = false;
 		x_axis_vis_ovr = true;
 		y_axis_vis_ovr = true;
+		zoom_full_to_axes = false;
 		coordinator_visibility = false;
 		coordinator.label().
 			setVisible(true);
@@ -2419,7 +2460,14 @@ struct jView::Data
 	}
 	__inline void setBase()
 	{
-		viewport.setBase(* x_axis, * y_axis);
+		if (zoom_full_to_axes)
+		{
+			viewport.setZoomFullView(* x_axis, * y_axis);
+		}
+		else
+		{
+			viewport.setBase(* x_axis, * y_axis);
+		}
 	}
 	__inline static bool itemZSort(const jItem * _item1, const jItem * _item2)
 	{
@@ -2614,6 +2662,21 @@ jAxis * jView::yAxis() const
 	return d->y_axis;
 }
 
+jView & jView::setZoomFullViewMaximized(bool _state)
+{
+	d->zoom_full_to_axes = _state;
+	if (d->zoom_full_to_axes && !fuzzySizeFCompare(d->viewport.rectBase().size(), d->viewport.maximumSize()))
+	{
+		d->viewport.setMaximumSize(d->viewport.rectBase().size());
+		d->viewport.zoomFullView();
+	}
+}
+
+bool jView::isZoomFullViewMaximized() const
+{
+	return d->zoom_full_to_axes;
+}
+
 jView & jView::setXAxisVisibleOverride(bool _state)
 {
 	d->x_axis_vis_ovr = _state;
@@ -2768,6 +2831,10 @@ QBrush jView::background() const
 
 void jView::render(QPainter & _painter) const
 {
+	if (d->zoom_full_to_axes && !fuzzySizeFCompare(d->viewport.rectBase().size(), d->viewport.maximumSize()))
+	{
+		d->viewport.setMaximumSize(d->viewport.rectBase().size());
+	}
 	QVector<jItem *> _items = d->items;
 	::qSort(_items.begin(), _items.end(), &Data::itemZSort);
     QRectF _rect = d->widget_rect;
@@ -4364,7 +4431,7 @@ void jSync::onZoomedFullView(const QRectF & _rect)
 		{
 			continue;
 		}
-		_view->viewport().clearHistory();
+		_view->viewport().d->history.clear();
 		_view->viewport().d->history << _zoom_rect;
 		d->update(_view);
 	}
