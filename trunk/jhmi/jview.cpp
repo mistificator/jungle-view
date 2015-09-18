@@ -2670,6 +2670,7 @@ jView & jView::setZoomFullViewMaximized(bool _state)
 		d->viewport.setMaximumSize(d->viewport.rectBase().size());
 		d->viewport.zoomFullView();
 	}
+	return * this;
 }
 
 bool jView::isZoomFullViewMaximized() const
