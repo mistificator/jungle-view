@@ -675,9 +675,14 @@ struct jViewport::Data
 		}
 		if (_rect.size().width() > maximum_size.width() && maximum_size.width() > 0)
 		{
+			if (_rect.size().width() > base.width())
+			{
+				_rect.setLeft(0);
+				_rect.setWidth(base.width());
+			}
 			const double _dx = _rect.size().width() - maximum_size.width();
 			_rect.setLeft(_rect.left() + _dx / 2.0);			
-			_rect.setRight(_rect.right() - _dx / 2.0);			
+			_rect.setRight(_rect.right() - _dx / 2.0);	
 		}
 		if (_rect.size().height() < minimum_size.height() && minimum_size.height() >= 0)
 		{
@@ -687,6 +692,11 @@ struct jViewport::Data
 		}
 		if (_rect.size().height() > maximum_size.height() && maximum_size.height() > 0)
 		{
+			if (_rect.size().height() > base.height())
+			{
+				_rect.setTop(0);
+				_rect.setHeight(base.height());
+			}
 			const double _dy = _rect.size().height() - maximum_size.height();
 			_rect.setTop(_rect.top() + _dy / 2.0);			
 			_rect.setBottom(_rect.bottom() - _dy / 2.0);			
@@ -2950,14 +2960,21 @@ void jView::actionAccepted(int _action, int _method, int _code, int _modifier, Q
 
 bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, QPointF _mpos, QWidget * /*_w*/)
 {
-	if (_method == jInputPattern::MousePress)
+	switch (_method)
 	{
+	case jInputPattern::MousePress:
 		d->press_point = _mpos;
-	}
-	else
-	if (_method == jInputPattern::MouseRelease)
-	{
+		break;
+	case jInputPattern::MouseRelease:
 		d->release_point = _mpos;
+		break;
+	case jInputPattern::MouseMove:
+		{
+			const QPoint & _pt_current = QCursor::pos();
+			QPoint _local_pt = mapFromGlobal(_pt_current);
+			d->adjustCoordinator(rect(), _local_pt);
+		}
+		break;
 	}
 
 	const QCursor & _cursor = cursor();
@@ -3177,6 +3194,7 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			d->viewport.pan(_p1.x() - _p2.x(), _p1.y() - _p2.y());
 			d->updateViewports(d->viewport.rect());
 			setCursor(Qt::ClosedHandCursor);
+			d->adjustCoordinator(rect(), _mpos);
 			d->renderer->rebuild();
 			d->move_point = _mpos;
 		}

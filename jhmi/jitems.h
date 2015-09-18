@@ -371,7 +371,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 									_ys_max = _ys_ptr[_i];
 								}
 							}
-							_rects[_j++] = QRectF(QPointF(_x - (_bar_width / 2.0), - _ys.back()), QSizeF(_bar_width, _ys.back()));
+							_rects[_j++] = QRectF(QPointF(_x - (_bar_width / 2.0), - _ys_max), QSizeF(_bar_width, _ys_max));
 						}
 					}
 					else
