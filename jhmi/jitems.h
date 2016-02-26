@@ -14,7 +14,7 @@ class jStack
 public:
     jStack();
     jStack(const jStack & _other);
-    const jStack<T> & operator = (const jStack & _other);
+    jStack<T> & operator = (const jStack & _other);
     ~jStack();
     void push(const T & _value);
     T pop(const T & _default);
@@ -150,9 +150,12 @@ jStack<T>::jStack(const jStack & _other)
 }
 
 template <class T>
-const jStack<T> & jStack<T>::operator = (const jStack & _other)
+jStack<T> & jStack<T>::operator = (const jStack & _other)
 {
-    stack = _other.stack;
+	if (& _other != this)
+	{
+	    stack = _other.stack;
+	}
     return * this;
 }
 
