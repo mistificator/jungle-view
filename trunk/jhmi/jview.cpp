@@ -636,7 +636,7 @@ struct jViewport::Data
 	jSelector selector;
 	int orientation;
 	QSizeF minimum_size, maximum_size;
-	Data()
+	Data(): orientation(0)
 	{
 		history << QRectF();
 		selector.setVisible(false);
@@ -1346,7 +1346,6 @@ QPointF jCoordinator::offset() const
 void jCoordinator::render(QPainter & _painter, const QRectF & _dst_rect, const QRectF & _src_rect, const jAxis * _x_axis, const jAxis * _y_axis)
 {
 	QPointF _pos = d->pos;
-	QPointF _offset = d->offset;
 	format_func _format_func = d->format_func;
 	d->label.
 		setText(_format_func(_pos.x(), _pos.y(), const_cast<jAxis *>(_x_axis), const_cast<jAxis *>(_y_axis), this)).
@@ -1375,7 +1374,7 @@ struct jItem::Data
 	jItemHandler * item_control;
 	QImage symbol_img;
 	bool preview_enabled;
-	Data() 
+	Data(): item_control(0) 
 	{
 		preview_enabled = true;
 		counter = 0;
@@ -1680,7 +1679,7 @@ struct jItemHandler::Data
 	bool enabled;
 	int from, to;
 	QSize sens_area;
-	Data()
+	Data(): item(0), enabled(false)
 	{
 		from = jInputPattern::ItemActionGroupBegin;
 		to = jInputPattern::ItemActionGroupEnd;
@@ -2387,7 +2386,7 @@ struct jView::Data
 	jInputPattern pattern;
     QRect widget_rect;
 	int axes_plane;
-	Data()
+	Data(): renderer(0)
 	{
 		pattern.setDefaultPattern();
 		axes_plane = jView::AxesInForeplane;
@@ -2609,7 +2608,7 @@ jView::jView(const jAxis & _x_axis, const jAxis & _y_axis, QWidget * _parent)
 
 jView::~jView()
 {
-	setVisible(false);
+	QWidget::setVisible(false);
 	d->viewport.setParent(0);
 	removeEventFilter(d->renderer);
 	delete d->renderer;
@@ -3623,7 +3622,7 @@ struct jPreview::Data
 	QCursor saved_cursor, pan_cursor;
     QRect widget_rect;
 	int min_dim;
-	Data()
+	Data(): renderer(0)
 	{
 		saved_cursor = Qt::OpenHandCursor;
 		pan_cursor = Qt::ClosedHandCursor;
@@ -4158,7 +4157,7 @@ struct jRenderer::Data
     quint64 counter;
 	bool force_update;
 	jRenderer::render_func render_func;
-	Data()
+	Data(): render_func(0)
 	{
 		force_update = false;
 		counter = 0;
