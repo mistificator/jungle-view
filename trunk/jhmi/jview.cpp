@@ -11,10 +11,10 @@ __inline bool jQuadToQuad(const QRectF & _from, const QRectF & _to, QTransform &
 
 __inline bool intEqual(double _op1, double _op2)
 {
-//	static const double _precision = 1000000;
-//	return ((qint64)(_op1 * _precision + (double)0.5) == (qint64)(_op2 * _precision + (double)0.5));
+	static const double _precision = 1000000000.0;
+	return ((qint64)(_op1 * _precision + (double)0.5) == (qint64)(_op2 * _precision + (double)0.5));
 //	return qFuzzyCompare(_op1, _op2);
-	return qFuzzyCompare((float)_op1, (float)_op2) && qFuzzyCompare((float)(_op1 - (qint64)_op1), (float)(_op2 - (qint64)_op2));
+//	return qFuzzyCompare((float)_op1, (float)_op2) && qFuzzyCompare((float)(_op1 - (qint64)_op1), (float)(_op2 - (qint64)_op2));
 }
 
 __inline bool fuzzyRectFCompare(const QRectF & r1, const QRectF & r2)
