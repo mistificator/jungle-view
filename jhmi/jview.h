@@ -370,12 +370,12 @@ public:
 	QRectF adjustRect(const QRectF & _rect, bool _to_orientation_only = false) const;
 
 	jViewport & setMinimumSize(const QSizeF & _size);
-	jViewport & setMinimumWidth(float _width);
-	jViewport & setMinimumHeight(float _height);
+	jViewport & setMinimumWidth(double _width);
+	jViewport & setMinimumHeight(double _height);
 	QSizeF minimumSize() const;
 	jViewport & setMaximumSize(const QSizeF & _size);
-	jViewport & setMaximumWidth(float _width);
-	jViewport & setMaximumHeight(float _height);
+	jViewport & setMaximumWidth(double _width);
+	jViewport & setMaximumHeight(double _height);
 	QSizeF maximumSize() const;
 public slots:
 	void zoomIn(const QRectF & _rect);

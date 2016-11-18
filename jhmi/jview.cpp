@@ -650,13 +650,13 @@ struct jViewport::Data
 	__inline QRectF minmaxRect0(QRectF _rect) const
 	{
 		_rect = minmaxRect(_rect);
-		if (_rect.size().width() < maximum_size.width() && maximum_size.width() > 0)
+		if (!intEqual(_rect.size().width(), maximum_size.width()) && _rect.size().width() < maximum_size.width() && maximum_size.width() > 0)
 		{
 			const double _dx = maximum_size.width() - _rect.size().width();
 			_rect.setLeft(_rect.left() - _dx / 2.0);			
 			_rect.setRight(_rect.right() + _dx / 2.0);			
 		}
-		if (_rect.size().height() < maximum_size.height() && maximum_size.height() > 0)
+		if (!intEqual(_rect.size().height(), maximum_size.height()) && _rect.size().height() < maximum_size.height() && maximum_size.height() > 0)
 		{
 			const double _dy = maximum_size.height() - _rect.size().height();
 			_rect.setTop(_rect.top() - _dy / 2.0);			
@@ -667,13 +667,13 @@ struct jViewport::Data
 	}
 	__inline QRectF minmaxRect(QRectF _rect) const
 	{
-		if (_rect.size().width() < minimum_size.width() && minimum_size.width() >= 0)
+		if (!intEqual(_rect.size().width(), minimum_size.width()) && _rect.size().width() < minimum_size.width() && minimum_size.width() >= 0)
 		{
 			const double _dx = minimum_size.width() - _rect.size().width();
 			_rect.setLeft(_rect.left() - _dx / 2.0);			
 			_rect.setRight(_rect.right() + _dx / 2.0);			
 		}
-		if (_rect.size().width() > maximum_size.width() && maximum_size.width() > 0)
+		if (!intEqual(_rect.size().width(), maximum_size.width()) && _rect.size().width() > maximum_size.width() && maximum_size.width() > 0)
 		{
 			if (_rect.size().width() > base.width())
 			{
@@ -684,13 +684,13 @@ struct jViewport::Data
 			_rect.setLeft(_rect.left() + _dx / 2.0);			
 			_rect.setRight(_rect.right() - _dx / 2.0);	
 		}
-		if (_rect.size().height() < minimum_size.height() && minimum_size.height() >= 0)
+		if (!intEqual(_rect.size().height(), minimum_size.height()) && _rect.size().height() < minimum_size.height() && minimum_size.height() >= 0)
 		{
 			const double _dy = minimum_size.height() - _rect.size().height();
 			_rect.setTop(_rect.top() - _dy / 2.0);			
 			_rect.setBottom(_rect.bottom() + _dy / 2.0);			
 		}
-		if (_rect.size().height() > maximum_size.height() && maximum_size.height() > 0)
+		if (!intEqual(_rect.size().height(), maximum_size.height()) && _rect.size().height() > maximum_size.height() && maximum_size.height() > 0)
 		{
 			if (_rect.size().height() > base.height())
 			{
@@ -997,14 +997,14 @@ jViewport & jViewport::setMinimumSize(const QSizeF & _size)
 	return * this;
 }
 
-jViewport & jViewport::setMinimumWidth(float _width)
+jViewport & jViewport::setMinimumWidth(double _width)
 {
 	d->minimum_size.setWidth(_width);
 	d->adjustHistory();
 	return * this;
 }
 
-jViewport & jViewport::setMinimumHeight(float _height)
+jViewport & jViewport::setMinimumHeight(double _height)
 {
 	d->minimum_size.setHeight(_height);
 	d->adjustHistory();
@@ -1023,14 +1023,14 @@ jViewport & jViewport::setMaximumSize(const QSizeF & _size)
 	return * this;
 }
 
-jViewport & jViewport::setMaximumWidth(float _width)
+jViewport & jViewport::setMaximumWidth(double _width)
 {
 	d->maximum_size.setWidth(_width);
 	d->adjustHistory();
 	return * this;
 }
 
-jViewport & jViewport::setMaximumHeight(float _height)
+jViewport & jViewport::setMaximumHeight(double _height)
 {
 	d->maximum_size.setHeight(_height);
 	d->adjustHistory();
