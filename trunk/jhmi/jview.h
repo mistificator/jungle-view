@@ -872,6 +872,10 @@ public:
 			PreviewFullView =		WidgetActionGroupBegin + 17,
 			PreviewDeltaVertical =	WidgetActionGroupBegin + 18,
 			PreviewDeltaHorizontal =WidgetActionGroupBegin + 19,
+			MoveViewportLeft =		WidgetActionGroupBegin + 20,
+			MoveViewportRight =		WidgetActionGroupBegin + 21,
+			MoveViewportUp =		WidgetActionGroupBegin + 22,
+			MoveViewportDown =		WidgetActionGroupBegin + 23,
 		WidgetActionGroupEnd =	WidgetActionGroupBegin + 999,
 
 		ItemActionGroupBegin =	WidgetActionGroupBegin + 1000,
@@ -1138,6 +1142,13 @@ public:
 	\return number of frames
 	*/
     quint64 counter() const;
+
+	jRenderer & setHighlightColor(const QColor &);
+	QColor highlightColor() const;
+
+	enum HighlightMode {HighlightDisabled = 0, HighlightOnFocus = 1, HighlightEnabled = 2, HighlightPermanent = HighlightEnabled};
+	jRenderer & setHighlightMode(HighlightMode);
+	HighlightMode highlightMode();
 
 public slots:
 	//! Initiates rendering and QWidget::update().
