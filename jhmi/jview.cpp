@@ -1943,6 +1943,10 @@ struct jInputPattern::Data
 			addAction(jInputPattern::MoveCursorRight, jInputPattern::KeyPress, Qt::Key_Right).
 			addAction(jInputPattern::MoveCursorUp, jInputPattern::KeyPress, Qt::Key_Up).
 			addAction(jInputPattern::MoveCursorDown, jInputPattern::KeyPress, Qt::Key_Down).
+			addAction(jInputPattern::MoveViewportLeft, jInputPattern::KeyPress, Qt::Key_Left, Qt::ControlModifier).
+			addAction(jInputPattern::MoveViewportRight, jInputPattern::KeyPress, Qt::Key_Right, Qt::ControlModifier).
+			addAction(jInputPattern::MoveViewportUp, jInputPattern::KeyPress, Qt::Key_Up, Qt::ControlModifier).
+			addAction(jInputPattern::MoveViewportDown, jInputPattern::KeyPress, Qt::Key_Down, Qt::ControlModifier).
 			addAction(jInputPattern::ContextMenuRequested, jInputPattern::MouseRelease, Qt::RightButton).
 			addAction(jInputPattern::ZoomStart, jInputPattern::MousePress, Qt::LeftButton).
 			addAction(jInputPattern::ZoomEnd, jInputPattern::MouseRelease, Qt::LeftButton).
@@ -3072,6 +3076,26 @@ bool jView::userCommand(int _action, int _method, int /*_code*/, int _modifier, 
 			}
 		}
 		break;
+	case jInputPattern::MoveViewportLeft:
+		{
+			d->viewport.pan(- 0.1 * d->viewport.rect().width(), 0);
+		}
+		break;
+	case jInputPattern::MoveViewportRight:
+		{
+			d->viewport.pan(0.1 * d->viewport.rect().width(), 0);
+		}
+		break;
+	case jInputPattern::MoveViewportUp:
+		{
+			d->viewport.pan(0, 0.1 * d->viewport.rect().height());
+		}
+		break;
+	case jInputPattern::MoveViewportDown:
+		{
+			d->viewport.pan(0, - 0.1 * d->viewport.rect().height());
+		}
+		break;
 	case jInputPattern::ZoomDeltaVertical:
 		{
 			const double _axis_point_x = d->screenToAxis(rect(), QPointF(_mpos.x(), 0)).x();
@@ -4156,12 +4180,16 @@ struct jRenderer::Data
     QSize widget_size;
     quint64 counter;
 	bool force_update;
+	jRenderer::HighlightMode hmode;
+	QColor hcolor;
 	jRenderer::render_func render_func;
 	Data(): render_func(0)
 	{
 		force_update = false;
 		counter = 0;
 		widget = 0;
+		hmode = jRenderer::HighlightDisabled;
+		hcolor = Qt::darkGreen;
 	}
 	~Data()
 	{
@@ -4171,6 +4199,12 @@ struct jRenderer::Data
 		QPainter _painter(&_device);
 		_painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing, false);
 		render_func(widget, _painter);
+
+		if ((hmode == jRenderer::HighlightPermanent) || (jRenderer::HighlightOnFocus && widget->hasFocus()))
+		{
+			_painter.setPen(QPen(hcolor, 2));
+			_painter.drawRect(1, 1, _device.width() - 2, _device.height() - 2);
+		}
 	}
 };
 
@@ -4190,6 +4224,28 @@ jRenderer::~jRenderer()
 quint64 jRenderer::counter() const
 {
 	return d->counter;
+}
+
+jRenderer & jRenderer::setHighlightColor(const QColor & c)
+{
+	d->hcolor = c;
+	return * this;
+}
+
+QColor jRenderer::highlightColor() const
+{
+	return d->hcolor;
+}
+
+jRenderer & jRenderer::setHighlightMode(jRenderer::HighlightMode m)
+{
+	d->hmode = m;
+	return * this;
+}
+
+jRenderer::HighlightMode jRenderer::highlightMode()
+{
+	return d->hmode;
 }
 
 bool jRenderer::eventFilter(QObject * _object, QEvent * _event)
