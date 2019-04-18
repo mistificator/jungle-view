@@ -1819,7 +1819,7 @@ jMarker & jMarker::setValue(double _value)
 	return * this;
 }
 
-inline double jMarker::value() const
+double jMarker::value() const
 {
 	return d->value;
 }
@@ -2745,7 +2745,7 @@ int jView::axesPlane() const
 	return d->axes_plane;
 }
 
-inline jViewport & jView::viewport() const
+jViewport & jView::viewport() const
 {
 	return d->viewport;
 }
@@ -4200,7 +4200,7 @@ struct jRenderer::Data
 		_painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing, false);
 		render_func(widget, _painter);
 
-		if ((hmode == jRenderer::HighlightPermanent) || (jRenderer::HighlightOnFocus && widget->hasFocus()))
+        if ((hmode == jRenderer::HighlightPermanent) || (hmode == jRenderer::HighlightOnFocus && widget->hasFocus()))
 		{
 			_painter.setPen(QPen(hcolor, 2));
 			_painter.drawRect(1, 1, _device.width() - 2, _device.height() - 2);

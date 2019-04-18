@@ -817,7 +817,7 @@ public:
 	QPen pen() const;
 
 	jMarker & setValue(double _value);
-	inline double value() const;
+    double value() const;
 
 	jMarker & setVisible(bool _state);
 	bool isVisible() const;
@@ -972,7 +972,7 @@ public:
 	jView & setAxesPlane(int _plane);
 	int axesPlane() const;
 
-	inline jViewport & viewport() const;
+    jViewport & viewport() const;
 	jCoordinator & coordinator() const;
 	jMarker & horizontalMarker() const;
 	jMarker & verticalMarker() const;
