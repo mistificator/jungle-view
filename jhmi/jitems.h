@@ -59,6 +59,10 @@ public:
     jItem1D<T, TX> & setBarWidth(double _width);
     double barWidth() const;
 
+	// set custom zero level for bars & ticks
+    jItem1D<T, TX> & setZeroLevel(double _zero_level);
+    double zeroLevel() const;
+
     bool intersects(const QRectF & _rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
     QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 
@@ -75,7 +79,7 @@ public:
     T y(int _idx = 0) const;
 private:
     int data_model, line_style;
-    double bar_width;
+    double bar_width, zero_level;
     TX * x_data;
 protected:
     virtual jItem1D<T, TX> & setDataModel(int _model);
@@ -192,7 +196,8 @@ jItem1D<T, TX>::jItem1D(int _line_style, double _bar_width): jItem()
     this->
     setDataModel(FlatData).
             setLineStyle(_line_style).
-            setBarWidth(_bar_width);
+            setBarWidth(_bar_width).
+			setZeroLevel(0);
 }
 
 template <class T, class TX>
@@ -228,6 +233,19 @@ template <class T, class TX>
 double jItem1D<T, TX>::barWidth() const
 {
     return bar_width;
+}
+
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setZeroLevel(double _zero_level)
+{
+	zero_level = _zero_level;
+	return * this;
+}
+
+template <class T, class TX>
+double jItem1D<T, TX>::zeroLevel() const
+{
+	return zero_level;
 }
 
 template <class T, class TX>
@@ -341,7 +359,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 								}
 							}
 							_points[_j++] = QPointF(_x, -_ys_max);
-							_points[_j++] = QPointF(_x, 0); 
+							_points[_j++] = QPointF(_x, -zero_level); 
 						}
 					}
 					else
@@ -350,7 +368,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 						for (int _x = _left; _x < _right; _x++)
 						{
 							_points << QPointF(_x, -_y_data[_x]);
-							_points << QPointF(_x, 0);
+							_points << QPointF(_x, -zero_level);
 						}
 					}
 					break;
@@ -374,7 +392,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 									_ys_max = _ys_ptr[_i];
 								}
 							}
-							_rects[_j++] = QRectF(QPointF(_x - (_bar_width / 2.0), - _ys_max), QSizeF(_bar_width, _ys_max));
+							_rects[_j++] = QRectF(QPointF(_x - (_bar_width / 2.0), - _ys_max), QSizeF(_bar_width, _ys_max - zero_level));
 						}
 					}
 					else
@@ -382,7 +400,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 						_rects.reserve(_right - _left);
 						for (int _x = _left; _x < _right; _x++)
 						{
-							_rects << QRectF(QPointF(_x - (_bar_width / 2.0), - _y_data[_x]), QSizeF(_bar_width, _y_data[_x]));
+							_rects << QRectF(QPointF(_x - (_bar_width / 2.0), - _y_data[_x]), QSizeF(_bar_width, _y_data[_x] - zero_level));
 						}
 					}
 				}
@@ -409,7 +427,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 						for (unsigned int _idx = 0; _idx < _width; _idx++)
 						{
 							_points << QPointF(x_data[_idx], -_y_data[_idx]);
-							_points << QPointF(x_data[_idx], 0);
+							_points << QPointF(x_data[_idx], -zero_level);
 						}
 						break;
 					}
@@ -418,7 +436,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 						_rects.reserve(_width);
 						for (unsigned int _idx = 0; _idx < _width; _idx++)
 						{
-							_rects << QRectF(QPointF(x_data[_idx] - (_bar_width / 2.0), -_y_data[_idx]), QSizeF(_bar_width, _y_data[_idx]));
+							_rects << QRectF(QPointF(x_data[_idx] - (_bar_width / 2.0), -_y_data[_idx]), QSizeF(_bar_width, _y_data[_idx] - zero_level));
 						}
 						break;
 					}
@@ -449,7 +467,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 					for (unsigned int _idx = 0; _idx < _width; _idx++)
 					{
 						_points << QPointF(_data[_idx].x, -_data[_idx].y);
-						_points << QPointF(_data[_idx].x, 0);
+						_points << QPointF(_data[_idx].x, -zero_level);
 					}
 					break;
 				}
@@ -458,7 +476,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 					_rects.reserve(_width);
 					for (unsigned int _idx = 0; _idx < _width; _idx++)
 					{
-						_rects << QRectF(QPointF(_data[_idx].x - (_bar_width / 2.0), -_data[_idx].y), QSizeF(_bar_width, _data[_idx].y));
+						_rects << QRectF(QPointF(_data[_idx].x - (_bar_width / 2.0), -_data[_idx].y), QSizeF(_bar_width, _data[_idx].y - zero_level));
 					}
 					break;
 				}
