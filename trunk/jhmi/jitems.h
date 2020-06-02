@@ -63,6 +63,10 @@ public:
     jItem1D<T, TX> & setZeroLevel(double _zero_level);
     double zeroLevel() const;
 
+	// say X is sorted and uniform distributed to enable draw optimization when X array is supplied
+	jItem1D<T, TX> & setXArraySortedAndUniform(bool);
+	bool isXArraySortedAndUniform() const;
+
     bool intersects(const QRectF & _rect, const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
     QRectF boundingRect(const jAxis * _x_axis = 0, const jAxis * _y_axis = 0) const;
 
@@ -80,6 +84,7 @@ public:
 private:
     int data_model, line_style;
     double bar_width, zero_level;
+	bool x_sorted_uniform;
     TX * x_data;
 protected:
     virtual jItem1D<T, TX> & setDataModel(int _model);
@@ -197,7 +202,8 @@ jItem1D<T, TX>::jItem1D(int _line_style, double _bar_width): jItem()
     setDataModel(FlatData).
             setLineStyle(_line_style).
             setBarWidth(_bar_width).
-			setZeroLevel(0);
+			setZeroLevel(0).
+			setXArraySortedAndUniform(false);
 }
 
 template <class T, class TX>
@@ -246,6 +252,19 @@ template <class T, class TX>
 double jItem1D<T, TX>::zeroLevel() const
 {
 	return zero_level;
+}
+
+template <class T, class TX>
+jItem1D<T, TX> & jItem1D<T, TX>::setXArraySortedAndUniform(bool state)
+{
+	x_sorted_uniform = state;
+	return * this;
+}
+
+template <class T, class TX>
+bool jItem1D<T, TX>::isXArraySortedAndUniform() const
+{
+	return x_sorted_uniform;
 }
 
 template <class T, class TX>
@@ -327,23 +346,65 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 				const qint32 _left = ((qint32)_fleft) < 0 ? 0 : _fleft;
 				const qint32 _right = ((qint32)_fright) < 0 ? 0 : _fright;
 				const double _ratio = (_right - _left) / _dst_rect.width();
+				const int _i_ratio = _ratio;
 				switch (line_style)
 				{
 				case Dots:
 				case Lines:
-				{
-					_points.reserve(_right - _left);
-					for (int _x = _left; _x < _right; _x++)
+				{ 
+					if (_i_ratio >= 2) // TODO: test this branch
 					{
-						_points << QPointF(_x, -_y_data[_x]);
+						QVector<T> _ys(_i_ratio);
+						T * _ys_ptr = _ys.data();
+						_points.reserve(_right - _left);
+						for (int _x = _left; _x <= _right - _i_ratio; _x+= _i_ratio)
+						{
+							::memcpy(_ys_ptr, _y_data + _x, _i_ratio * sizeof(T));
+							T _ys_max = _ys[0];
+							T _ys_min = _ys[0];
+							for (int _i = 1; _i < _i_ratio; _i++)
+							{
+								if (_ys_max < _ys_ptr[_i])
+								{
+									_ys_max = _ys_ptr[_i];
+								}
+								if (_ys_min > _ys_ptr[_i])
+								{
+									_ys_min = _ys_ptr[_i];
+								}
+							}
+							if (_ys_min * _ys_max < 0)
+							{
+								if (!_points.isEmpty())
+								{
+									if (- _points.last().y() > 0)
+									{
+										qSwap(_ys_min, _ys_max);
+									}
+								}
+								_points << QPointF(_x, -_ys_min);
+								_points << QPointF(_x, -_ys_max);								
+							}
+							else
+							{
+								_points << QPointF(_x, _ys_max > _ys_min ? -_ys_max : -_ys_min);								
+							}
+						}
+					}
+					else
+					{
+						_points.reserve(_right - _left);
+						for (int _x = _left; _x < _right; _x++)
+						{
+							_points << QPointF(_x, -_y_data[_x]);
+						}
 					}
 					break;
 				}
 				case Ticks:
 				{
-					if (_ratio >= 2)
+					if (_i_ratio >= 2)
 					{
-						const int _i_ratio = _ratio;
 						QVector<T> _ys(_i_ratio);
 						T * _ys_ptr = _ys.data();
 						_points.resize((_right - _left) * 2 / _i_ratio);
@@ -375,9 +436,8 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 				}
 				case Bars:
 				{
-					if (_ratio >= 2)
+					if (_i_ratio >= 2)
 					{
-						const int _i_ratio = _ratio;
 						QVector<T> _ys(_i_ratio);
 						T * _ys_ptr = _ys.data();
 						_rects.resize((_right - _left) / _i_ratio);
@@ -408,21 +468,71 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 			}
 			else
 			{
+				double _ratio = 1;
+				if (x_sorted_uniform)
+				{
+					double _fleft = qMax<double>((jAxis::normalizeFromScale(_x_axis, _src_rect.left() - _origin.x()) - x_data[0]) * _width / (x_data[_width - 1] - x_data[0]), 0);
+					double _fright = qMax<double>((jAxis::normalizeFromScale(_x_axis, _src_rect.right() - _origin.x()) - x_data[0]) * _width / (x_data[_width - 1] - x_data[0]), 0);
+					_ratio = (_fright - _fleft) / _dst_rect.width();
+				}
 				const double _bar_width = jAxis::normalizeFromScale(_x_axis, bar_width);
+				const int _i_ratio = _ratio;
 				switch (line_style)
 				{
 					case Dots:
 					case Lines:
 					{
-						_points.reserve(_width);
-						for (unsigned int _idx = 0; _idx < _width; _idx++)
+						_points.reserve(_width);						
+						if (_i_ratio >= 2)
 						{
-							_points << QPointF(x_data[_idx], -_y_data[_idx]);
+							QVector<T> _ys(_i_ratio);
+							T * _ys_ptr = _ys.data();
+							for (int _idx = 0; _idx <= _width - _i_ratio; _idx += _i_ratio)
+							{
+								::memcpy(_ys_ptr, _y_data + _idx, _i_ratio * sizeof(T));
+								T _ys_max = _ys[0];
+								T _ys_min = _ys[0];
+								for (int _i = 1; _i < _i_ratio; _i++)
+								{
+									if (_ys_max < _ys_ptr[_i])
+									{
+										_ys_max = _ys_ptr[_i];
+									}
+									if (_ys_min > _ys_ptr[_i])
+									{
+										_ys_min = _ys_ptr[_i];
+									}
+								}
+								if (_ys_min * _ys_max < 0)
+								{
+									if (!_points.isEmpty())
+									{
+										if (- _points.last().y() > 0)
+										{
+											qSwap(_ys_min, _ys_max);
+										}
+									}
+									_points << QPointF(x_data[_idx], -_ys_min);
+									_points << QPointF(x_data[_idx], -_ys_max);								
+								}
+								else
+								{
+									_points << QPointF(x_data[_idx],  _ys_max > _ys_min ? -_ys_max : -_ys_min);
+								}
+							}
+						}
+						else
+						{
+							for (unsigned int _idx = 0; _idx < _width; _idx++)
+							{
+								_points << QPointF(x_data[_idx], -_y_data[_idx]);
+							}
 						}
 						break;
 					}
 					case Ticks:
 					{
+						// TODO: make optimization with x_sorted_uniform
 						_points.reserve(_width * 2);
 						for (unsigned int _idx = 0; _idx < _width; _idx++)
 						{
@@ -433,6 +543,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 					}
 					case Bars:
 					{
+						// TODO: make optimization with x_sorted_uniform
 						_rects.reserve(_width);
 						for (unsigned int _idx = 0; _idx < _width; _idx++)
 						{
