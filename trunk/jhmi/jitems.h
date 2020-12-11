@@ -487,7 +487,7 @@ void jItem1D<T, TX>::render(QPainter & _painter, const QRectF & _dst_rect, const
 						{
 							QVector<T> _ys(_i_ratio);
 							T * _ys_ptr = _ys.data();
-							for (int _idx = 0; _idx <= _width - _i_ratio; _idx += _i_ratio)
+							for (int _idx = 0; _idx <= (int)_width - _i_ratio; _idx += _i_ratio)
 							{
 								::memcpy(_ys_ptr, _y_data + _idx, _i_ratio * sizeof(T));
 								T _ys_max = _ys[0];
